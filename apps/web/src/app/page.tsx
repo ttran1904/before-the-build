@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   FaHouse, FaCamera, FaPalette, FaSackDollar, FaBookOpen, FaCheck,
   FaStar, FaRobot, FaCompass, FaCouch, FaArrowsRotate,
@@ -7,117 +8,36 @@ import {
 } from "react-icons/fa6";
 
 /* ─── Room scene illustrations ─── */
-const ROOMS: Record<string, { bg: string; label: string; accents: React.ReactNode }> = {
+const ROOMS: Record<string, { bg: string; label: string; image?: string; accents: React.ReactNode }> = {
   kitchen: {
-    bg: "linear-gradient(to top, #e8ddd0 40%, #c9b99a 40%, #c9b99a 44%, #eae3d8 44%, #eae3d8 56%, #f5f0eb 56%)",
+    bg: "none",
     label: "Modern Farmhouse Kitchen",
-    accents: (
-      <>
-        <div className="absolute left-[38%] top-[6%] h-[28%] w-[24%] rounded border-2 border-[#d4c5a0] bg-[#c5dff0]/70" />
-        <div className="absolute left-[48%] top-0 h-[10%] w-px bg-[#999]" />
-        <div className="absolute left-[46.5%] top-[8%] h-3.5 w-3.5 rounded-full bg-[#f5e6c8] shadow-md" />
-        <div className="absolute bottom-[6%] left-[22%] h-[18%] w-[56%] rounded-lg bg-[#d4a574]/80" />
-        {/* Upper cabinets */}
-        <div className="absolute left-[4%] top-[8%] h-[24%] w-[28%] rounded bg-[#e0d5c5] border border-[#d4c5a0]" />
-        <div className="absolute right-[4%] top-[8%] h-[24%] w-[28%] rounded bg-[#e0d5c5] border border-[#d4c5a0]" />
-        {/* Cabinet handles */}
-        <div className="absolute left-[14%] top-[19%] h-[2px] w-[8%] rounded bg-[#b8a88a]" />
-        <div className="absolute right-[14%] top-[19%] h-[2px] w-[8%] rounded bg-[#b8a88a]" />
-        {/* Stove */}
-        <div className="absolute bottom-[44%] left-[42%] h-[12%] w-[16%] rounded-sm bg-[#5a5a5a]" />
-      </>
-    ),
+    image: "/images/kitchen-remodel.png",
+    accents: <></>,
   },
   coastal: {
-    bg: "linear-gradient(to bottom, #d6eaf8 0%, #eaf2f8 40%, #f5f0eb 70%, #e8ddd0 100%)",
+    bg: "none",
     label: "Coastal Living Room",
-    accents: (
-      <>
-        {/* Large window */}
-        <div className="absolute left-[8%] top-[6%] h-[40%] w-[35%] rounded border-2 border-[#b0c4d4] bg-[#c5dff0]/50" />
-        <div className="absolute left-[24%] top-[6%] h-[40%] w-px bg-[#b0c4d4]" />
-        <div className="absolute left-[8%] top-[26%] h-px w-[35%] bg-[#b0c4d4]" />
-        {/* Sofa */}
-        <div className="absolute bottom-[4%] left-[10%] h-[28%] w-[50%] rounded-lg bg-[#e8e4de] border border-[#d4cfc8]" />
-        <div className="absolute bottom-[20%] left-[12%] h-[10%] w-[12%] rounded bg-[#d4cfc8]" />
-        <div className="absolute bottom-[20%] left-[44%] h-[10%] w-[12%] rounded bg-[#d4cfc8]" />
-        {/* Coffee table */}
-        <div className="absolute bottom-[8%] left-[30%] h-[7%] w-[22%] rounded bg-[#c9b99a]/70" />
-        {/* Plant */}
-        <div className="absolute bottom-[12%] right-[8%] h-[30%] w-[3%] rounded-full bg-[#8b7355]/60" />
-        <div className="absolute bottom-[30%] right-[4%] h-[18%] w-[12%] rounded-full bg-[#7cb87c]/50" />
-        <div className="absolute bottom-[38%] right-[8%] h-[14%] w-[10%] rounded-full bg-[#8dca8d]/40" />
-      </>
-    ),
+    image: "/images/coastal-living room.png",
+    accents: <></>,
   },
   japandi: {
-    bg: "linear-gradient(to bottom, #f0ebe4 0%, #e8ddd0 60%, #d4c5a0 100%)",
+    bg: "none",
     label: "Japandi Bedroom",
-    accents: (
-      <>
-        {/* Bed frame */}
-        <div className="absolute bottom-[10%] left-[12%] h-[24%] w-[60%] rounded-lg bg-[#c9b99a]/60 border border-[#b8a88a]" />
-        {/* Headboard */}
-        <div className="absolute bottom-[26%] left-[12%] h-[8%] w-[60%] rounded-t bg-[#b8a88a]/50" />
-        {/* Pillows */}
-        <div className="absolute bottom-[27%] left-[20%] h-[6%] w-[14%] rounded-full bg-white/80" />
-        <div className="absolute bottom-[27%] left-[42%] h-[6%] w-[14%] rounded-full bg-[#e8e0d4]" />
-        {/* Nightstand */}
-        <div className="absolute bottom-[10%] right-[10%] h-[18%] w-[12%] rounded bg-[#a09080]/40" />
-        {/* Paper lamp */}
-        <div className="absolute right-[12%] top-[20%] h-8 w-8 rounded-full bg-[#f5e6c8]/80" />
-        <div className="absolute right-[14.5%] top-[10%] h-[12%] w-px bg-[#999]" />
-        {/* Rug */}
-        <div className="absolute bottom-[2%] left-[18%] h-[6%] w-[50%] rounded bg-[#d4c5a0]/40" />
-      </>
-    ),
+    image: "/images/japandi-bedroom.png",
+    accents: <></>,
   },
   bathroom: {
-    bg: "linear-gradient(to bottom, #f5f0eb 0%, #eae3d8 50%, #e0dbd4 100%)",
+    bg: "none",
     label: "Mid-Century Bathroom",
-    accents: (
-      <>
-        {/* Tile lines */}
-        <div className="absolute left-[10%] top-[10%] h-px w-[80%] bg-[#c9b99a]/30" />
-        <div className="absolute left-[10%] top-[20%] h-px w-[80%] bg-[#c9b99a]/30" />
-        <div className="absolute left-[10%] top-[30%] h-px w-[80%] bg-[#c9b99a]/30" />
-        {/* Oval mirror */}
-        <div className="absolute right-[18%] top-[8%] h-16 w-12 rounded-full border-2 border-[#c9b99a] bg-[#e8e4de]/70" />
-        {/* Vanity */}
-        <div className="absolute bottom-[8%] right-[10%] h-[30%] w-[30%] rounded-t-lg bg-[#d4a574]/50 border border-[#c9956a]/40" />
-        {/* Basin */}
-        <div className="absolute bottom-[30%] right-[16%] h-[6%] w-[18%] rounded-full bg-white/80" />
-        {/* Bathtub */}
-        <div className="absolute bottom-[4%] left-[8%] h-[26%] w-[45%] rounded-[50%] border-2 border-[#d4c5a0] bg-white/80" />
-        {/* Faucet */}
-        <div className="absolute bottom-[28%] left-[28%] h-[6%] w-[2%] rounded bg-[#999]" />
-      </>
-    ),
+    image: "/images/midcentury-bathroom.png",
+    accents: <></>,
   },
   industrial: {
-    bg: "linear-gradient(to bottom, #5a5a5a 0%, #6a6a6a 20%, #7a7a7a 100%)",
+    bg: "none",
     label: "Industrial Loft",
-    accents: (
-      <>
-        {/* Large window with panes */}
-        <div className="absolute left-[15%] top-[5%] h-[55%] w-[45%] rounded border-2 border-[#888] bg-[#b0c4d4]/25" />
-        <div className="absolute left-[36%] top-[5%] h-[55%] w-px bg-[#888]" />
-        <div className="absolute left-[15%] top-[32%] h-px w-[45%] bg-[#888]" />
-        {/* Exposed beams */}
-        <div className="absolute left-0 top-[4%] h-1.5 w-full bg-[#555]" />
-        <div className="absolute left-0 top-[10%] h-1 w-full bg-[#555]/60" />
-        {/* Concrete floor */}
-        <div className="absolute bottom-0 left-0 h-[22%] w-full bg-[#8a8a7a]/40" />
-        {/* Pendant light */}
-        <div className="absolute left-[70%] top-[4%] h-[14%] w-px bg-[#aaa]" />
-        <div className="absolute left-[67%] top-[16%] h-3 w-4 rounded-b bg-[#f5e6c8]/50" />
-        {/* Metal shelf */}
-        <div className="absolute right-[8%] top-[30%] h-px w-[18%] bg-[#999]" />
-        <div className="absolute right-[8%] top-[42%] h-px w-[18%] bg-[#999]" />
-        <div className="absolute right-[8%] top-[30%] h-[12%] w-px bg-[#999]" />
-        <div className="absolute right-[26%] top-[30%] h-[12%] w-px bg-[#999]" />
-      </>
-    ),
+    image: "/images/industrial-loft.png",
+    accents: <></>,
   },
 };
 
@@ -132,8 +52,11 @@ function RoomScene({
   return (
     <div
       className={`relative overflow-hidden rounded-xl ${className}`}
-      style={{ background: room.bg }}
+      style={{ background: room.image ? "none" : room.bg }}
     >
+      {room.image && (
+        <Image src={room.image} alt={room.label} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+      )}
       {room.accents}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/30 to-transparent p-4 pt-8">
         <span className="rounded-lg bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
@@ -257,27 +180,8 @@ export default function Home() {
             <div className="rounded-2xl border border-[#e8e6e1] bg-white p-3 shadow-2xl shadow-black/5">
               <div
                 className="relative aspect-[4/3] overflow-hidden rounded-xl"
-                style={{
-                  background: "linear-gradient(to bottom, #f5f0eb 0%, #ede5d8 30%, #e8ddd0 100%)",
-                }}
               >
-                {/* Room scene background elements */}
-                <div className="absolute left-[32%] top-[5%] h-[35%] w-[36%] rounded border-2 border-[#c9b99a]/50 bg-[#c5dff0]/30" />
-                <div className="absolute left-[48%] top-[5%] h-[35%] w-px bg-[#c9b99a]/40" />
-                <div className="absolute left-[32%] top-[22%] h-px w-[36%] bg-[#c9b99a]/40" />
-                <div className="absolute bottom-0 left-0 right-0 h-[42%] bg-[#e0d5c5]" />
-                <div className="absolute bottom-[42%] left-0 right-0 h-[4%] bg-[#c9b99a]/80" />
-                <div className="absolute bottom-[6%] left-[20%] h-[18%] w-[60%] rounded-lg bg-[#d4a574]/40" />
-                {/* Upper cabinets */}
-                <div className="absolute left-[3%] top-[6%] h-[22%] w-[24%] rounded bg-[#e0d5c5] border border-[#d4c5a0]/60" />
-                <div className="absolute right-[3%] top-[6%] h-[22%] w-[24%] rounded bg-[#e0d5c5] border border-[#d4c5a0]/60" />
-                {/* Pendant lights */}
-                <div className="absolute left-[42%] top-0 h-[7%] w-px bg-[#aaa]" />
-                <div className="absolute left-[40.5%] top-[5.5%] h-3 w-3 rounded-full bg-[#f5e6c8]/70 shadow" />
-                <div className="absolute left-[56%] top-0 h-[7%] w-px bg-[#aaa]" />
-                <div className="absolute left-[54.5%] top-[5.5%] h-3 w-3 rounded-full bg-[#f5e6c8]/70 shadow" />
-                {/* Stove */}
-                <div className="absolute bottom-[46%] left-[40%] h-[10%] w-[18%] rounded-sm bg-[#6a6a6a]/30" />
+                <Image src="/images/kitchen-remodel.png" alt="Kitchen Remodel Preview" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" priority />
                 {/* Overlay content */}
                 <div className="relative flex h-full flex-col justify-between p-6">
                   <div className="flex items-center gap-2">
@@ -715,27 +619,8 @@ export default function Home() {
               </div>
               <div
                 className="relative aspect-[16/10] overflow-hidden rounded-lg"
-                style={{
-                  background: "linear-gradient(180deg, #f0ebe4 0%, #e8ddd0 40%, #ddd5c8 100%)",
-                }}
               >
-                {/* Room scene elements */}
-                <div className="absolute left-[25%] top-[4%] h-[44%] w-[30%] rounded border-2 border-[#c9b99a]/50 bg-[#c5dff0]/30" />
-                <div className="absolute left-[38%] top-[4%] h-[44%] w-px bg-[#c9b99a]/40" />
-                <div className="absolute left-[25%] top-[26%] h-px w-[30%] bg-[#c9b99a]/40" />
-                <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-[#d4cabb]/60" />
-                {/* Sofa outline */}
-                <div className="absolute bottom-[12%] left-[8%] h-[22%] w-[36%] rounded-lg border-2 border-dashed border-[#b8a88a]/50 bg-[#e8ddd0]/40" />
-                {/* Coffee table */}
-                <div className="absolute bottom-[16%] left-[50%] h-[10%] w-[16%] rounded border-2 border-dashed border-[#b8a88a]/50 bg-[#c9b99a]/20" />
-                {/* Bookshelf */}
-                <div className="absolute right-[6%] top-[8%] h-[60%] w-[12%] rounded border border-[#c9b99a]/30 bg-[#e0d5c5]/40" />
-                <div className="absolute right-[7%] top-[18%] h-px w-[10%] bg-[#c9b99a]/30" />
-                <div className="absolute right-[7%] top-[32%] h-px w-[10%] bg-[#c9b99a]/30" />
-                <div className="absolute right-[7%] top-[46%] h-px w-[10%] bg-[#c9b99a]/30" />
-                {/* Plant */}
-                <div className="absolute bottom-[40%] right-[20%] h-[20%] w-[2%] bg-[#8b7355]/30 rounded-full" />
-                <div className="absolute bottom-[50%] right-[17%] h-[14%] w-[8%] rounded-full bg-[#7cb87c]/30" />
+                <Image src="/images/3d-plan.png" alt="3D Room Design View" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
                 {/* Overlay content */}
                 <div className="relative flex h-full flex-col justify-between p-5">
                   {/* Room elements */}
@@ -803,18 +688,20 @@ export default function Home() {
           {/* Mock build book spread */}
           <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-4 md:grid-cols-4">
             {[
-              { title: "Floor Plans", icon: <FaCompass className="text-3xl text-white" />, bg: "linear-gradient(135deg, #2d5a3d 0%, #3d7a5d 100%)" },
-              { title: "3D Renders", icon: <FaHouse className="text-3xl text-white" />, bg: "linear-gradient(135deg, #d4956a 0%, #e0a880 100%)" },
+              { title: "Floor Plans", image: "/images/2d-plan.png" },
+              { title: "3D Renders", image: "/images/3d-plan.png" },
               { title: "Budget Report", icon: <FaSackDollar className="text-3xl text-white" />, bg: "linear-gradient(135deg, #4a6fa5 0%, #6a8fc5 100%)" },
               { title: "Timeline", icon: <FaCalendarDays className="text-3xl text-white" />, bg: "linear-gradient(135deg, #8a6aaa 0%, #a080c0 100%)" },
             ].map((item) => (
               <div
                 key={item.title}
-                className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl p-4"
-                style={{ background: item.bg }}
+                className="relative flex aspect-[3/4] flex-col items-center justify-center overflow-hidden rounded-xl p-4"
+                style={{ background: item.bg || "none" }}
               >
-                <span className="mb-3">{item.icon}</span>
-                <span className="text-sm font-semibold text-white">{item.title}</span>
+                {item.image && <Image src={item.image} alt={item.title} fill className="object-cover" sizes="25vw" />}
+                {item.image && <div className="absolute inset-0 bg-black/30" />}
+                {item.icon && <span className="mb-3">{item.icon}</span>}
+                <span className="relative text-sm font-semibold text-white">{item.title}</span>
               </div>
             ))}
           </div>
