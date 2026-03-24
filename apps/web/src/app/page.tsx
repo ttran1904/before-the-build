@@ -126,9 +126,9 @@ export default function Home() {
             </Link>
           </nav>
           <div className="flex items-center gap-3">
-            <button className="rounded-full border border-[#d5d3cd] px-5 py-2 text-sm font-medium text-[#1a1a2e] transition hover:bg-[#f8f7f4]">
+            <Link href="/sign-in" className="rounded-full border border-[#d5d3cd] px-5 py-2 text-sm font-medium text-[#1a1a2e] transition hover:bg-[#f8f7f4]">
               Sign In
-            </button>
+            </Link>
             <Link
               href="/dashboard"
               className="rounded-full bg-[#2d5a3d] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#234a31]"

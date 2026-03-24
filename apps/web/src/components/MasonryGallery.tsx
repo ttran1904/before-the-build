@@ -1,0 +1,129 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import Masonry from "react-masonry-css";
+import { FaHeart, FaRegHeart, FaBookmark } from "react-icons/fa6";
+import { useMoodboardStore, type MoodboardItem } from "@/lib/store";
+
+interface GalleryImage {
+  id: string;
+  url: string;
+  title: string;
+  tags: string[];
+  source?: string;
+  sourceUrl?: string;
+}
+
+interface MasonryGalleryProps {
+  images: GalleryImage[];
+  loading?: boolean;
+}
+
+export default function MasonryGallery({ images, loading }: MasonryGalleryProps) {
+  const { items: savedItems, toggleItem } = useMoodboardStore();
+
+  const breakpointCols = {
+    default: 4,
+    1280: 3,
+    1024: 3,
+    768: 2,
+    640: 2,
+  };
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            className="animate-pulse rounded-xl bg-[#f3f2ef]"
+            style={{ height: `${200 + Math.random() * 150}px` }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (images.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-[#d5d3cd] p-20">
+        <span className="text-5xl">🔍</span>
+        <h3 className="text-lg font-semibold text-[#4a4a5a]">No images found</h3>
+        <p className="max-w-sm text-center text-sm text-[#7a7a8a]">
+          Try a different style or search term.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <Masonry
+      breakpointCols={breakpointCols}
+      className="flex w-auto -ml-4"
+      columnClassName="pl-4 bg-clip-padding"
+    >
+      {images.map((img, idx) => {
+        const isSaved = savedItems.some((s) => s.id === img.id);
+        const heights = [240, 280, 320, 360, 280, 300];
+        const h = heights[idx % heights.length];
+
+        return (
+          <div key={img.id} className="group relative mb-4 overflow-hidden rounded-xl">
+            <div className="relative" style={{ height: `${h}px` }}>
+              <Image
+                src={img.url}
+                alt={img.title}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="(max-width: 768px) 50vw, 25vw"
+                unoptimized
+              />
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-x-0 bottom-0 p-4">
+                  <p className="text-sm font-medium text-white">{img.title}</p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {img.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white backdrop-blur-sm"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* Save button */}
+              <button
+                onClick={() =>
+                  toggleItem({
+                    id: img.id,
+                    imageUrl: img.url,
+                    source: img.source || "curated",
+                    sourceUrl: img.sourceUrl,
+                    tags: img.tags,
+                    title: img.title,
+                    saved: true,
+                  })
+                }
+                className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full transition ${
+                  isSaved
+                    ? "bg-red-500 text-white shadow-lg"
+                    : "bg-white/80 text-[#4a4a5a] opacity-0 shadow-md backdrop-blur-sm group-hover:opacity-100 hover:bg-white"
+                }`}
+              >
+                {isSaved ? (
+                  <FaHeart className="text-sm" />
+                ) : (
+                  <FaRegHeart className="text-sm" />
+                )}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </Masonry>
+  );
+}
