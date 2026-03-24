@@ -1,21 +1,26 @@
 "use client";
 
-import { useRef } from "react";
-import { FaChevronLeft, FaChevronRight, FaLock } from "react-icons/fa6";
+import { useRef, type ReactNode } from "react";
+import {
+  FaChevronLeft, FaChevronRight, FaLock,
+  FaBath, FaFireBurner, FaBed, FaCouch,
+  FaUtensils, FaTree, FaHelmetSafety, FaBriefcase,
+  FaCar, FaShirt, FaDoorOpen, FaStairs,
+} from "react-icons/fa6";
 
-const ROOM_CATEGORIES = [
-  { id: "bathroom", label: "Bath", emoji: "🛁", available: true },
-  { id: "kitchen", label: "Kitchen", emoji: "🍳", available: false },
-  { id: "bedroom", label: "Bedroom", emoji: "🛏️", available: false },
-  { id: "living_room", label: "Living", emoji: "🛋️", available: false },
-  { id: "dining_room", label: "Dining", emoji: "🍽️", available: false },
-  { id: "outdoor", label: "Outdoor", emoji: "🌿", available: false },
-  { id: "basement", label: "Basement", emoji: "🏗️", available: false },
-  { id: "office", label: "Home Office", emoji: "💼", available: false },
-  { id: "garage", label: "Garage & Shed", emoji: "🚗", available: false },
-  { id: "laundry", label: "Laundry", emoji: "👕", available: false },
-  { id: "entry", label: "Entry", emoji: "🚪", available: false },
-  { id: "staircase", label: "Staircase", emoji: "🪜", available: false },
+const ROOM_CATEGORIES: { id: string; label: string; icon: ReactNode; available: boolean }[] = [
+  { id: "bathroom", label: "Bath", icon: <FaBath />, available: true },
+  { id: "kitchen", label: "Kitchen", icon: <FaFireBurner />, available: false },
+  { id: "bedroom", label: "Bedroom", icon: <FaBed />, available: false },
+  { id: "living_room", label: "Living", icon: <FaCouch />, available: false },
+  { id: "dining_room", label: "Dining", icon: <FaUtensils />, available: false },
+  { id: "outdoor", label: "Outdoor", icon: <FaTree />, available: false },
+  { id: "basement", label: "Basement", icon: <FaHelmetSafety />, available: false },
+  { id: "office", label: "Home Office", icon: <FaBriefcase />, available: false },
+  { id: "garage", label: "Garage & Shed", icon: <FaCar />, available: false },
+  { id: "laundry", label: "Laundry", icon: <FaShirt />, available: false },
+  { id: "entry", label: "Entry", icon: <FaDoorOpen />, available: false },
+  { id: "staircase", label: "Staircase", icon: <FaStairs />, available: false },
 ];
 
 interface RoomCategoryBarProps {
@@ -68,7 +73,7 @@ export default function RoomCategoryBar({ selected, onSelect }: RoomCategoryBarP
                   : "bg-[#f3f2ef]"
               }`}
             >
-              {room.emoji}
+              {room.icon}
             </div>
             <span
               className={`text-xs font-medium ${

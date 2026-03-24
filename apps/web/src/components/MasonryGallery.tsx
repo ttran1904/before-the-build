@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Masonry from "react-masonry-css";
-import { FaHeart, FaRegHeart, FaBookmark } from "react-icons/fa6";
+import { FaHeart, FaRegHeart, FaBookmark, FaMagnifyingGlass } from "react-icons/fa6";
 import { useMoodboardStore, type MoodboardItem } from "@/lib/store";
 
 interface GalleryImage {
@@ -48,7 +48,7 @@ export default function MasonryGallery({ images, loading }: MasonryGalleryProps)
   if (images.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-[#d5d3cd] p-20">
-        <span className="text-5xl">🔍</span>
+        <FaMagnifyingGlass className="text-5xl text-[#9a9aaa]" />
         <h3 className="text-lg font-semibold text-[#4a4a5a]">No images found</h3>
         <p className="max-w-sm text-center text-sm text-[#7a7a8a]">
           Try a different style or search term.

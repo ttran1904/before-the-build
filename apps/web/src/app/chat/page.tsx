@@ -53,12 +53,12 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
-      <h1 className="mb-4 text-xl font-bold text-zinc-900 dark:text-zinc-50">
+      <h1 className="mb-4 text-xl font-bold text-[#1a1a2e]">
         AI Design Chat
       </h1>
 
       {/* Messages */}
-      <div className="flex-1 space-y-4 overflow-y-auto rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex-1 space-y-4 overflow-y-auto rounded-2xl border border-[#e8e6e1] bg-[#f8f7f4] p-6">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -67,8 +67,8 @@ export default function ChatPage() {
             <div
               className={`max-w-[70%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === "user"
-                  ? "rounded-br-md bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                  : "rounded-bl-md border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                  ? "rounded-br-md bg-[#2d5a3d] text-white"
+                  : "rounded-bl-md border border-[#e8e6e1] bg-white text-[#4a4a5a]"
               }`}
             >
               {msg.content}
@@ -86,11 +86,11 @@ export default function ChatPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          className="flex-1 rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800"
+          className="flex-1 rounded-xl border border-[#e8e6e1] bg-white px-4 py-3 text-[#1a1a2e] outline-none focus:border-[#2d5a3d] focus:ring-2 focus:ring-[#2d5a3d]/20"
         />
         <button
           onClick={handleSend}
-          className="rounded-xl bg-zinc-900 px-6 py-3 text-sm font-semibold text-white hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900"
+          className="rounded-xl bg-[#2d5a3d] px-6 py-3 text-sm font-semibold text-white hover:bg-[#234a31]"
         >
           Send
         </button>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { FaXmark, FaTrash, FaBookmark, FaArrowRight } from "react-icons/fa6";
+import { FaXmark, FaTrash, FaBookmark, FaArrowRight, FaHeart } from "react-icons/fa6";
 import { useMoodboardStore } from "@/lib/store";
 import Link from "next/link";
 
@@ -51,7 +51,7 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
         <div className="flex-1 overflow-y-auto p-4">
           {items.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <span className="text-4xl">💛</span>
+              <FaHeart className="text-4xl text-[#d4956a]" />
               <h3 className="text-base font-semibold text-[#4a4a5a]">
                 No saved images yet
               </h3>
@@ -98,7 +98,7 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
               href="/dashboard/projects/new/bathroom"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d5a3d] py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
             >
-              Continue to Questionnaire
+              Plan Your Renovation
               <FaArrowRight className="text-xs" />
             </Link>
           </div>

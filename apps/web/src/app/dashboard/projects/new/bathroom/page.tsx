@@ -2,18 +2,24 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaArrowLeft, FaArrowRight, FaCheck, FaWandMagicSparkles } from "react-icons/fa6";
+import {
+  FaArrowLeft, FaArrowRight, FaCheck, FaWandMagicSparkles,
+  FaBullseye, FaRulerCombined, FaClipboardList, FaCoins, FaPalette, FaListCheck,
+  FaChartLine, FaUpRightAndDownLeftFromCenter, FaLeaf, FaPaintRoller,
+  FaChildReaching, FaWheelchair, FaWrench, FaBox, FaSpa,
+  FaPaintbrush, FaScrewdriverWrench, FaHammer, FaRuler,
+} from "react-icons/fa6";
 import { useWizardStore, type BathroomScope, type BudgetTier } from "@/lib/store";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
 
 const STEPS = [
-  { id: "goal", label: "Goal", icon: "🎯" },
-  { id: "scope", label: "Scope", icon: "📐" },
-  { id: "must-haves", label: "Must-Haves", icon: "📋" },
-  { id: "budget", label: "Budget", icon: "💰" },
-  { id: "style", label: "Style", icon: "🎨" },
-  { id: "summary", label: "Summary", icon: "✅" },
+  { id: "goal", label: "Goal", icon: FaBullseye },
+  { id: "scope", label: "Scope", icon: FaRulerCombined },
+  { id: "must-haves", label: "Must-Haves", icon: FaClipboardList },
+  { id: "budget", label: "Budget", icon: FaCoins },
+  { id: "style", label: "Style", icon: FaPalette },
+  { id: "summary", label: "Summary", icon: FaListCheck },
 ];
 
 export default function BathroomWizardPage() {
@@ -92,7 +98,7 @@ export default function BathroomWizardPage() {
                   : "bg-[#e8e6e1] text-[#9a9aaa]"
             }`}
           >
-            {i < currentStep ? <FaCheck className="text-[10px]" /> : <span>{step.icon}</span>}
+            {i < currentStep ? <FaCheck className="text-[10px]" /> : <step.icon className="text-[10px]" />}
             <span className="hidden sm:inline">{step.label}</span>
           </button>
         ))}
@@ -144,15 +150,15 @@ function GoalStep() {
   const { goal, setGoal } = useWizardStore();
 
   const GOALS = [
-    { id: "increase_value", label: "Increase Home Value", desc: "Focus on ROI upgrades — vanity, tile, fixtures", icon: "📈" },
-    { id: "more_space", label: "Create More Space", desc: "Reconfigure layout, remove tub for walk-in shower", icon: "📐" },
-    { id: "energy_efficient", label: "Energy Efficient", desc: "Low-flow fixtures, LED lighting, better ventilation", icon: "🌱" },
-    { id: "update_style", label: "Update the Style", desc: "Change aesthetic — modern, farmhouse, spa-like", icon: "🎨" },
-    { id: "family_friendly", label: "Family / Kid-Friendly", desc: "Non-slip floors, tub, storage, durability", icon: "👨‍👩‍👧" },
-    { id: "accessibility", label: "Improve Accessibility", desc: "Walk-in shower, grab bars, ADA compliance", icon: "♿" },
-    { id: "fix_problems", label: "Fix Existing Problems", desc: "Leaks, mold, outdated plumbing, broken tiles", icon: "🔧" },
-    { id: "more_storage", label: "Increase Storage", desc: "Vanity with drawers, medicine cabinet, shelving", icon: "🗄️" },
-    { id: "luxury_spa", label: "Create a Spa Experience", desc: "Soaking tub, rain shower, heated floors", icon: "🧖" },
+    { id: "increase_value", label: "Increase Home Value", desc: "Focus on ROI upgrades — vanity, tile, fixtures", icon: FaChartLine },
+    { id: "more_space", label: "Create More Space", desc: "Reconfigure layout, remove tub for walk-in shower", icon: FaUpRightAndDownLeftFromCenter },
+    { id: "energy_efficient", label: "Energy Efficient", desc: "Low-flow fixtures, LED lighting, better ventilation", icon: FaLeaf },
+    { id: "update_style", label: "Update the Style", desc: "Change aesthetic — modern, farmhouse, spa-like", icon: FaPaintRoller },
+    { id: "family_friendly", label: "Family / Kid-Friendly", desc: "Non-slip floors, tub, storage, durability", icon: FaChildReaching },
+    { id: "accessibility", label: "Improve Accessibility", desc: "Walk-in shower, grab bars, ADA compliance", icon: FaWheelchair },
+    { id: "fix_problems", label: "Fix Existing Problems", desc: "Leaks, mold, outdated plumbing, broken tiles", icon: FaWrench },
+    { id: "more_storage", label: "Increase Storage", desc: "Vanity with drawers, medicine cabinet, shelving", icon: FaBox },
+    { id: "luxury_spa", label: "Create a Spa Experience", desc: "Soaking tub, rain shower, heated floors", icon: FaSpa },
   ];
 
   return (
@@ -174,7 +180,7 @@ function GoalStep() {
                 : "border-[#e8e6e1] hover:border-[#d5d3cd]"
             }`}
           >
-            <span className="mt-0.5 text-xl">{g.icon}</span>
+            <span className="mt-0.5 text-lg text-[#2d5a3d]"><g.icon /></span>
             <div>
               <div className="font-semibold text-[#1a1a2e]">{g.label}</div>
               <div className="mt-0.5 text-xs text-[#6a6a7a]">{g.desc}</div>
@@ -190,11 +196,11 @@ function GoalStep() {
 function ScopeStep() {
   const { scope, setScope } = useWizardStore();
 
-  const SCOPES: { id: BathroomScope; label: string; desc: string; price: string; icon: string }[] = [
-    { id: "cosmetic", label: "Cosmetic Refresh", desc: "Paint, fixtures, hardware, accessories. Minimal disruption.", price: "$1,000 – $5,000", icon: "🎨" },
-    { id: "partial", label: "Partial Remodel", desc: "New vanity, flooring, paint. Keep existing layout.", price: "$5,000 – $20,000", icon: "🔧" },
-    { id: "full", label: "Full Remodel", desc: "Gut everything and rebuild. New layout possible.", price: "$15,000 – $50,000", icon: "🏗️" },
-    { id: "addition", label: "Addition / Expansion", desc: "Expand bathroom footprint. Structural changes.", price: "$30,000 – $100,000+", icon: "📏" },
+  const SCOPES: { id: BathroomScope; label: string; desc: string; price: string; icon: typeof FaPaintbrush }[] = [
+    { id: "cosmetic", label: "Cosmetic Refresh", desc: "Paint, fixtures, hardware, accessories. Minimal disruption.", price: "$1,000 – $5,000", icon: FaPaintbrush },
+    { id: "partial", label: "Partial Remodel", desc: "New vanity, flooring, paint. Keep existing layout.", price: "$5,000 – $20,000", icon: FaScrewdriverWrench },
+    { id: "full", label: "Full Remodel", desc: "Gut everything and rebuild. New layout possible.", price: "$15,000 – $50,000", icon: FaHammer },
+    { id: "addition", label: "Addition / Expansion", desc: "Expand bathroom footprint. Structural changes.", price: "$30,000 – $100,000+", icon: FaRuler },
   ];
 
   return (
@@ -214,7 +220,7 @@ function ScopeStep() {
                 : "border-[#e8e6e1] hover:border-[#d5d3cd]"
             }`}
           >
-            <span className="text-2xl">{s.icon}</span>
+            <span className="text-xl text-[#2d5a3d]"><s.icon /></span>
             <div className="flex-1">
               <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
               <div className="mt-0.5 text-sm text-[#6a6a7a]">{s.desc}</div>

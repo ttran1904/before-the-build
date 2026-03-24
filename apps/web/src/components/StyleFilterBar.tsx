@@ -1,22 +1,27 @@
 "use client";
 
-import { useRef } from "react";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
+import { useRef, type ReactNode } from "react";
+import {
+  FaChevronLeft, FaChevronRight,
+  FaWandMagicSparkles, FaCube, FaHouseChimney, FaWater,
+  FaSpa, FaMinus, FaGears, FaSnowflake,
+  FaSun, FaChair, FaLandmarkDome, FaFan, FaMasksTheater,
+} from "react-icons/fa6";
 
-const STYLE_FILTERS = [
-  { id: "all", label: "All Styles", icon: "✨" },
-  { id: "modern", label: "Modern", icon: "◻️" },
-  { id: "farmhouse", label: "Farmhouse", icon: "🏡" },
-  { id: "coastal", label: "Coastal", icon: "🌊" },
-  { id: "spa", label: "Spa/Luxury", icon: "🧖" },
-  { id: "minimalist", label: "Minimalist", icon: "⬜" },
-  { id: "industrial", label: "Industrial", icon: "🏭" },
-  { id: "scandinavian", label: "Scandinavian", icon: "❄️" },
-  { id: "bohemian", label: "Bohemian", icon: "🌻" },
-  { id: "mid_century_modern", label: "Mid-Century", icon: "🪑" },
-  { id: "traditional", label: "Traditional", icon: "🏛️" },
-  { id: "japandi", label: "Japandi", icon: "🎋" },
-  { id: "art_deco", label: "Art Deco", icon: "🎭" },
+const STYLE_FILTERS: { id: string; label: string; icon: ReactNode }[] = [
+  { id: "all", label: "All Styles", icon: <FaWandMagicSparkles /> },
+  { id: "modern", label: "Modern", icon: <FaCube /> },
+  { id: "farmhouse", label: "Farmhouse", icon: <FaHouseChimney /> },
+  { id: "coastal", label: "Coastal", icon: <FaWater /> },
+  { id: "spa", label: "Spa/Luxury", icon: <FaSpa /> },
+  { id: "minimalist", label: "Minimalist", icon: <FaMinus /> },
+  { id: "industrial", label: "Industrial", icon: <FaGears /> },
+  { id: "scandinavian", label: "Scandinavian", icon: <FaSnowflake /> },
+  { id: "bohemian", label: "Bohemian", icon: <FaSun /> },
+  { id: "mid_century_modern", label: "Mid-Century", icon: <FaChair /> },
+  { id: "traditional", label: "Traditional", icon: <FaLandmarkDome /> },
+  { id: "japandi", label: "Japandi", icon: <FaFan /> },
+  { id: "art_deco", label: "Art Deco", icon: <FaMasksTheater /> },
 ];
 
 interface StyleFilterBarProps {
