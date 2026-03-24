@@ -35,7 +35,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="mb-3 text-xl font-semibold text-[#1a1a2e]">1. Introduction</h2>
             <p>
               Before The Build (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates the website and
-              application located at <strong>beforethebuild.com</strong> (the &quot;Service&quot;). This Privacy
+              application located at <strong>renoheaven.com</strong> (the &quot;Service&quot;). This Privacy
               Policy explains how we collect, use, disclose, and safeguard your information when you use our
               Service, including any data obtained through third-party platforms such as the Pinterest API.
             </p>
@@ -53,7 +53,7 @@ export default function PrivacyPolicyPage() {
               2.1 Information You Provide
             </h3>
             <ul className="ml-6 list-disc space-y-1">
-              <li>Account registration details (name, email address, password)</li>
+              <li>Account registration details (name, email address) managed securely through Firebase Authentication</li>
               <li>Household and project information you enter during onboarding</li>
               <li>Design preferences, room scans, goals, and style selections</li>
               <li>Messages and content shared through the chat feature</li>
@@ -237,10 +237,10 @@ export default function PrivacyPolicyPage() {
               <p>
                 Email:{" "}
                 <a
-                  href="mailto:privacy@beforethebuild.com"
+                  href="mailto:privacy@renoheaven.com"
                   className="text-[#6c63ff] hover:underline"
                 >
-                  privacy@beforethebuild.com
+                  privacy@renoheaven.com
                 </a>
               </p>
             </div>
