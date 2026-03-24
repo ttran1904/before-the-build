@@ -53,7 +53,7 @@ export default function RoomCategoryBar({ selected, onSelect }: RoomCategoryBarP
             key={room.id}
             onClick={() => room.available && onSelect(room.id)}
             disabled={!room.available}
-            className={`group relative flex shrink-0 flex-col items-center gap-2 rounded-xl px-4 py-3 transition ${
+            className={`group relative flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 transition ${
               selected === room.id
                 ? "bg-[#2d5a3d] text-white shadow-lg shadow-[#2d5a3d]/20"
                 : room.available
@@ -62,7 +62,7 @@ export default function RoomCategoryBar({ selected, onSelect }: RoomCategoryBarP
             }`}
           >
             <div
-              className={`flex h-16 w-16 items-center justify-center rounded-xl text-2xl ${
+              className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg ${
                 selected === room.id
                   ? "bg-white/20"
                   : "bg-[#f3f2ef]"
