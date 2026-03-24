@@ -828,7 +828,7 @@ export default function Home() {
               <ul className="space-y-2 text-sm text-[#7a7a8a]">
                 <li><span className="hover:text-[#1a1a2e] cursor-pointer">About</span></li>
                 <li><span className="hover:text-[#1a1a2e] cursor-pointer">Careers</span></li>
-                <li><span className="hover:text-[#1a1a2e] cursor-pointer">Privacy</span></li>
+                <li><Link href="/privacy-policy" className="hover:text-[#1a1a2e] cursor-pointer">Privacy</Link></li>
                 <li><span className="hover:text-[#1a1a2e] cursor-pointer">Terms</span></li>
               </ul>
             </div>
