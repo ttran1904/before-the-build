@@ -1,65 +1,110 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   FaArrowLeft, FaArrowRight, FaCheck, FaWandMagicSparkles,
-  FaBullseye, FaRulerCombined, FaClipboardList, FaCoins, FaPalette, FaListCheck,
+  FaBullseye, FaRulerCombined, FaClipboardList, FaCoins, FaImages, FaListCheck,
   FaChartLine, FaUpRightAndDownLeftFromCenter, FaLeaf, FaPaintRoller,
   FaChildReaching, FaWheelchair, FaWrench, FaBox, FaSpa,
   FaPaintbrush, FaScrewdriverWrench, FaHammer, FaRuler,
+  FaCompass, FaTrash, FaPlus,
+  FaCalendarDays, FaHelmetSafety, FaStar, FaStarHalfStroke,
+  FaCircleCheck, FaThumbsUp, FaClock, FaDiamond,
+  FaArrowUpRightFromSquare, FaLocationDot, FaShieldHalved,
 } from "react-icons/fa6";
-import { useWizardStore, type BathroomScope, type BudgetTier } from "@/lib/store";
+import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier } from "@/lib/store";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
 
+/* ── Step definitions ── */
 const STEPS = [
   { id: "goal", label: "Goal", icon: FaBullseye },
   { id: "scope", label: "Scope", icon: FaRulerCombined },
   { id: "must-haves", label: "Must-Haves", icon: FaClipboardList },
   { id: "budget", label: "Budget", icon: FaCoins },
-  { id: "style", label: "Style", icon: FaPalette },
+  { id: "moodboard", label: "Moodboard", icon: FaImages },
+  { id: "timeline", label: "Timeline", icon: FaCalendarDays },
+  { id: "contractor", label: "Contractor", icon: FaHelmetSafety },
   { id: "summary", label: "Summary", icon: FaListCheck },
 ];
+
+/* ── Dirty-check: build a hash string of inputs that drive AI calls ── */
+function wizardInputHash(s: { goal: string; scope: BathroomScope | null; mustHaves: string[]; niceToHaves: string[]; budgetTier: BudgetTier | null; bathroomSize: string; style: DesignStyle | null }) {
+  return [s.goal, s.scope, s.mustHaves.join(","), s.niceToHaves.join(","), s.budgetTier, s.bathroomSize, s.style].join("|");
+}
+
+/* ── Types for AI data ── */
+interface TimelineTask {
+  id: number; name: string; phase: string; startDay: number; duration: number;
+  dependencies: number[]; assignee: string; milestone: boolean;
+}
+interface Contractor {
+  name: string; rating: number; reviewCount: number; specialty: string;
+  location: string; price: string; thumbtackUrl: string; hiredCount: string;
+  responseTime: string; verified: boolean;
+}
 
 export default function BathroomWizardPage() {
   const router = useRouter();
   const store = useWizardStore();
   const [currentStep, setCurrentStep] = useState(0);
-  const [aiSummary, setAiSummary] = useState("");
-  const [generating, setGenerating] = useState(false);
 
-  const next = () => {
-    if (currentStep === STEPS.length - 2) {
-      generateSummary();
-    }
-    setCurrentStep((s) => Math.min(s + 1, STEPS.length - 1));
-  };
-  const back = () => setCurrentStep((s) => Math.max(s - 1, 0));
+  /* AI data for Timeline step */
+  const [timelineTasks, setTimelineTasks] = useState<TimelineTask[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const timelineHashRef = useRef("");
 
-  const generateSummary = async () => {
-    setGenerating(true);
+  /* AI data for Contractor step */
+  const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [contractorLoading, setContractorLoading] = useState(false);
+  const contractorHashRef = useRef("");
+
+  const currentHash = useMemo(() => wizardInputHash(store), [store.goal, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
+
+  /* Fetch timeline — only if inputs changed */
+  const fetchTimeline = useCallback(async () => {
+    if (currentHash === timelineHashRef.current && timelineTasks.length > 0) return;
+    setTimelineLoading(true);
     try {
-      const res = await fetch("/api/ai/budget-estimate", {
+      const res = await fetch("/api/ai/generate-timeline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          goal: store.goal,
-          scope: store.scope,
-          mustHaves: store.mustHaves,
-          niceToHaves: store.niceToHaves,
-          budgetTier: store.budgetTier,
-          bathroomSize: store.bathroomSize,
-          style: store.style,
+          goal: store.goal, scope: store.scope, budgetTier: store.budgetTier,
+          bathroomSize: store.bathroomSize, mustHaves: store.mustHaves, style: store.style,
         }),
       });
       const data = await res.json();
-      setAiSummary(data.summary || "Your bathroom renovation plan is ready!");
-    } catch {
-      setAiSummary("Your bathroom renovation plan has been saved. Head to the dashboard to continue.");
-    }
-    setGenerating(false);
+      setTimelineTasks(data.tasks || []);
+      timelineHashRef.current = currentHash;
+    } catch { /* keep existing data */ }
+    setTimelineLoading(false);
+  }, [currentHash, store, timelineTasks.length]);
+
+  /* Fetch contractors — only if inputs changed */
+  const fetchContractors = useCallback(async () => {
+    if (currentHash === contractorHashRef.current && contractors.length > 0) return;
+    setContractorLoading(true);
+    try {
+      const params = new URLSearchParams({ scope: store.scope || "full", zip: "94103" });
+      const res = await fetch(`/api/ai/search-contractors?${params}`);
+      const data = await res.json();
+      setContractors(data.contractors || []);
+      contractorHashRef.current = currentHash;
+    } catch { /* keep existing data */ }
+    setContractorLoading(false);
+  }, [currentHash, store.scope, contractors.length]);
+
+  const next = () => {
+    const nextIdx = Math.min(currentStep + 1, STEPS.length - 1);
+    // Trigger AI when entering Timeline or Contractor steps
+    if (STEPS[nextIdx]?.id === "timeline") fetchTimeline();
+    if (STEPS[nextIdx]?.id === "contractor") fetchContractors();
+    setCurrentStep(nextIdx);
   };
+  const back = () => setCurrentStep((s) => Math.max(s - 1, 0));
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
 
@@ -77,42 +122,59 @@ export default function BathroomWizardPage() {
         </div>
         {/* Progress bar */}
         <div className="h-1 bg-[#e8e6e1]">
-          <div
-            className="h-full bg-[#2d5a3d] transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="h-full bg-[#2d5a3d] transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
       </header>
 
-      {/* Step pills */}
-      <div className="mx-auto mt-8 flex max-w-3xl justify-center gap-2 px-6">
-        {STEPS.map((step, i) => (
-          <button
-            key={step.id}
-            onClick={() => i < currentStep && setCurrentStep(i)}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
-              i === currentStep
-                ? "bg-[#2d5a3d] text-white"
-                : i < currentStep
-                  ? "bg-[#2d5a3d]/10 text-[#2d5a3d] hover:bg-[#2d5a3d]/20"
-                  : "bg-[#e8e6e1] text-[#9a9aaa]"
-            }`}
-          >
-            {i < currentStep ? <FaCheck className="text-[10px]" /> : <step.icon className="text-[10px]" />}
-            <span className="hidden sm:inline">{step.label}</span>
-          </button>
-        ))}
+      {/* Horizontal step bar */}
+      <div className="mx-auto mt-6 max-w-5xl overflow-x-auto px-6">
+        <div className="flex items-center min-w-max">
+          {STEPS.map((step, i) => {
+            const done = i < currentStep;
+            const active = i === currentStep;
+            return (
+              <div key={step.id} className="contents">
+                <button
+                  onClick={() => done && setCurrentStep(i)}
+                  className={`group flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 transition ${
+                    active
+                      ? "border-[#2d5a3d] bg-[#2d5a3d] text-white shadow-md shadow-[#2d5a3d]/20"
+                      : done
+                        ? "cursor-pointer border-[#2d5a3d]/20 bg-[#2d5a3d]/10 text-[#2d5a3d] hover:bg-[#2d5a3d]/20"
+                        : "border-[#d5d3cd] text-[#b0b0ba]"
+                  }`}
+                >
+                  <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${
+                    active ? "bg-white/20" : done ? "bg-[#2d5a3d] text-white" : "bg-[#e8e6e1]"
+                  }`}>
+                    {done ? <FaCheck /> : <step.icon />}
+                  </span>
+                  <span className="text-xs font-semibold">{step.label}</span>
+                </button>
+                {i < STEPS.length - 1 && (
+                  <div className={`mx-2 h-[2px] min-w-[20px] flex-1 rounded-full transition-colors ${
+                    done ? "bg-[#2d5a3d]" : "bg-[#d5d3cd]"
+                  }`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Step content */}
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
+        <div className={`rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5 ${
+          currentStep === 5 ? "max-w-none !mx-0" : ""
+        }`}>
           {currentStep === 0 && <GoalStep />}
           {currentStep === 1 && <ScopeStep />}
           {currentStep === 2 && <MustHavesStep />}
           {currentStep === 3 && <BudgetStep />}
-          {currentStep === 4 && <StyleStep />}
-          {currentStep === 5 && <SummaryStep summary={aiSummary} generating={generating} />}
+          {currentStep === 4 && <MoodboardStep />}
+          {currentStep === 5 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
+          {currentStep === 6 && <ContractorStep contractors={contractors} loading={contractorLoading} />}
+          {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractors={contractors} />}
         </div>
 
         {/* Navigation */}
@@ -418,9 +480,10 @@ function BudgetStep() {
   );
 }
 
-/* ── Style Step ── */
-function StyleStep() {
+/* ── Moodboard Step ── */
+function MoodboardStep() {
   const { style, setStyle } = useWizardStore();
+  const { items, removeItem } = useMoodboardStore();
 
   const STYLES: { id: DesignStyle; label: string; desc: string }[] = [
     { id: "modern", label: "Modern", desc: "Floating vanity, large-format tile, frameless glass" },
@@ -438,33 +501,311 @@ function StyleStep() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">Choose your style</h2>
+      <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Moodboard</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
-        This will guide AI-generated visualizations and product recommendations.
+        Review your saved inspiration images, add more from Explore, and pick your preferred style.
       </p>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {STYLES.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setStyle(s.id)}
-            className={`rounded-xl border-2 p-4 text-left transition ${
-              style === s.id
-                ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-            }`}
+
+      {/* Saved moodboard images */}
+      <div className="mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-[#1a1a2e]">
+            Saved Inspiration ({items.length})
+          </h3>
+          <Link
+            href="/explore"
+            className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d]/10 px-3 py-1.5 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20"
           >
-            <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
-            <div className="mt-0.5 text-xs text-[#6a6a7a]">{s.desc}</div>
-          </button>
-        ))}
+            <FaCompass className="text-[10px]" /> Browse Explore
+          </Link>
+        </div>
+
+        {items.length > 0 ? (
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {items.map((item) => (
+              <div key={item.id} className="group relative overflow-hidden rounded-xl border border-[#e8e6e1]">
+                <div className="relative aspect-square">
+                  <Image
+                    src={item.imageUrl}
+                    alt={item.title || "Moodboard image"}
+                    fill
+                    className="object-cover"
+                    sizes="160px"
+                    unoptimized
+                  />
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition group-hover:opacity-100 hover:bg-red-500"
+                  >
+                    <FaTrash className="text-[9px]" />
+                  </button>
+                </div>
+                {item.title && (
+                  <div className="px-2 py-1.5">
+                    <p className="truncate text-[11px] text-[#4a4a5a]">{item.title}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+            {/* Add more card */}
+            <Link
+              href="/explore"
+              className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] text-[#9a9aaa] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
+            >
+              <FaPlus className="text-lg" />
+              <span className="text-[11px] font-medium">Add More</span>
+            </Link>
+          </div>
+        ) : (
+          <Link
+            href="/explore"
+            className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-10 transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+          >
+            <FaImages className="text-3xl text-[#9a9aaa]" />
+            <span className="text-sm font-medium text-[#6a6a7a]">
+              No images saved yet — go to Explore to build your moodboard
+            </span>
+            <span className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white">
+              <FaCompass className="text-[10px]" /> Open Explore
+            </span>
+          </Link>
+        )}
+      </div>
+
+      {/* Style picker */}
+      <div className="mt-8">
+        <h3 className="mb-3 text-sm font-semibold text-[#1a1a2e]">Design Style</h3>
+        <p className="mb-4 text-xs text-[#6a6a7a]">
+          Pick a style to guide AI visualizations and product recommendations.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {STYLES.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setStyle(s.id)}
+              className={`rounded-xl border-2 p-4 text-left transition ${
+                style === s.id
+                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+              }`}
+            >
+              <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
+              <div className="mt-0.5 text-xs text-[#6a6a7a]">{s.desc}</div>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
+/* ── Timeline Step (Bryntum-inspired Gantt chart) ── */
+function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: boolean }) {
+  const PHASE_COLORS: Record<string, string> = {
+    Planning: "#3b82f6",
+    Demolition: "#ef4444",
+    "Rough-In": "#f97316",
+    Installation: "#22c55e",
+    Finishing: "#a855f7",
+  };
+
+  const totalDays = tasks.length > 0
+    ? Math.max(...tasks.map((t) => t.startDay + t.duration))
+    : 0;
+  const totalWeeks = Math.ceil(totalDays / 7);
+  const milestones = tasks.filter((t) => t.milestone);
+  const phases = [...new Set(tasks.map((t) => t.phase))];
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-[#1a1a2e]">Project Timeline</h2>
+      <p className="mt-2 text-sm text-[#6a6a7a]">
+        Your AI-generated renovation schedule. Phases are color-coded with dependencies shown.
+      </p>
+
+      {loading ? (
+        <div className="mt-10 flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#2d5a3d] border-t-transparent" />
+          <span className="text-sm text-[#6a6a7a]">Generating your timeline with AI...</span>
+        </div>
+      ) : tasks.length === 0 ? (
+        <div className="mt-10 text-center text-sm text-[#6a6a7a]">No timeline data available.</div>
+      ) : (
+        <>
+          {/* Stats bar */}
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            <div className="rounded-xl bg-[#f8f7f4] p-4 text-center">
+              <div className="text-2xl font-bold text-[#2d5a3d]">{totalDays}</div>
+              <div className="text-xs text-[#6a6a7a]">Total Days</div>
+            </div>
+            <div className="rounded-xl bg-[#f8f7f4] p-4 text-center">
+              <div className="text-2xl font-bold text-[#2d5a3d]">{tasks.length}</div>
+              <div className="text-xs text-[#6a6a7a]">Tasks</div>
+            </div>
+            <div className="rounded-xl bg-[#f8f7f4] p-4 text-center">
+              <div className="text-2xl font-bold text-[#2d5a3d]">{milestones.length}</div>
+              <div className="text-xs text-[#6a6a7a]">Milestones</div>
+            </div>
+          </div>
+
+          {/* Phase legend */}
+          <div className="mt-6 flex flex-wrap gap-3">
+            {phases.map((phase) => (
+              <span key={phase} className="flex items-center gap-1.5 text-xs font-medium text-[#4a4a5a]">
+                <span className="h-2.5 w-2.5 rounded-sm" style={{ background: PHASE_COLORS[phase] || "#94a3b8" }} />
+                {phase}
+              </span>
+            ))}
+          </div>
+
+          {/* Gantt chart */}
+          <div className="mt-4 overflow-x-auto rounded-xl border border-[#e8e6e1]">
+            <div className="min-w-[700px]">
+              {/* Week headers */}
+              <div className="flex border-b border-[#e8e6e1] bg-[#f8f7f4]">
+                <div className="w-52 shrink-0 border-r border-[#e8e6e1] px-3 py-2 text-xs font-semibold text-[#4a4a5a]">
+                  Task
+                </div>
+                <div className="flex flex-1">
+                  {Array.from({ length: totalWeeks }, (_, i) => (
+                    <div key={i} className="flex-1 border-r border-[#e8e6e1] px-1 py-2 text-center text-[10px] text-[#6a6a7a]">
+                      Wk {i + 1}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Task rows */}
+              {tasks.map((task) => {
+                const pct = totalDays > 0 ? 100 / totalDays : 0;
+                const left = task.startDay * pct;
+                const width = Math.max(task.duration * pct, 1.5);
+                const color = PHASE_COLORS[task.phase] || "#94a3b8";
+
+                return (
+                  <div key={task.id} className="group flex border-b border-[#e8e6e1] last:border-b-0 hover:bg-[#f8f7f4]/50">
+                    <div className="w-52 shrink-0 border-r border-[#e8e6e1] px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        {task.milestone && <FaDiamond className="shrink-0 text-[8px] text-[#d4956a]" />}
+                        <span className="truncate text-xs font-medium text-[#1a1a2e]">{task.name}</span>
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-[#9a9aaa]">{task.assignee}</div>
+                    </div>
+                    <div className="relative flex-1 py-2">
+                      <div
+                        className="absolute top-1/2 h-5 -translate-y-1/2 rounded transition-all group-hover:h-6"
+                        style={{ left: `${left}%`, width: `${width}%`, background: color, opacity: 0.85 }}
+                      >
+                        <span className="absolute inset-0 flex items-center justify-center overflow-hidden text-[9px] font-medium text-white">
+                          {task.duration}d
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── Contractor Step (Thumbtack search) ── */
+function ContractorStep({ contractors, loading }: { contractors: Contractor[]; loading: boolean }) {
+  const renderStars = (rating: number) => {
+    const full = Math.floor(rating);
+    const half = rating - full >= 0.5;
+    return (
+      <span className="flex items-center gap-0.5 text-[#d4956a]">
+        {Array.from({ length: full }, (_, i) => <FaStar key={i} className="text-[10px]" />)}
+        {half && <FaStarHalfStroke className="text-[10px]" />}
+      </span>
+    );
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-[#1a1a2e]">Find Contractors</h2>
+      <p className="mt-2 text-sm text-[#6a6a7a]">
+        Top-rated bathroom contractors from Thumbtack, matched to your project scope.
+      </p>
+
+      {loading ? (
+        <div className="mt-10 flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#2d5a3d] border-t-transparent" />
+          <span className="text-sm text-[#6a6a7a]">Searching for contractors near you...</span>
+        </div>
+      ) : contractors.length === 0 ? (
+        <div className="mt-10 text-center text-sm text-[#6a6a7a]">No contractors found.</div>
+      ) : (
+        <div className="mt-6 space-y-4">
+          {contractors.map((c, i) => (
+            <div
+              key={i}
+              className="rounded-xl border border-[#e8e6e1] p-5 transition hover:border-[#d5d3cd] hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-[#1a1a2e]">{c.name}</h3>
+                    {c.verified && (
+                      <span className="flex items-center gap-1 rounded-full bg-[#2d5a3d]/10 px-2 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">
+                        <FaShieldHalved className="text-[8px]" /> Verified
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-[#6a6a7a]">{c.specialty}</p>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-[#4a4a5a]">
+                    <span className="flex items-center gap-1">
+                      {renderStars(c.rating)}
+                      <span className="ml-1 font-medium">{c.rating}</span>
+                      <span className="text-[#9a9aaa]">({c.reviewCount} reviews)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <FaLocationDot className="text-[10px] text-[#9a9aaa]" /> {c.location}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <FaClock className="text-[10px] text-[#9a9aaa]" /> {c.responseTime}
+                    </span>
+                  </div>
+
+                  {c.hiredCount && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-[#2d5a3d]">
+                      <FaThumbsUp className="text-[10px]" /> Hired {c.hiredCount} times on Thumbtack
+                    </div>
+                  )}
+                </div>
+
+                <div className="shrink-0 text-right">
+                  <div className="text-lg font-bold text-[#2d5a3d]">{c.price}</div>
+                  <div className="text-[10px] text-[#9a9aaa]">estimated</div>
+                  {c.thumbtackUrl && (
+                    <a
+                      href={c.thumbtackUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1 rounded-lg bg-[#2d5a3d] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#234a31]"
+                    >
+                      View <FaArrowUpRightFromSquare className="text-[8px]" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Summary Step ── */
-function SummaryStep({ summary, generating }: { summary: string; generating: boolean }) {
+function SummaryStep({ tasks, contractors }: { tasks: TimelineTask[]; contractors: Contractor[] }) {
   const store = useWizardStore();
+  const moodboardCount = useMoodboardStore.getState().items.length;
 
   const GOAL_LABELS: Record<string, string> = {
     increase_value: "Increase Home Value",
@@ -485,11 +826,15 @@ function SummaryStep({ summary, generating }: { summary: string; generating: boo
     addition: "Addition / Expansion",
   };
 
+  const totalDays = tasks.length > 0
+    ? Math.max(...tasks.map((t) => t.startDay + t.duration))
+    : 0;
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Renovation Plan</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
-        Here&apos;s a summary of your bathroom renovation. Ready to visualize it!
+        Everything&apos;s set! Here&apos;s your bathroom renovation summary.
       </p>
 
       <div className="mt-6 space-y-4">
@@ -498,26 +843,22 @@ function SummaryStep({ summary, generating }: { summary: string; generating: boo
         <SummaryRow label="Size" value={`${store.bathroomSize.charAt(0).toUpperCase() + store.bathroomSize.slice(1)} bathroom`} />
         <SummaryRow label="Budget Tier" value={store.budgetTier ? store.budgetTier.charAt(0).toUpperCase() + store.budgetTier.slice(1) : "—"} />
         <SummaryRow label="Style" value={store.style || "—"} />
+        <SummaryRow label="Moodboard" value={`${moodboardCount} saved images`} />
         <SummaryRow label="Must-Haves" value={store.mustHaves.join(", ") || "None selected"} />
         <SummaryRow label="Nice-to-Haves" value={store.niceToHaves.join(", ") || "None selected"} />
+        <SummaryRow label="Timeline" value={tasks.length > 0 ? `${tasks.length} tasks over ${totalDays} days` : "—"} />
+        <SummaryRow label="Contractors" value={contractors.length > 0 ? `${contractors.length} matched pros` : "—"} />
       </div>
 
-      {/* AI Summary */}
+      {/* Ready banner */}
       <div className="mt-6 rounded-xl border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 p-5">
-        <div className="mb-2 flex items-center gap-2">
-          <FaWandMagicSparkles className="text-[#2d5a3d]" />
-          <span className="text-sm font-semibold text-[#2d5a3d]">AI Recommendation</span>
+        <div className="flex items-center gap-2">
+          <FaCircleCheck className="text-[#2d5a3d]" />
+          <span className="text-sm font-semibold text-[#2d5a3d]">Ready to Visualize</span>
         </div>
-        {generating ? (
-          <div className="flex items-center gap-2 text-sm text-[#6a6a7a]">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#2d5a3d] border-t-transparent" />
-            Generating your personalized plan...
-          </div>
-        ) : (
-          <p className="text-sm leading-relaxed text-[#4a4a5a]">
-            {summary || "Complete the previous steps to get your AI-powered renovation plan."}
-          </p>
-        )}
+        <p className="mt-2 text-sm text-[#4a4a5a]">
+          Your plan is complete with timeline and contractor matches. Click &quot;See Your Design&quot; to generate an AI visualization of your new bathroom.
+        </p>
       </div>
     </div>
   );
