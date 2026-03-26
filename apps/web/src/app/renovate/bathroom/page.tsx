@@ -14,8 +14,10 @@ import {
   FaCircleCheck, FaThumbsUp, FaClock, FaDiamond,
   FaArrowUpRightFromSquare, FaLocationDot, FaShieldHalved, FaMagnifyingGlass,
   FaExpand, FaSwatchbook, FaCartShopping, FaSpinner, FaCrosshairs,
+  FaLink, FaCircleExclamation,
 } from "react-icons/fa6";
 import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
+import type { PointedItem, Product } from "@/lib/moodboard/types";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
 
@@ -74,8 +76,10 @@ export default function BathroomWizardPage() {
   const contractorHashRef = useRef("");
   const [contractorZip, setContractorZip] = useState("");
 
-  /* Moodboard pointed-items state — lifted here so it persists across step navigation */
+  /* Moodboard state — lifted here so it persists across step navigation */
   const [moodboardPointedItems, setMoodboardPointedItems] = useState<Record<string, PointedItem[]>>({});
+  const [moodboardManualProducts, setMoodboardManualProducts] = useState<Product[]>([]);
+  const [moodboardDragPositions, setMoodboardDragPositions] = useState<Record<number, { x: number; y: number }>>({});
 
   const currentHash = useMemo(() => wizardInputHash(store), [store.goal, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
 
@@ -195,7 +199,7 @@ export default function BathroomWizardPage() {
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
             {currentStep === 1 && <MustHavesStep />}
             {currentStep === 2 && <BudgetStep />}
-            {currentStep === 3 && <MoodboardStep pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} />}
+            {currentStep === 3 && <MoodboardStep pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
             {currentStep === 4 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
             {currentStep === 5 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
             {currentStep === 6 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} />}
@@ -529,16 +533,14 @@ function BudgetStep() {
 
 /* ── Moodboard Step (discover items + moodboard view) ── */
 
-interface PointedItem {
-  id: string;
-  cropBox: { x: number; y: number; w: number; h: number };
-  label: string;
-  loading: boolean;
-  products: { title: string; price: string; source: string; url: string; thumbnail: string }[];
-  selectedProductIdx: number | null;
-}
-
-function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record<string, PointedItem[]>; setPointedItems: React.Dispatch<React.SetStateAction<Record<string, PointedItem[]>>> }) {
+function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManualProducts, dragPositions, setDragPositions }: {
+  pointedItems: Record<string, PointedItem[]>;
+  setPointedItems: React.Dispatch<React.SetStateAction<Record<string, PointedItem[]>>>;
+  manualProducts: Product[];
+  setManualProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  dragPositions: Record<number, { x: number; y: number }>;
+  setDragPositions: React.Dispatch<React.SetStateAction<Record<number, { x: number; y: number }>>>;
+}) {
   const { items, removeItem } = useMoodboardStore();
   const [activeSection, setActiveSection] = useState<"discover" | "moodboard">("discover");
   const [selectingImageId, setSelectingImageId] = useState<string | null>(null);
@@ -546,8 +548,12 @@ function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record
   const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // Manual product link input state
+  const [manualLinkUrl, setManualLinkUrl] = useState("");
+  const [manualLinkLoading, setManualLinkLoading] = useState(false);
+  const [manualLinkError, setManualLinkError] = useState<string | null>(null);
+
   // Draggable moodboard canvas state
-  const [dragPositions, setDragPositions] = useState<Record<number, { x: number; y: number }>>({});
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -589,9 +595,12 @@ function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record
   }, [draggingIdx]);
 
   const totalFoundItems = Object.values(pointedItems).flat().filter(p => !p.loading).length;
-  const selectedProducts = Object.values(pointedItems).flat()
-    .filter(p => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
-    .map(p => p.products[p.selectedProductIdx!]);
+  const selectedProducts = [
+    ...Object.values(pointedItems).flat()
+      .filter(p => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
+      .map(p => p.products[p.selectedProductIdx!]),
+    ...manualProducts,
+  ];
 
   /* ── Drawing handlers for bounding-box selection ── */
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, imageId: string) => {
@@ -669,6 +678,34 @@ function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record
     }));
   };
 
+  const handleManualLinkSubmit = async () => {
+    if (!manualLinkUrl.trim()) return;
+    setManualLinkLoading(true);
+    setManualLinkError(null);
+    try {
+      const res = await fetch("/api/ai/fetch-product-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: manualLinkUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setManualLinkError(data.error || "Could not pull the item from the link. There is an error.");
+      } else {
+        setManualProducts(prev => [...prev, data]);
+        setManualLinkUrl("");
+      }
+    } catch {
+      setManualLinkError("Could not pull the item from the link. There is an error.");
+    } finally {
+      setManualLinkLoading(false);
+    }
+  };
+
+  const removeManualProduct = (idx: number) => {
+    setManualProducts(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const selectionRect = drawStart && drawCurrent ? {
     left: `${Math.min(drawStart.x, drawCurrent.x) * 100}%`,
     top: `${Math.min(drawStart.y, drawCurrent.y) * 100}%`,
@@ -734,10 +771,22 @@ function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record
       {/* ── SECTION: Discover Items You Want ── */}
       {activeSection === "discover" && (
         <div className="mt-6">
-          <h2 className="text-2xl font-bold text-[#1a1a2e]">Discover the Items You Want</h2>
-          <p className="mt-2 text-sm text-[#6a6a7a]">
-            Draw a box around any item in your inspiration photos. We&apos;ll identify it and find where to buy it online.
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-[#1a1a2e]">Discover the Items You Want</h2>
+              <p className="mt-2 text-sm text-[#6a6a7a]">
+                Draw a box around any item in your inspiration photos. We&apos;ll identify it and find where to buy it online.
+              </p>
+            </div>
+            {items.length > 0 && (
+              <Link
+                href="/explore?from=moodboard"
+                className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#234a31]"
+              >
+                <FaPlus className="text-[10px]" /> Add More from Explore
+              </Link>
+            )}
+          </div>
 
           {items.length === 0 ? (
             <Link
@@ -939,14 +988,76 @@ function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record
                 );
               })}
 
-              {/* Add more images link */}
-              <Link
-                href="/explore?from=moodboard"
-                className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] p-6 text-[#9a9aaa] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
-              >
-                <FaPlus className="text-sm" />
-                <span className="text-sm font-medium">Add More Images from Explore</span>
-              </Link>
+              {/* Manual product link input */}
+              <div className="rounded-2xl border border-[#e8e6e1] p-5">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+                  <FaLink className="text-xs text-[#2d5a3d]" />
+                  Add an Item by Link
+                </h3>
+                <p className="mt-1 text-xs text-[#9a9aaa]">Paste a product URL to add it directly to your moodboard.</p>
+
+                <div className="mt-3 flex gap-2">
+                  <input
+                    type="url"
+                    value={manualLinkUrl}
+                    onChange={(e) => { setManualLinkUrl(e.target.value); setManualLinkError(null); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleManualLinkSubmit(); }}
+                    placeholder="https://www.example.com/product..."
+                    className="min-w-0 flex-1 rounded-lg border border-[#d5d3cd] px-3 py-2 text-sm text-[#1a1a2e] placeholder:text-[#c5c3bd] focus:border-[#2d5a3d] focus:outline-none focus:ring-1 focus:ring-[#2d5a3d]"
+                  />
+                  <button
+                    onClick={handleManualLinkSubmit}
+                    disabled={manualLinkLoading || !manualLinkUrl.trim()}
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#234a31] disabled:opacity-50"
+                  >
+                    {manualLinkLoading ? <FaSpinner className="animate-spin text-xs" /> : <FaPlus className="text-[10px]" />}
+                    {manualLinkLoading ? "Fetching..." : "Add"}
+                  </button>
+                </div>
+
+                {manualLinkError && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-red-500">
+                    <FaCircleExclamation className="text-[10px]" />
+                    {manualLinkError}
+                  </div>
+                )}
+
+                {manualProducts.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs font-medium text-[#6a6a7a]">Added Items ({manualProducts.length})</p>
+                    {manualProducts.map((p, i) => (
+                      <div key={i} className="flex items-center gap-3 rounded-xl border border-[#e8e6e1] p-3">
+                        {p.thumbnail && (
+                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+                            <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="48px" unoptimized />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium text-[#1a1a2e]">{p.title}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-[#6a6a7a]">{p.source}</span>
+                            {p.price && <span className="text-xs font-semibold text-[#2d5a3d]">{p.price}</span>}
+                          </div>
+                        </div>
+                        <a
+                          href={p.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 text-[10px] text-[#9a9aaa] transition hover:text-[#2d5a3d]"
+                        >
+                          <FaArrowUpRightFromSquare />
+                        </a>
+                        <button
+                          onClick={() => removeManualProduct(i)}
+                          className="shrink-0 text-[10px] text-[#9a9aaa] transition hover:text-red-500"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Submit to moodboard */}
               <div className="flex justify-center pt-2">
@@ -1001,7 +1112,7 @@ function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record
             ) : (
               <div
                 ref={canvasRef}
-                className="relative h-[450px] select-none"
+                className="relative h-[520px] select-none"
                 style={{ cursor: draggingIdx !== null ? "grabbing" : "default" }}
               >
                 {selectedProducts.map((p, i) => {
