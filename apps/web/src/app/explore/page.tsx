@@ -58,7 +58,7 @@ export default function ExplorePage() {
         <div className="sticky top-0 z-40 border-b border-[#2d5a3d]/20 bg-[#2d5a3d]/5 backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center px-6 py-2.5">
             <Link
-              href="/renovate/bathroom"
+              href="/renovate/bathroom?step=moodboard"
               className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234a31]"
             >
               <FaArrowLeft className="text-xs" />

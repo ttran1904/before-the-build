@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
   FaArrowLeft, FaArrowRight, FaCheck, FaWandMagicSparkles,
@@ -48,8 +48,19 @@ interface Contractor {
 
 export default function BathroomWizardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const store = useWizardStore();
-  const [currentStep, setCurrentStep] = useState(0);
+
+  const initialStep = useMemo(() => {
+    const stepParam = searchParams.get("step");
+    if (stepParam) {
+      const idx = STEPS.findIndex(s => s.id === stepParam);
+      if (idx >= 0) return idx;
+    }
+    return 0;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [currentStep, setCurrentStep] = useState(initialStep);
 
   /* AI data for Timeline step */
   const [timelineTasks, setTimelineTasks] = useState<TimelineTask[]>([]);
@@ -531,105 +542,115 @@ function MoodboardStep() {
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
   const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"select" | "products" | "styleboard">("select");
-  const [productResults, setProductResults] = useState<Record<string, { title: string; price: string; source: string; url: string; thumbnail: string }[]>>({});
-  const [searchingId, setSearchingId] = useState<string | null>(null);
-  const [collageUrl, setCollageUrl] = useState<string | null>(null);
-  const [generatingCollage, setGeneratingCollage] = useState(false);
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const totalFoundItems = Object.values(pointedItems).flat().filter(p => !p.loading).length;
+  const allProducts = Object.values(pointedItems).flat().flatMap(p => p.products);
+
+  /* ── Drawing handlers for bounding-box selection ── */
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, imageId: string) => {
+    if (selectingImageId !== imageId) return;
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDrawStart({ x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height });
+    setDrawCurrent(null);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!drawStart || !selectingImageId) return;
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDrawCurrent({
+      x: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
+      y: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
     });
   };
 
-  const selectedCount = selectedIds.size;
-  const selectedItems = items.filter((i) => selectedIds.has(i.id));
+  const handleMouseUp = async (e: React.MouseEvent<HTMLDivElement>, imageId: string, imageUrl: string) => {
+    if (!drawStart || !drawCurrent || selectingImageId !== imageId) return;
+    e.preventDefault();
+    const box = {
+      x: Math.min(drawStart.x, drawCurrent.x),
+      y: Math.min(drawStart.y, drawCurrent.y),
+      w: Math.abs(drawCurrent.x - drawStart.x),
+      h: Math.abs(drawCurrent.y - drawStart.y),
+    };
+    setDrawStart(null);
+    setDrawCurrent(null);
+    setSelectingImageId(null);
 
-  const searchProducts = async (item: MoodboardItem) => {
-    setSearchingId(item.id);
+    if (box.w < 0.03 || box.h < 0.03) return; // skip accidental clicks
+
+    const pointedId = `${imageId}-${Date.now()}`;
+    const newItem: PointedItem = { id: pointedId, cropBox: box, label: "Identifying...", loading: true, products: [] };
+    setPointedItems(prev => ({ ...prev, [imageId]: [...(prev[imageId] || []), newItem] }));
+
     try {
-      const res = await fetch("/api/ai/search-products", {
+      const res = await fetch("/api/ai/identify-and-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: item.imageUrl, title: item.title }),
+        body: JSON.stringify({ imageUrl, cropBox: box }),
       });
       const data = await res.json();
-      setProductResults((prev) => ({ ...prev, [item.id]: data.products || [] }));
+      setPointedItems(prev => ({
+        ...prev,
+        [imageId]: (prev[imageId] || []).map(item =>
+          item.id === pointedId ? { ...item, label: data.label || "Unknown item", loading: false, products: data.products || [] } : item
+        ),
+      }));
     } catch {
-      setProductResults((prev) => ({ ...prev, [item.id]: [] }));
+      setPointedItems(prev => ({
+        ...prev,
+        [imageId]: (prev[imageId] || []).map(item =>
+          item.id === pointedId ? { ...item, label: "Could not identify", loading: false, products: [] } : item
+        ),
+      }));
     }
-    setSearchingId(null);
   };
 
-  const generateCollage = async () => {
-    setGeneratingCollage(true);
-    try {
-      const imageUrls = selectedItems.map((i) => i.imageUrl);
-      const res = await fetch("/api/ai/generate-styleboard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrls, products: Object.values(productResults).flat() }),
-      });
-      const data = await res.json();
-      setCollageUrl(data.imageUrl || null);
-    } catch { /* keep null */ }
-    setGeneratingCollage(false);
+  const removePointedItem = (imageId: string, pointedId: string) => {
+    setPointedItems(prev => ({ ...prev, [imageId]: (prev[imageId] || []).filter(item => item.id !== pointedId) }));
   };
 
-  const TABS = [
-    { id: "select" as const, label: "Select Photos", icon: FaImages },
-    { id: "products" as const, label: "Find Products", icon: FaCartShopping },
-    { id: "styleboard" as const, label: "Style Board", icon: FaSwatchbook },
-  ];
+  const selectionRect = drawStart && drawCurrent ? {
+    left: `${Math.min(drawStart.x, drawCurrent.x) * 100}%`,
+    top: `${Math.min(drawStart.y, drawCurrent.y) * 100}%`,
+    width: `${Math.abs(drawCurrent.x - drawStart.x) * 100}%`,
+    height: `${Math.abs(drawCurrent.y - drawStart.y) * 100}%`,
+  } : null;
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Moodboard</h2>
-      <p className="mt-2 text-sm text-[#6a6a7a]">
-        Curate your inspiration, find matching products, and generate your style board &mdash; all in one place.
-      </p>
-
-      {/* Preview modal */}
-      {previewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPreviewItem(null)}>
-          <div className="relative mx-4 max-h-[85vh] max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setPreviewItem(null)}
-              className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
-            >
-              ✕
-            </button>
-            <div className="relative" style={{ minHeight: "300px", maxHeight: "75vh" }}>
-              <Image
-                src={previewItem.imageUrl}
-                alt={previewItem.title || "Preview"}
-                width={800}
-                height={600}
-                className="h-auto max-h-[75vh] w-full object-contain"
-                unoptimized
-              />
-            </div>
-            {previewItem.title && (
-              <div className="border-t border-[#e8e6e1] px-6 py-3">
-                <p className="text-sm font-medium text-[#1a1a2e]">{previewItem.title}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Section switcher */}
+      <div className="flex gap-1 rounded-xl bg-[#f8f7f4] p-1">
+        <button
+          onClick={() => setActiveSection("discover")}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+            activeSection === "discover" ? "bg-white text-[#2d5a3d] shadow-sm" : "text-[#6a6a7a] hover:text-[#4a4a5a]"
+          }`}
+        >
+          <FaCrosshairs className="text-xs" />
+          Discover Items You Want
+        </button>
+        <button
+          onClick={() => setActiveSection("moodboard")}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+            activeSection === "moodboard" ? "bg-white text-[#2d5a3d] shadow-sm" : "text-[#6a6a7a] hover:text-[#4a4a5a]"
+          }`}
+        >
+          <FaImages className="text-xs" />
+          Moodboard
+          {totalFoundItems > 0 && (
+            <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">{totalFoundItems}</span>
+          )}
+        </button>
+      </div>
 
       {/* Delete confirmation modal */}
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-sm rounded-2xl border border-[#e8e6e1] bg-white p-6 shadow-xl">
             <h3 className="text-lg font-bold text-[#1a1a2e]">Remove from Moodboard?</h3>
-            <p className="mt-2 text-sm text-[#6a6a7a]">
-              Are you sure you want to remove this image from your moodboard?
-            </p>
+            <p className="mt-2 text-sm text-[#6a6a7a]">This will also remove any identified items for this image.</p>
             <div className="mt-5 flex justify-end gap-3">
               <button
                 onClick={() => setConfirmDeleteId(null)}
@@ -640,7 +661,7 @@ function MoodboardStep() {
               <button
                 onClick={() => {
                   removeItem(confirmDeleteId);
-                  setSelectedIds((prev) => { const next = new Set(prev); next.delete(confirmDeleteId); return next; });
+                  setPointedItems(prev => { const next = { ...prev }; delete next[confirmDeleteId]; return next; });
                   setConfirmDeleteId(null);
                 }}
                 className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
@@ -652,227 +673,211 @@ function MoodboardStep() {
         </div>
       )}
 
-      {/* Tab navigation */}
-      <div className="mt-5 flex gap-1 rounded-xl bg-[#f8f7f4] p-1">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-              activeTab === tab.id
-                ? "bg-white text-[#2d5a3d] shadow-sm"
-                : "text-[#6a6a7a] hover:text-[#4a4a5a]"
-            }`}
-          >
-            <tab.icon className="text-xs" />
-            {tab.label}
-            {tab.id === "select" && items.length > 0 && (
-              <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">{selectedCount}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* ── SECTION: Discover Items You Want ── */}
+      {activeSection === "discover" && (
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold text-[#1a1a2e]">Discover the Items You Want</h2>
+          <p className="mt-2 text-sm text-[#6a6a7a]">
+            Draw a box around any item in your inspiration photos. We&apos;ll identify it and find where to buy it online.
+          </p>
 
-      {/* ── Tab: Select Photos ── */}
-      {activeTab === "select" && (
-        <div className="mt-5">
-          {/* Selection summary bar */}
-          {items.length > 0 && (
-            <div className="mb-4 flex items-center gap-3 rounded-xl bg-[#f8f7f4] px-4 py-2.5">
-              <span className="text-sm text-[#4a4a5a]">
-                <span className="font-semibold text-[#2d5a3d]">{selectedCount}</span> of {items.length} selected
-              </span>
-              <button
-                onClick={() => setSelectedIds(selectedCount === items.length ? new Set() : new Set(items.map((i) => i.id)))}
-                className="ml-auto text-xs font-medium text-[#2d5a3d] transition hover:underline"
-              >
-                {selectedCount === items.length ? "Deselect All" : "Select All"}
-              </button>
-            </div>
-          )}
-
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#1a1a2e]">
-              Saved Inspiration ({items.length})
-            </h3>
+          {items.length === 0 ? (
             <Link
               href="/explore?from=moodboard"
-              className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d]/10 px-3 py-1.5 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20"
-            >
-              <FaCompass className="text-[10px]" /> Browse Explore
-            </Link>
-          </div>
-
-          {items.length > 0 ? (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-              {items.map((item) => {
-                const isSelected = selectedIds.has(item.id);
-                return (
-                  <div
-                    key={item.id}
-                    className={`group relative cursor-pointer overflow-hidden rounded-xl border-2 transition ${
-                      isSelected ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/20" : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-                    }`}
-                    onClick={() => toggleSelect(item.id)}
-                  >
-                    <div className="relative aspect-square">
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.title || "Moodboard image"}
-                        fill
-                        className="object-cover"
-                        sizes="160px"
-                        unoptimized
-                      />
-                      {/* Select checkmark */}
-                      <div className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 transition ${
-                        isSelected
-                          ? "border-[#2d5a3d] bg-[#2d5a3d] text-white"
-                          : "border-white/70 bg-black/30 text-transparent"
-                      }`}>
-                        <FaCheck className="text-[10px]" />
-                      </div>
-                      {/* Action buttons */}
-                      <div className="absolute right-1.5 top-1.5 flex flex-col gap-1 opacity-0 transition group-hover:opacity-100">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setPreviewItem(item); }}
-                          className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
-                          title="View larger"
-                        >
-                          <FaExpand className="text-[9px]" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(item.id); }}
-                          className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-red-500"
-                          title="Remove"
-                        >
-                          <FaTrash className="text-[9px]" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {/* Add more card */}
-              <Link
-                href="/explore?from=moodboard"
-                className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] text-[#9a9aaa] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
-              >
-                <FaPlus className="text-lg" />
-                <span className="text-[11px] font-medium">Add More</span>
-              </Link>
-            </div>
-          ) : (
-            <Link
-              href="/explore?from=moodboard"
-              className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-10 transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+              className="mt-6 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-10 transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
             >
               <FaImages className="text-3xl text-[#9a9aaa]" />
-              <span className="text-sm font-medium text-[#6a6a7a]">
-                No images saved yet — go to Explore to build your moodboard
-              </span>
+              <span className="text-sm font-medium text-[#6a6a7a]">No images saved yet &mdash; go to Explore to build your moodboard</span>
               <span className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white">
                 <FaCompass className="text-[10px]" /> Open Explore
               </span>
             </Link>
-          )}
-
-          {/* CTA to go to products tab */}
-          {items.length > 0 && selectedCount > 0 && (
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={() => setActiveTab("products")}
-                className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl"
-              >
-                <FaCartShopping className="text-sm" />
-                Find Matching Products
-                <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs">{selectedCount}</span>
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Tab: Find Products ── */}
-      {activeTab === "products" && (
-        <div className="mt-5">
-          {selectedItems.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-10">
-              <FaCartShopping className="text-3xl text-[#9a9aaa]" />
-              <p className="text-sm text-[#6a6a7a]">Select images in the &quot;Select Photos&quot; tab first.</p>
-              <button onClick={() => setActiveTab("select")} className="text-xs font-semibold text-[#2d5a3d] hover:underline">Go to Select Photos</button>
-            </div>
           ) : (
-            <div className="space-y-4">
-              <p className="text-xs text-[#6a6a7a]">
-                Click &quot;Find Products&quot; on any image to search for real products that match.
-              </p>
-              {selectedItems.map((item) => {
-                const products = productResults[item.id];
-                const isSearching = searchingId === item.id;
+            <div className="mt-6 space-y-6">
+              {items.map((item) => {
+                const pointed = pointedItems[item.id] || [];
+                const isSelecting = selectingImageId === item.id;
 
                 return (
-                  <div key={item.id} className="rounded-xl border border-[#e8e6e1] p-3">
-                    <div className="flex gap-3">
-                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-                        <Image src={item.imageUrl} alt={item.title || ""} fill className="object-cover" sizes="80px" unoptimized />
-                      </div>
-                      <div className="flex flex-1 flex-col justify-between">
-                        <p className="text-sm font-medium text-[#1a1a2e] line-clamp-2">{item.title || "Inspiration image"}</p>
-                        <button
-                          onClick={() => searchProducts(item)}
-                          disabled={isSearching}
-                          className="mt-1 flex w-fit items-center gap-1.5 rounded-lg bg-[#2d5a3d]/10 px-3 py-1.5 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20 disabled:opacity-50"
-                        >
-                          {isSearching ? (
-                            <><FaSpinner className="animate-spin text-[10px]" /> Searching...</>
-                          ) : products ? (
-                            <><FaMagnifyingGlass className="text-[10px]" /> Search Again</>
-                          ) : (
-                            <><FaMagnifyingGlass className="text-[10px]" /> Find Products</>
-                          )}
-                        </button>
-                      </div>
+                  <div key={item.id} className="overflow-hidden rounded-2xl border border-[#e8e6e1]">
+                    {/* Action bar */}
+                    <div className="flex items-center justify-end border-b border-[#e8e6e1] bg-[#faf9f6] px-5 py-3">
+                      <button
+                        onClick={() => setConfirmDeleteId(item.id)}
+                        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs text-[#9a9aaa] transition hover:bg-red-50 hover:text-red-500"
+                      >
+                        <FaTrash className="text-[10px]" /> Remove
+                      </button>
                     </div>
 
-                    {products && products.length > 0 && (
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        {products.slice(0, 4).map((p, i) => (
-                          <a
-                            key={i}
-                            href={p.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex gap-2 rounded-lg border border-[#e8e6e1] p-2 transition hover:bg-[#f8f7f4]"
-                          >
-                            {p.thumbnail && (
-                              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-[#f8f7f4]">
-                                <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="48px" unoptimized />
-                              </div>
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[11px] font-medium text-[#1a1a2e]">{p.title}</p>
-                              <p className="text-[10px] text-[#6a6a7a]">{p.source}</p>
-                              {p.price && <p className="text-[11px] font-semibold text-[#2d5a3d]">{p.price}</p>}
+                    <div className="flex">
+                      {/* LEFT: Image + Point-out button */}
+                      <div className="w-1/2 border-r border-[#e8e6e1] p-4">
+                        <div
+                          className={`relative select-none overflow-hidden rounded-xl ${isSelecting ? "cursor-crosshair ring-2 ring-[#2d5a3d] ring-offset-2" : ""}`}
+                          onMouseDown={(e) => handleMouseDown(e, item.id)}
+                          onMouseMove={handleMouseMove}
+                          onMouseUp={(e) => handleMouseUp(e, item.id, item.imageUrl)}
+                          onMouseLeave={() => { if (isSelecting) { setDrawStart(null); setDrawCurrent(null); } }}
+                        >
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.title || "Inspiration"}
+                            width={600}
+                            height={450}
+                            className="h-auto w-full rounded-xl object-cover"
+                            unoptimized
+                            draggable={false}
+                          />
+
+                          {/* Active drawing rectangle */}
+                          {isSelecting && selectionRect && (
+                            <div
+                              className="pointer-events-none absolute border-2 border-dashed border-[#2d5a3d] bg-[#2d5a3d]/15"
+                              style={selectionRect}
+                            />
+                          )}
+
+                          {/* Existing bounding boxes */}
+                          {pointed.map((pi, idx) => (
+                            <div
+                              key={pi.id}
+                              className="pointer-events-none absolute border-2 border-[#2d5a3d] bg-[#2d5a3d]/10"
+                              style={{
+                                left: `${pi.cropBox.x * 100}%`,
+                                top: `${pi.cropBox.y * 100}%`,
+                                width: `${pi.cropBox.w * 100}%`,
+                                height: `${pi.cropBox.h * 100}%`,
+                              }}
+                            >
+                              <span className="absolute -top-5 left-0 whitespace-nowrap rounded bg-[#2d5a3d] px-1.5 py-0.5 text-[9px] font-medium text-white shadow-sm">
+                                {pi.loading ? "Identifying..." : `${idx + 1}. ${pi.label}`}
+                              </span>
                             </div>
-                          </a>
-                        ))}
+                          ))}
+
+                          {/* Selection mode hint overlay */}
+                          {isSelecting && !drawStart && (
+                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/5">
+                              <span className="rounded-full bg-white/90 px-4 py-2 text-xs font-medium text-[#2d5a3d] shadow-md">
+                                Click &amp; drag to select an item
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => setSelectingImageId(isSelecting ? null : item.id)}
+                          className={`mt-3 flex w-fit items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
+                            isSelecting
+                              ? "bg-[#2d5a3d] text-white shadow-md"
+                              : "border-2 border-[#2d5a3d] text-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+                          }`}
+                        >
+                          <FaMagnifyingGlass className="text-xs" />
+                          {isSelecting ? "Drawing mode \u2014 cancel" : "Point out the Item"}
+                        </button>
                       </div>
-                    )}
-                    {products && products.length === 0 && (
-                      <p className="mt-2 text-xs text-[#9a9aaa]">No matching products found.</p>
-                    )}
+
+                      {/* RIGHT: Found items & products */}
+                      <div className="w-1/2 p-4">
+                        <h4 className="mb-3 text-sm font-semibold text-[#1a1a2e]">
+                          Items to Buy
+                          {pointed.length > 0 && (
+                            <span className="ml-2 text-xs font-normal text-[#6a6a7a]">({pointed.length} found)</span>
+                          )}
+                        </h4>
+
+                        {pointed.length === 0 ? (
+                          <div className="flex h-48 flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#e8e6e1] text-center">
+                            <FaCartShopping className="mb-2 text-2xl text-[#d5d3cd]" />
+                            <p className="text-xs text-[#9a9aaa]">
+                              Point out items in the image<br />to find them online
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="max-h-[400px] space-y-3 overflow-y-auto pr-1">
+                            {pointed.map((pi, idx) => (
+                              <div key={pi.id} className="rounded-xl border border-[#e8e6e1] p-3">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2d5a3d] text-[9px] font-bold text-white">{idx + 1}</span>
+                                    {pi.loading ? (
+                                      <span className="flex items-center gap-1.5 text-xs text-[#6a6a7a]">
+                                        <FaSpinner className="animate-spin text-[10px]" /> Identifying...
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm font-medium text-[#1a1a2e]">{pi.label}</span>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => removePointedItem(item.id, pi.id)}
+                                    className="text-[10px] text-[#9a9aaa] transition hover:text-red-500"
+                                  >
+                                    <FaTrash />
+                                  </button>
+                                </div>
+
+                                {!pi.loading && pi.products.length > 0 && (
+                                  <div className="mt-2 space-y-2">
+                                    {pi.products.slice(0, 4).map((p, i) => (
+                                      <a
+                                        key={i}
+                                        href={p.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex gap-2 rounded-lg border border-[#e8e6e1] p-2 transition hover:bg-[#f8f7f4]"
+                                      >
+                                        {p.thumbnail && (
+                                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-[#f8f7f4]">
+                                            <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="40px" unoptimized />
+                                          </div>
+                                        )}
+                                        <div className="min-w-0 flex-1">
+                                          <p className="truncate text-[11px] font-medium text-[#1a1a2e]">{p.title}</p>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-[#6a6a7a]">{p.source}</span>
+                                            {p.price && <span className="text-[11px] font-semibold text-[#2d5a3d]">{p.price}</span>}
+                                          </div>
+                                        </div>
+                                        <FaArrowUpRightFromSquare className="mt-1 shrink-0 text-[9px] text-[#9a9aaa]" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
+                                {!pi.loading && pi.products.length === 0 && (
+                                  <p className="mt-1 text-[11px] text-[#9a9aaa]">No matching products found.</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
 
-              {/* CTA to style board */}
-              <div className="mt-4 flex justify-center">
+              {/* Add more images link */}
+              <Link
+                href="/explore?from=moodboard"
+                className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] p-6 text-[#9a9aaa] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
+              >
+                <FaPlus className="text-sm" />
+                <span className="text-sm font-medium">Add More Images from Explore</span>
+              </Link>
+
+              {/* Submit to moodboard */}
+              <div className="flex justify-center pt-2">
                 <button
-                  onClick={() => setActiveTab("styleboard")}
-                  className="flex items-center gap-2 rounded-xl bg-[#2d5a3d] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#234a31]"
+                  onClick={() => setActiveSection("moodboard")}
+                  className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl"
                 >
-                  <FaSwatchbook className="text-sm" /> Generate Style Board
+                  <FaImages className="text-sm" />
+                  View Moodboard
+                  {totalFoundItems > 0 && (
+                    <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs">{totalFoundItems} items</span>
+                  )}
                 </button>
               </div>
             </div>
@@ -880,55 +885,111 @@ function MoodboardStep() {
         </div>
       )}
 
-      {/* ── Tab: Style Board ── */}
-      {activeTab === "styleboard" && (
-        <div className="mt-5">
-          <p className="mb-4 text-xs text-[#6a6a7a]">
-            Generate a curated mood board collage from your selected images and matched products.
-          </p>
+      {/* ── SECTION: Moodboard ── */}
+      {activeSection === "moodboard" && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Moodboard</h2>
+              <p className="mt-1 text-sm text-[#6a6a7a]">Your curated inspiration with identified items and products.</p>
+            </div>
+            <button
+              onClick={() => setActiveSection("discover")}
+              className="flex items-center gap-1.5 rounded-lg border border-[#d5d3cd] px-3 py-1.5 text-xs font-medium text-[#4a4a5a] transition hover:bg-[#f8f7f4]"
+            >
+              <FaArrowLeft className="text-[9px]" /> Back to Discover
+            </button>
+          </div>
 
-          {collageUrl ? (
-            <div className="overflow-hidden rounded-xl border border-[#e8e6e1] shadow-md">
-              <Image
-                src={collageUrl}
-                alt="Generated style board"
-                width={600}
-                height={500}
-                className="h-auto w-full"
-                unoptimized
-              />
-              <div className="border-t border-[#e8e6e1] p-4">
-                <button
-                  onClick={generateCollage}
-                  disabled={generatingCollage}
-                  className="flex items-center gap-2 rounded-lg bg-[#2d5a3d]/10 px-4 py-2 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20"
-                >
-                  <FaWandMagicSparkles className="text-[10px]" /> Regenerate
-                </button>
+          {/* Image grid with identified items */}
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            {items.map((item) => {
+              const pointed = pointedItems[item.id] || [];
+              return (
+                <div key={item.id} className="overflow-hidden rounded-xl border border-[#e8e6e1]">
+                  <div className="relative">
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.title || "Inspiration"}
+                      width={400}
+                      height={300}
+                      className="h-auto w-full object-cover"
+                      unoptimized
+                    />
+                    {pointed.map((pi, idx) => (
+                      <div
+                        key={pi.id}
+                        className="pointer-events-none absolute border-2 border-white/80 bg-white/10"
+                        style={{
+                          left: `${pi.cropBox.x * 100}%`,
+                          top: `${pi.cropBox.y * 100}%`,
+                          width: `${pi.cropBox.w * 100}%`,
+                          height: `${pi.cropBox.h * 100}%`,
+                        }}
+                      >
+                        <span className="absolute -top-4 left-0 rounded bg-[#2d5a3d] px-1 py-0.5 text-[8px] font-medium text-white">
+                          {idx + 1}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {pointed.length > 0 && (
+                    <div className="border-t border-[#e8e6e1] p-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        {pointed.filter(p => !p.loading).map((pi) => (
+                          <span key={pi.id} className="rounded-full bg-[#2d5a3d]/10 px-2.5 py-1 text-[10px] font-medium text-[#2d5a3d]">
+                            {pi.label} &middot; {pi.products.length} products
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Shopping List */}
+          {allProducts.length > 0 && (
+            <div className="mt-8">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#1a1a2e]">
+                <FaCartShopping className="text-[#2d5a3d]" /> Your Shopping List
+                <span className="rounded-full bg-[#2d5a3d]/10 px-2 py-0.5 text-xs font-medium text-[#2d5a3d]">{allProducts.length}</span>
+              </h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {allProducts.map((p, i) => (
+                  <a
+                    key={i}
+                    href={p.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex gap-3 rounded-xl border border-[#e8e6e1] p-3 transition hover:border-[#2d5a3d]/30 hover:shadow-sm"
+                  >
+                    {p.thumbnail && (
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+                        <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="56px" unoptimized />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-xs font-medium text-[#1a1a2e]">{p.title}</p>
+                      <p className="mt-0.5 text-[10px] text-[#6a6a7a]">{p.source}</p>
+                      {p.price && <p className="mt-0.5 text-sm font-semibold text-[#2d5a3d]">{p.price}</p>}
+                    </div>
+                  </a>
+                ))}
               </div>
             </div>
-          ) : (
-            <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-12">
-              <FaSwatchbook className="text-4xl text-[#d5d3cd]" />
-              <p className="text-center text-sm text-[#6a6a7a]">
-                Your AI-generated style board will appear here.
-              </p>
-              <button
-                onClick={generateCollage}
-                disabled={generatingCollage || selectedCount === 0}
-                className="flex items-center gap-2 rounded-xl bg-[#2d5a3d] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#234a31] disabled:opacity-50"
-              >
-                {generatingCollage ? (
-                  <><FaSpinner className="animate-spin" /> Generating...</>
-                ) : (
-                  <><FaWandMagicSparkles /> Generate Style Board</>
-                )}
-              </button>
-              {selectedCount === 0 && (
-                <p className="text-xs text-[#9a9aaa]">Select images first to generate a style board.</p>
-              )}
-            </div>
           )}
+
+          {/* Browse more */}
+          <div className="mt-6 flex justify-center">
+            <Link
+              href="/explore?from=moodboard"
+              className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d]/10 px-4 py-2 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20"
+            >
+              <FaCompass className="text-[10px]" /> Add More from Explore
+            </Link>
+          </div>
         </div>
       )}
     </div>
