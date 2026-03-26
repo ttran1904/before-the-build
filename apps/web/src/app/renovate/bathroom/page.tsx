@@ -15,8 +15,10 @@ import {
   FaArrowUpRightFromSquare, FaLocationDot, FaShieldHalved, FaMagnifyingGlass,
   FaExpand, FaSwatchbook, FaCartShopping, FaSpinner, FaCrosshairs,
   FaLink, FaCircleExclamation,
+  FaDollarSign, FaSackDollar, FaGem,
 } from "react-icons/fa6";
 import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
+import { BATHROOM_SIZES } from "@/lib/room-sizes/bathroom";
 import type { PointedItem, Product } from "@/lib/moodboard/types";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
@@ -431,100 +433,131 @@ function MustHavesStep() {
 
 /* ── Budget Step ── */
 function BudgetStep() {
-  const { budgetTier, setBudgetTier, bathroomSize, setBathroomSize } = useWizardStore();
+  const { budgetTier, setBudgetTier, bathroomSize, setBathroomSize, budgetAmounts, setBudgetAmounts } = useWizardStore();
 
-  const BUDGET_DATA: Record<string, Record<BudgetTier, string>> = {
-    small: { basic: "$5,000 – $10,000", mid: "$10,000 – $20,000", high: "$20,000 – $40,000" },
-    medium: { basic: "$10,000 – $20,000", mid: "$20,000 – $35,000", high: "$35,000 – $60,000" },
-    large: { basic: "$15,000 – $30,000", mid: "$30,000 – $50,000", high: "$50,000 – $100,000+" },
-  };
-
-  const tiers: { id: BudgetTier; label: string; desc: string; color: string }[] = [
-    { id: "basic", label: "Basic", desc: "Builder-grade materials, standard fixtures", color: "#87CEEB" },
-    { id: "mid", label: "Mid-Range", desc: "Quality materials, upgraded fixtures", color: "#2d5a3d" },
-    { id: "high", label: "High-End", desc: "Premium materials, luxury fixtures", color: "#d4956a" },
+  const tiers: { id: BudgetTier; label: string; desc: string; color: string; icon: React.ReactNode }[] = [
+    { id: "basic", label: "Basic", desc: "Builder-grade materials, standard fixtures, functional finishes", color: "#87CEEB", icon: <FaDollarSign className="text-base" /> },
+    { id: "mid", label: "Mid-Range", desc: "Quality materials, one statement piece or upgraded tiling", color: "#2d5a3d", icon: <FaSackDollar className="text-base" /> },
+    { id: "high", label: "High-End", desc: "Premium materials, statement pieces throughout, luxury fixtures", color: "#d4956a", icon: <FaGem className="text-base" /> },
   ];
 
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s your budget?</h2>
-      <p className="mt-2 text-sm text-[#6a6a7a]">
-        Select your bathroom size and budget tier. We&apos;ll auto-add 10% for contingency.
-      </p>
+  const BREAKDOWN = [
+    { label: "Materials (40–50%)", pct: 45 },
+    { label: "Labor (30–40%)", pct: 35 },
+    { label: "Permits & Fees (5%)", pct: 5 },
+    { label: "Contingency (10%)", pct: 10 },
+    { label: "Design & Planning (5%)", pct: 5 },
+  ];
 
-      {/* Size selector */}
-      <div className="mt-6">
-        <label className="mb-2 block text-sm font-medium text-[#4a4a5a]">Bathroom Size</label>
-        <div className="flex gap-3">
-          {([
-            { id: "small" as const, label: "Small", sqft: "35-45 sqft" },
-            { id: "medium" as const, label: "Medium", sqft: "45-75 sqft" },
-            { id: "large" as const, label: "Large/Master", sqft: "75+ sqft" },
-          ]).map((s) => (
+  const selectedAmount = budgetTier ? budgetAmounts[budgetTier] : null;
+
+  const formatCurrency = (n: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+
+  return (
+    <div className="space-y-10">
+      {/* ── Question 1: Bathroom Size ── */}
+      <div>
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">What is the size?</h2>
+        <p className="mt-2 text-sm text-[#6a6a7a]">
+          Choose the category that best matches your space.
+        </p>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          {BATHROOM_SIZES.map((s) => (
             <button
               key={s.id}
               onClick={() => setBathroomSize(s.id)}
-              className={`flex-1 rounded-xl border-2 p-4 text-center transition ${
+              className={`rounded-xl border-2 p-4 text-left transition ${
                 bathroomSize === s.id
                   ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
                   : "border-[#e8e6e1] hover:border-[#d5d3cd]"
               }`}
             >
               <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
-              <div className="text-xs text-[#6a6a7a]">{s.sqft}</div>
+              <div className="text-xs text-[#6a6a7a]">{s.desc}</div>
+              <div className="mt-1 text-xs font-medium text-[#2d5a3d]">{s.sqft}</div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Budget tier */}
-      <div className="mt-6 space-y-3">
-        {tiers.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setBudgetTier(t.id)}
-            className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
-              budgetTier === t.id
-                ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-            }`}
-          >
-            <div className="h-4 w-4 rounded-full" style={{ background: t.color }} />
-            <div className="flex-1">
-              <div className="font-semibold text-[#1a1a2e]">{t.label}</div>
-              <div className="text-xs text-[#6a6a7a]">{t.desc}</div>
-            </div>
-            <span className="shrink-0 text-lg font-bold text-[#2d5a3d]">
-              {BUDGET_DATA[bathroomSize][t.id]}
-            </span>
-          </button>
-        ))}
-      </div>
+      {/* ── Question 2: Budget ── */}
+      <div>
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s your budget?</h2>
+        <p className="mt-2 text-sm text-[#6a6a7a]">
+          Enter your comfortable budget for each tier, then select the range you&apos;re aiming for.
+        </p>
 
-      {/* Breakdown preview */}
-      {budgetTier && (
-        <div className="mt-6 rounded-xl bg-[#f8f7f4] p-4">
-          <h4 className="mb-3 text-sm font-semibold text-[#1a1a2e]">Estimated Breakdown</h4>
-          <div className="space-y-2">
-            {[
-              { label: "Materials (40-50%)", pct: 45 },
-              { label: "Labor (30-40%)", pct: 35 },
-              { label: "Permits & Fees (5%)", pct: 5 },
-              { label: "Contingency (10%)", pct: 10 },
-              { label: "Design & Planning (5%)", pct: 5 },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-3">
-                <span className="w-40 text-xs text-[#4a4a5a]">{item.label}</span>
-                <div className="h-2 flex-1 rounded-full bg-[#e8e6e1]">
-                  <div
-                    className="h-full rounded-full bg-[#2d5a3d]"
-                    style={{ width: `${item.pct}%` }}
+        <div className="mt-5 space-y-3">
+          {tiers.map((t) => {
+            const amount = budgetAmounts[t.id];
+            return (
+              <button
+                key={t.id}
+                onClick={() => setBudgetTier(t.id)}
+                className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
+                  budgetTier === t.id
+                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+                }`}
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: t.color, color: '#fff' }}>
+                  {t.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-[#1a1a2e]">{t.label}</div>
+                  <div className="text-xs text-[#6a6a7a]">{t.desc}</div>
+                </div>
+                <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <FaDollarSign className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#6a6a7a]" />
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={amount ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+                      setBudgetAmounts(t.id, val);
+                    }}
+                    className="w-32 rounded-lg border border-[#d5d3cd] bg-white py-2 pl-7 pr-3 text-right text-sm font-semibold text-[#1a1a2e] outline-none focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                 </div>
-                <span className="w-10 text-right text-xs font-medium text-[#4a4a5a]">{item.pct}%</span>
-              </div>
-            ))}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Estimated Breakdown ── */}
+      {budgetTier && (
+        <div className="rounded-xl bg-[#f8f7f4] p-5">
+          <h4 className="mb-4 text-sm font-semibold text-[#1a1a2e]">Estimated Breakdown</h4>
+          <div className="space-y-2.5">
+            {BREAKDOWN.map((item) => {
+              const dollarAmount = selectedAmount ? Math.round((selectedAmount * item.pct) / 100) : null;
+              return (
+                <div key={item.label} className="flex items-center gap-3">
+                  <span className="w-44 text-xs text-[#4a4a5a]">{item.label}</span>
+                  <div className="h-2 flex-1 rounded-full bg-[#e8e6e1]">
+                    <div
+                      className="h-full rounded-full bg-[#2d5a3d]"
+                      style={{ width: `${item.pct}%` }}
+                    />
+                  </div>
+                  <span className="w-20 text-right text-xs font-medium text-[#4a4a5a]">
+                    {dollarAmount !== null ? formatCurrency(dollarAmount) : `${item.pct}%`}
+                  </span>
+                </div>
+              );
+            })}
           </div>
+          {selectedAmount && (
+            <div className="mt-4 flex items-center justify-between border-t border-[#e8e6e1] pt-3">
+              <span className="text-sm font-semibold text-[#1a1a2e]">Total Budget</span>
+              <span className="text-sm font-bold text-[#2d5a3d]">{formatCurrency(selectedAmount)}</span>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1563,7 +1596,7 @@ function SummaryStep({ tasks, contractorCount }: { tasks: TimelineTask[]; contra
       <div className="mt-6 space-y-4">
         <SummaryRow label="Goal" value={GOAL_LABELS[store.goal] || store.goal} />
         <SummaryRow label="Scope" value={store.scope ? SCOPE_LABELS[store.scope] : "—"} />
-        <SummaryRow label="Size" value={`${store.bathroomSize.charAt(0).toUpperCase() + store.bathroomSize.slice(1)} bathroom`} />
+        <SummaryRow label="Size" value={BATHROOM_SIZES.find(s => s.id === store.bathroomSize)?.label || store.bathroomSize} />
         <SummaryRow label="Budget Tier" value={store.budgetTier ? store.budgetTier.charAt(0).toUpperCase() + store.budgetTier.slice(1) : "—"} />
         <SummaryRow label="Style" value={store.style || "—"} />
         <SummaryRow label="Moodboard" value={`${moodboardCount} saved images`} />

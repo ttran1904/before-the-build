@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { DesignStyle, ProjectGoal } from "@before-the-build/shared";
+import type { BathroomSize } from "@/lib/room-sizes/bathroom";
 
 /* ── Bathroom Wizard State ── */
 
@@ -17,10 +18,11 @@ export interface BathroomWizardState {
   // Step 4: Budget
   budgetTier: BudgetTier | null;
   budgetAmount: number | null;
+  budgetAmounts: Record<BudgetTier, number | null>;
   // Step 5: Style
   style: DesignStyle | null;
   // Metadata
-  bathroomSize: "small" | "medium" | "large";
+  bathroomSize: BathroomSize;
   currentStep: number;
 }
 
@@ -31,8 +33,9 @@ interface WizardActions {
   setNiceToHaves: (items: string[]) => void;
   setBudgetTier: (tier: BudgetTier) => void;
   setBudgetAmount: (amount: number) => void;
+  setBudgetAmounts: (tier: BudgetTier, amount: number | null) => void;
   setStyle: (style: DesignStyle) => void;
-  setBathroomSize: (size: "small" | "medium" | "large") => void;
+  setBathroomSize: (size: BathroomSize) => void;
   setCurrentStep: (step: number) => void;
   reset: () => void;
 }
@@ -44,8 +47,9 @@ const initialState: BathroomWizardState = {
   niceToHaves: [],
   budgetTier: null,
   budgetAmount: null,
+  budgetAmounts: { basic: null, mid: null, high: null },
   style: null,
-  bathroomSize: "medium",
+  bathroomSize: "full-bath",
   currentStep: 0,
 };
 
@@ -55,8 +59,12 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>((set) 
   setScope: (scope) => set({ scope }),
   setMustHaves: (mustHaves) => set({ mustHaves }),
   setNiceToHaves: (niceToHaves) => set({ niceToHaves }),
-  setBudgetTier: (budgetTier) => set({ budgetTier }),
+  setBudgetTier: (budgetTier) => set((state) => ({ budgetTier, budgetAmount: state.budgetAmounts[budgetTier] })),
   setBudgetAmount: (budgetAmount) => set({ budgetAmount }),
+  setBudgetAmounts: (tier, amount) => set((state) => ({
+    budgetAmounts: { ...state.budgetAmounts, [tier]: amount },
+    ...(state.budgetTier === tier ? { budgetAmount: amount } : {}),
+  })),
   setStyle: (style) => set({ style }),
   setBathroomSize: (bathroomSize) => set({ bathroomSize }),
   setCurrentStep: (currentStep) => set({ currentStep }),
