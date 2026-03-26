@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
 
   // Step 1: Use Claude Vision to identify the item in the bounding box region
   let label = "Unknown item";
+  let searchQuery = "";
 
   if (anthropicKey) {
     try {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 150,
+          max_tokens: 200,
           messages: [
             {
               role: "user",
@@ -35,9 +36,25 @@ export async function POST(req: NextRequest) {
                 },
                 {
                   type: "text",
-                  text: `Look at this interior/bathroom image. Focus specifically on the region at approximately: left ${Math.round(cropBox.x * 100)}%, top ${Math.round(cropBox.y * 100)}%, width ${Math.round(cropBox.w * 100)}%, height ${Math.round(cropBox.h * 100)}% of the image.
+                  text: `This is a bathroom/interior design photo. The user has drawn a selection box over a specific area they want to identify and purchase.
 
-What specific product or fixture is in that highlighted region? Respond with ONLY a concise product name including material, color, and style when visible. Examples: "brass wall-mounted faucet", "white marble hexagon floor tile", "frameless glass shower door", "matte black rain showerhead". Keep it under 8 words.`,
+The selection covers approximately: left ${Math.round(cropBox.x * 100)}%, top ${Math.round(cropBox.y * 100)}%, width ${Math.round(cropBox.w * 100)}%, height ${Math.round(cropBox.h * 100)}% of the image.
+
+Examine the ENTIRE image for context, then identify the PRIMARY object or material the user is pointing at within that selection box. The edges of the selection may include other objects — focus on what is most central and intentional.
+
+This could be any of these categories:
+- Fixtures: faucet, showerhead, shower handle, drain, towel bar, toilet paper holder, doorknob, cabinet handle/pull
+- Surfaces/Materials: floor tile, wall tile, countertop, backsplash (include material like marble, porcelain, ceramic, natural stone)
+- Furniture: vanity, cabinet, mirror, shelf, storage unit
+- Plumbing: bathtub, toilet, sink, shower enclosure, shower door
+- Decor: light fixture, plant/planter, artwork, towel, rug, basket
+- Hardware: hinges, knobs, drawer pulls
+
+Respond with ONLY the JSON object, nothing else. No explanation, no reasoning, no markdown. Just the raw JSON:
+{"label": "concise product name (e.g. matte black wall-mounted rain showerhead)", "searchTerms": "shopping search query to find this product to buy (e.g. matte black rain showerhead bathroom fixture)"}
+
+For the label: include color, material, and style when visible. Keep under 8 words.
+For searchTerms: add relevant shopping terms like 'buy', the room type, and product category to improve search accuracy. Keep under 12 words.`,
                 },
               ],
             },
@@ -47,7 +64,19 @@ What specific product or fixture is in that highlighted region? Respond with ONL
 
       if (identifyRes.ok) {
         const identifyData = await identifyRes.json();
-        label = identifyData.content?.[0]?.text?.trim() || label;
+        const rawText = identifyData.content?.[0]?.text?.trim() || "";
+        // Extract JSON from the response — Claude may wrap it in markdown code blocks or add reasoning
+        const jsonMatch = rawText.match(/\{[\s\S]*"label"\s*:\s*"[^"]+[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            label = parsed.label || label;
+            searchQuery = parsed.searchTerms || label;
+          } catch {
+            // JSON-like text but invalid — identification failed
+          }
+        }
+        // If we still have the default label, identification failed — don't proceed
       }
     } catch {
       // Fall through with default label
@@ -59,15 +88,15 @@ What specific product or fixture is in that highlighted region? Respond with ONL
 
   if (serpApiKey && label !== "Unknown item") {
     try {
-      const query = `${label} bathroom`;
+      const query = searchQuery || `${label} bathroom`;
       const serpRes = await fetch(
-        `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(query)}&api_key=${serpApiKey}&num=6`
+        `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(query)}&api_key=${serpApiKey}&num=4`
       );
 
       if (serpRes.ok) {
         const serpData = await serpRes.json();
         products = (serpData.shopping_results || [])
-          .slice(0, 6)
+          .slice(0, 4)
           .map((r: Record<string, unknown>) => ({
             title: (r.title as string) || "",
             price: (r.price as string) || String(r.extracted_price || ""),

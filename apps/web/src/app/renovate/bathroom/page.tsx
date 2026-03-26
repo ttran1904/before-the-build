@@ -74,6 +74,9 @@ export default function BathroomWizardPage() {
   const contractorHashRef = useRef("");
   const [contractorZip, setContractorZip] = useState("");
 
+  /* Moodboard pointed-items state — lifted here so it persists across step navigation */
+  const [moodboardPointedItems, setMoodboardPointedItems] = useState<Record<string, PointedItem[]>>({});
+
   const currentHash = useMemo(() => wizardInputHash(store), [store.goal, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
 
   /* Fetch timeline — only if inputs changed */
@@ -192,7 +195,7 @@ export default function BathroomWizardPage() {
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
             {currentStep === 1 && <MustHavesStep />}
             {currentStep === 2 && <BudgetStep />}
-            {currentStep === 3 && <MoodboardStep />}
+            {currentStep === 3 && <MoodboardStep pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} />}
             {currentStep === 4 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
             {currentStep === 5 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
             {currentStep === 6 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} />}
@@ -532,19 +535,21 @@ interface PointedItem {
   label: string;
   loading: boolean;
   products: { title: string; price: string; source: string; url: string; thumbnail: string }[];
+  selectedProductIdx: number | null;
 }
 
-function MoodboardStep() {
+function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record<string, PointedItem[]>; setPointedItems: React.Dispatch<React.SetStateAction<Record<string, PointedItem[]>>> }) {
   const { items, removeItem } = useMoodboardStore();
   const [activeSection, setActiveSection] = useState<"discover" | "moodboard">("discover");
-  const [pointedItems, setPointedItems] = useState<Record<string, PointedItem[]>>({});
   const [selectingImageId, setSelectingImageId] = useState<string | null>(null);
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
   const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const totalFoundItems = Object.values(pointedItems).flat().filter(p => !p.loading).length;
-  const allProducts = Object.values(pointedItems).flat().flatMap(p => p.products);
+  const selectedProducts = Object.values(pointedItems).flat()
+    .filter(p => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
+    .map(p => p.products[p.selectedProductIdx!]);
 
   /* ── Drawing handlers for bounding-box selection ── */
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, imageId: string) => {
@@ -581,7 +586,7 @@ function MoodboardStep() {
     if (box.w < 0.03 || box.h < 0.03) return; // skip accidental clicks
 
     const pointedId = `${imageId}-${Date.now()}`;
-    const newItem: PointedItem = { id: pointedId, cropBox: box, label: "Identifying...", loading: true, products: [] };
+    const newItem: PointedItem = { id: pointedId, cropBox: box, label: "Identifying...", loading: true, products: [], selectedProductIdx: null };
     setPointedItems(prev => ({ ...prev, [imageId]: [...(prev[imageId] || []), newItem] }));
 
     try {
@@ -609,6 +614,17 @@ function MoodboardStep() {
 
   const removePointedItem = (imageId: string, pointedId: string) => {
     setPointedItems(prev => ({ ...prev, [imageId]: (prev[imageId] || []).filter(item => item.id !== pointedId) }));
+  };
+
+  const toggleProductSelection = (imageId: string, pointedId: string, productIdx: number) => {
+    setPointedItems(prev => ({
+      ...prev,
+      [imageId]: (prev[imageId] || []).map(item =>
+        item.id === pointedId
+          ? { ...item, selectedProductIdx: item.selectedProductIdx === productIdx ? null : productIdx }
+          : item
+      ),
+    }));
   };
 
   const selectionRect = drawStart && drawCurrent ? {
@@ -806,6 +822,8 @@ function MoodboardStep() {
                                       <span className="flex items-center gap-1.5 text-xs text-[#6a6a7a]">
                                         <FaSpinner className="animate-spin text-[10px]" /> Identifying...
                                       </span>
+                                    ) : pi.label === "Unknown item" || pi.label === "Could not identify" ? (
+                                      <span className="text-xs text-red-400">Could not identify this item. Try a tighter selection.</span>
                                     ) : (
                                       <span className="text-sm font-medium text-[#1a1a2e]">{pi.label}</span>
                                     )}
@@ -819,30 +837,51 @@ function MoodboardStep() {
                                 </div>
 
                                 {!pi.loading && pi.products.length > 0 && (
-                                  <div className="mt-2 space-y-2">
-                                    {pi.products.slice(0, 4).map((p, i) => (
-                                      <a
-                                        key={i}
-                                        href={p.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex gap-2 rounded-lg border border-[#e8e6e1] p-2 transition hover:bg-[#f8f7f4]"
-                                      >
-                                        {p.thumbnail && (
-                                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-[#f8f7f4]">
-                                            <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="40px" unoptimized />
+                                  <div className="mt-2 space-y-1.5">
+                                    {pi.products.slice(0, 4).map((p, i) => {
+                                      const isSelected = pi.selectedProductIdx === i;
+                                      return (
+                                        <div
+                                          key={i}
+                                          onClick={() => toggleProductSelection(item.id, pi.id, i)}
+                                          className={`flex cursor-pointer gap-2 rounded-lg border p-2 transition ${
+                                            isSelected
+                                              ? "border-[#2d5a3d] bg-[#2d5a3d]/5 ring-1 ring-[#2d5a3d]/20"
+                                              : "border-[#e8e6e1] hover:bg-[#f8f7f4]"
+                                          }`}
+                                        >
+                                          {/* Radio circle */}
+                                          <div className={`mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                                            isSelected
+                                              ? "border-[#2d5a3d] bg-[#2d5a3d]"
+                                              : "border-[#d5d3cd]"
+                                          }`}>
+                                            {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                                           </div>
-                                        )}
-                                        <div className="min-w-0 flex-1">
-                                          <p className="truncate text-[11px] font-medium text-[#1a1a2e]">{p.title}</p>
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-[#6a6a7a]">{p.source}</span>
-                                            {p.price && <span className="text-[11px] font-semibold text-[#2d5a3d]">{p.price}</span>}
+                                          {p.thumbnail && (
+                                            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-[#f8f7f4]">
+                                              <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="40px" unoptimized />
+                                            </div>
+                                          )}
+                                          <div className="min-w-0 flex-1">
+                                            <p className="truncate text-[11px] font-medium text-[#1a1a2e]">{p.title}</p>
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-[10px] text-[#6a6a7a]">{p.source}</span>
+                                              {p.price && <span className="text-[11px] font-semibold text-[#2d5a3d]">{p.price}</span>}
+                                            </div>
                                           </div>
+                                          <a
+                                            href={p.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="mt-1 shrink-0 text-[9px] text-[#9a9aaa] transition hover:text-[#2d5a3d]"
+                                          >
+                                            <FaArrowUpRightFromSquare />
+                                          </a>
                                         </div>
-                                        <FaArrowUpRightFromSquare className="mt-1 shrink-0 text-[9px] text-[#9a9aaa]" />
-                                      </a>
-                                    ))}
+                                      );
+                                    })}
                                   </div>
                                 )}
                                 {!pi.loading && pi.products.length === 0 && (
@@ -891,7 +930,7 @@ function MoodboardStep() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Moodboard</h2>
-              <p className="mt-1 text-sm text-[#6a6a7a]">Your curated inspiration with identified items and products.</p>
+              <p className="mt-1 text-sm text-[#6a6a7a]">Your selected items arranged on a style board.</p>
             </div>
             <button
               onClick={() => setActiveSection("discover")}
@@ -901,63 +940,88 @@ function MoodboardStep() {
             </button>
           </div>
 
-          {/* Image grid with identified items */}
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            {items.map((item) => {
-              const pointed = pointedItems[item.id] || [];
-              return (
-                <div key={item.id} className="overflow-hidden rounded-xl border border-[#e8e6e1]">
-                  <div className="relative">
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.title || "Inspiration"}
-                      width={400}
-                      height={300}
-                      className="h-auto w-full object-cover"
-                      unoptimized
-                    />
-                    {pointed.map((pi, idx) => (
+          {/* White canvas moodboard */}
+          <div className="mt-6 overflow-hidden rounded-2xl border border-[#e8e6e1] bg-white shadow-sm">
+            {selectedProducts.length === 0 ? (
+              <div className="flex h-[500px] flex-col items-center justify-center text-center">
+                <FaImages className="mb-3 text-4xl text-[#e8e6e1]" />
+                <p className="text-sm font-medium text-[#9a9aaa]">No items selected yet</p>
+                <p className="mt-1 text-xs text-[#c5c3bd]">
+                  Go to Discover, point out items, and select a product for each.
+                </p>
+                <button
+                  onClick={() => setActiveSection("discover")}
+                  className="mt-4 flex items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#234a31]"
+                >
+                  <FaCrosshairs className="text-[10px]" /> Start Discovering
+                </button>
+              </div>
+            ) : (
+              <div className="relative" style={{ minHeight: "500px" }}>
+                {/* Scattered collage layout */}
+                <div className="grid gap-6 p-8" style={{
+                  gridTemplateColumns: selectedProducts.length === 1
+                    ? "1fr"
+                    : selectedProducts.length === 2
+                      ? "1fr 1fr"
+                      : selectedProducts.length <= 4
+                        ? "repeat(2, 1fr)"
+                        : "repeat(3, 1fr)",
+                }}>
+                  {selectedProducts.map((p, i) => {
+                    // Alternate sizes for visual interest
+                    const isLarge = i === 0 || (selectedProducts.length > 3 && i === 3);
+                    const rotation = ["-2deg", "1.5deg", "-1deg", "2deg", "-1.5deg", "0.5deg"][i % 6];
+
+                    return (
                       <div
-                        key={pi.id}
-                        className="pointer-events-none absolute border-2 border-white/80 bg-white/10"
-                        style={{
-                          left: `${pi.cropBox.x * 100}%`,
-                          top: `${pi.cropBox.y * 100}%`,
-                          width: `${pi.cropBox.w * 100}%`,
-                          height: `${pi.cropBox.h * 100}%`,
-                        }}
+                        key={i}
+                        className={`group relative flex flex-col items-center transition-transform duration-300 hover:scale-105 ${isLarge && selectedProducts.length > 2 ? "row-span-2" : ""}`}
+                        style={{ transform: `rotate(${rotation})` }}
                       >
-                        <span className="absolute -top-4 left-0 rounded bg-[#2d5a3d] px-1 py-0.5 text-[8px] font-medium text-white">
-                          {idx + 1}
-                        </span>
+                        {/* Product image with shadow */}
+                        <div className="overflow-hidden rounded-xl bg-white p-2 shadow-md ring-1 ring-black/5 transition group-hover:shadow-lg">
+                          {p.thumbnail ? (
+                            <div className={`relative overflow-hidden rounded-lg bg-[#fafafa] ${isLarge && selectedProducts.length > 2 ? "h-56 w-56" : "h-40 w-40"}`}>
+                              <Image
+                                src={p.thumbnail}
+                                alt={p.title}
+                                fill
+                                className="object-contain p-1"
+                                sizes={isLarge ? "224px" : "160px"}
+                                unoptimized
+                              />
+                            </div>
+                          ) : (
+                            <div className={`flex items-center justify-center rounded-lg bg-[#f8f7f4] ${isLarge && selectedProducts.length > 2 ? "h-56 w-56" : "h-40 w-40"}`}>
+                              <FaCartShopping className="text-2xl text-[#d5d3cd]" />
+                            </div>
+                          )}
+                        </div>
+                        {/* Label */}
+                        <div className="mt-2 max-w-[180px] text-center">
+                          <p className="truncate text-[11px] font-medium text-[#4a4a5a]">{p.title}</p>
+                          {p.price && (
+                            <p className="mt-0.5 text-xs font-semibold text-[#2d5a3d]">{p.price}</p>
+                          )}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  {pointed.length > 0 && (
-                    <div className="border-t border-[#e8e6e1] p-3">
-                      <div className="flex flex-wrap gap-1.5">
-                        {pointed.filter(p => !p.loading).map((pi) => (
-                          <span key={pi.id} className="rounded-full bg-[#2d5a3d]/10 px-2.5 py-1 text-[10px] font-medium text-[#2d5a3d]">
-                            {pi.label} &middot; {pi.products.length} products
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            )}
           </div>
 
           {/* Shopping List */}
-          {allProducts.length > 0 && (
+          {selectedProducts.length > 0 && (
             <div className="mt-8">
               <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#1a1a2e]">
                 <FaCartShopping className="text-[#2d5a3d]" /> Your Shopping List
-                <span className="rounded-full bg-[#2d5a3d]/10 px-2 py-0.5 text-xs font-medium text-[#2d5a3d]">{allProducts.length}</span>
+                <span className="rounded-full bg-[#2d5a3d]/10 px-2 py-0.5 text-xs font-medium text-[#2d5a3d]">{selectedProducts.length}</span>
               </h3>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {allProducts.map((p, i) => (
+                {selectedProducts.map((p, i) => (
                   <a
                     key={i}
                     href={p.url}
@@ -982,14 +1046,6 @@ function MoodboardStep() {
           )}
 
           {/* Browse more */}
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/explore?from=moodboard"
-              className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d]/10 px-4 py-2 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20"
-            >
-              <FaCompass className="text-[10px]" /> Add More from Explore
-            </Link>
-          </div>
         </div>
       )}
     </div>
