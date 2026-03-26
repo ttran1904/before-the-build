@@ -195,7 +195,7 @@ export default function BathroomWizardPage() {
 
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto">
-        <div className={`mx-auto px-8 py-10 ${currentStep === 3 || currentStep === 4 ? "max-w-6xl" : "max-w-3xl"}`}>
+        <div className={`mx-auto px-8 py-10 ${currentStep === 1 || currentStep === 3 || currentStep === 4 ? "max-w-6xl" : "max-w-3xl"}`}>
           {currentStep === 0 && <GoalAndScopeStep />}
           {currentStep !== 0 && (
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
@@ -349,34 +349,59 @@ function GoalAndScopeStep() {
   );
 }
 
+/* ── Must-Haves Gallery Items (ordered most→least commonly needed) ── */
+const MUST_HAVE_GALLERY = [
+  { label: "New tile (floor)",           slug: "new-tile-floor",          desc: "Replace worn flooring with fresh porcelain, ceramic, or natural stone tile." },
+  { label: "New tile (shower walls)",    slug: "new-tile-shower-walls",   desc: "Waterproof wall tile for your shower — subway, mosaic, or large-format." },
+  { label: "Single vanity",             slug: "single-vanity",           desc: "A standalone sink cabinet — ideal for smaller bathrooms or powder rooms." },
+  { label: "Comfort-height toilet",     slug: "comfort-height-toilet",   desc: "ADA-height bowl (17-19 in.) that's easier to sit down on and stand up from." },
+  { label: "Exhaust fan upgrade",       slug: "exhaust-fan-upgrade",     desc: "Powerful, quiet ventilation to prevent mold and moisture damage." },
+  { label: "Recessed lighting",         slug: "recessed-lighting",       desc: "Flush ceiling fixtures that provide even, shadow-free illumination." },
+  { label: "Walk-in shower",            slug: "walk-in-shower",          desc: "Curbless or low-threshold shower — spacious, modern, and accessible." },
+  { label: "Bathtub",                   slug: "bathtub",                 desc: "Freestanding, alcove, or drop-in tub for soaking and relaxation." },
+  { label: "Double vanity",             slug: "double-vanity",           desc: "Two-sink vanity for shared bathrooms — more counter space and storage." },
+  { label: "Glass shower door",         slug: "glass-shower-door",       desc: "Frameless or semi-frameless glass enclosure that opens up the room." },
+  { label: "Medicine cabinet",          slug: "medicine-cabinet",        desc: "Recessed or surface-mount mirrored cabinet for organized storage." },
+  { label: "Rain showerhead",           slug: "rain-showerhead",         desc: "Oversized ceiling-mount head that mimics gentle rainfall." },
+  { label: "LED mirror",                slug: "led-mirror",              desc: "Backlit or edge-lit vanity mirror with built-in LED lighting." },
+  { label: "Dimmer switches",           slug: "dimmer-switches",         desc: "Adjustable light controls for mood lighting and energy savings." },
+  { label: "Handheld showerhead",       slug: "handheld-showerhead",     desc: "Detachable head on a flexible hose — great for rinsing and cleaning." },
+  { label: "Non-slip flooring",         slug: "non-slip-flooring",       desc: "Textured tile or slip-resistant finish for wet-area safety." },
+  { label: "Grab bars",                 slug: "grab-bars",               desc: "Wall-mounted safety bars near shower, tub, and toilet areas." },
+  { label: "Heated floors",             slug: "heated-floors",           desc: "Electric radiant mats under tile for warm feet on cold mornings." },
+  { label: "Built-in shelving",         slug: "built-in-shelving",       desc: "Recessed niches or open shelves built into shower or vanity walls." },
+  { label: "Towel warmer",              slug: "towel-warmer",            desc: "Wall-mounted heated rack that keeps towels warm and dry." },
+  { label: "Bidet/bidet seat",          slug: "bidet-bidet-seat",        desc: "Add-on bidet seat or standalone bidet for improved hygiene." },
+  { label: "Under-cabinet lighting",    slug: "under-cabinet-lighting",  desc: "LED strip or puck lights beneath the vanity for ambient glow." },
+];
+
+/* Image extension lookup (some downloads may be .webp or .png) */
+function mustHaveImageSrc(slug: string) {
+  // At build time Next.js will resolve whichever file exists.
+  // We default to .jpg; the download script may have saved .webp for some.
+  const EXT_OVERRIDES: Record<string, string> = { "double-vanity": "webp" };
+  const ext = EXT_OVERRIDES[slug] || "jpg";
+  return `/images/must-haves/${slug}.${ext}`;
+}
+
 /* ── Must-Haves Step ── */
 function MustHavesStep() {
   const { mustHaves, setMustHaves, niceToHaves, setNiceToHaves } = useWizardStore();
 
-  const ALL_ITEMS = [
-    "Walk-in shower", "Bathtub", "Double vanity", "Single vanity", "Heated floors",
-    "Rain showerhead", "Handheld showerhead", "Grab bars", "Non-slip flooring",
-    "Medicine cabinet", "LED mirror", "Towel warmer", "Built-in shelving",
-    "Comfort-height toilet", "Bidet/bidet seat", "Exhaust fan upgrade",
-    "New tile (floor)", "New tile (shower walls)", "Glass shower door",
-    "Recessed lighting", "Dimmer switches", "Under-cabinet lighting",
-  ];
+  const cycle = (label: string) => {
+    const isMust = mustHaves.includes(label);
+    const isNice = niceToHaves.includes(label);
 
-  const toggleMustHave = (item: string) => {
-    if (mustHaves.includes(item)) {
-      setMustHaves(mustHaves.filter((i) => i !== item));
+    if (!isMust && !isNice) {
+      // unselected → must-have
+      setMustHaves([...mustHaves, label]);
+    } else if (isMust) {
+      // must-have → nice-to-have
+      setMustHaves(mustHaves.filter((i) => i !== label));
+      setNiceToHaves([...niceToHaves, label]);
     } else {
-      setNiceToHaves(niceToHaves.filter((i) => i !== item));
-      setMustHaves([...mustHaves, item]);
-    }
-  };
-
-  const toggleNiceToHave = (item: string) => {
-    if (niceToHaves.includes(item)) {
-      setNiceToHaves(niceToHaves.filter((i) => i !== item));
-    } else {
-      setMustHaves(mustHaves.filter((i) => i !== item));
-      setNiceToHaves([...niceToHaves, item]);
+      // nice-to-have → remove
+      setNiceToHaves(niceToHaves.filter((i) => i !== label));
     }
   };
 
@@ -398,30 +423,46 @@ function MustHavesStep() {
         </span>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        {ALL_ITEMS.map((item) => {
-          const isMust = mustHaves.includes(item);
-          const isNice = niceToHaves.includes(item);
+      {/* ── Gallery grid ── */}
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {MUST_HAVE_GALLERY.map((item) => {
+          const isMust = mustHaves.includes(item.label);
+          const isNice = niceToHaves.includes(item.label);
           return (
             <button
-              key={item}
-              onClick={() => {
-                if (!isMust && !isNice) toggleMustHave(item);
-                else if (isMust) {
-                  setMustHaves(mustHaves.filter((i) => i !== item));
-                  toggleNiceToHave(item);
-                }
-                else toggleNiceToHave(item); // removes
-              }}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+              key={item.slug}
+              onClick={() => cycle(item.label)}
+              className={`group relative flex flex-col overflow-hidden rounded-xl border-2 text-left transition-all ${
                 isMust
-                  ? "border-[#2d5a3d] bg-[#2d5a3d] text-white"
+                  ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/30"
                   : isNice
-                    ? "border-[#d4956a] bg-[#d4956a]/10 text-[#d4956a]"
-                    : "border-[#e8e6e1] text-[#4a4a5a] hover:border-[#d5d3cd]"
+                    ? "border-[#d4956a] ring-2 ring-[#d4956a]/30"
+                    : "border-[#e8e6e1] hover:border-[#d5d3cd] hover:shadow-md"
               }`}
             >
-              {item}
+              {/* Image */}
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#f0efeb]">
+                <Image
+                  src={mustHaveImageSrc(item.slug)}
+                  alt={item.label}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                {/* Selection badge */}
+                {(isMust || isNice) && (
+                  <span className={`absolute top-2 right-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold shadow ${
+                    isMust ? "bg-[#2d5a3d] text-white" : "bg-[#d4956a] text-white"
+                  }`}>
+                    {isMust ? <><FaCheck className="text-[8px]" /> Must</> : "Nice"}
+                  </span>
+                )}
+              </div>
+              {/* Text */}
+              <div className="flex flex-1 flex-col p-3">
+                <span className="text-sm font-semibold text-[#1a1a2e] leading-tight">{item.label}</span>
+                <span className="mt-1 text-[11px] leading-snug text-[#6a6a7a] line-clamp-2">{item.desc}</span>
+              </div>
             </button>
           );
         })}
