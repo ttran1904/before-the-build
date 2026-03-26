@@ -16,6 +16,7 @@ import {
   FaExpand, FaSwatchbook, FaCartShopping, FaSpinner, FaCrosshairs,
   FaLink, FaCircleExclamation,
   FaDollarSign, FaSackDollar, FaGem,
+  FaToilet, FaShower, FaBath, FaCrown,
 } from "react-icons/fa6";
 import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
 import { BATHROOM_SIZES } from "@/lib/room-sizes/bathroom";
@@ -407,19 +408,21 @@ function MustHavesStep() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">What do you need?</h2>
-      <p className="mt-2 text-sm text-[#6a6a7a]">
-        Click once for <span className="font-semibold text-[#2d5a3d]">Must-Have</span>,
-        twice for <span className="font-semibold text-[#d4956a]">Nice-to-Have</span>,
-        three times to remove.
-      </p>
+      <h2 className="text-2xl font-bold text-[#1a1a2e]">Must-Haves vs. Nice-to-Haves</h2>
+      <p className="mt-1 text-base text-[#4a4a5a]">Tap each item to set its priority for your renovation.</p>
 
-      <div className="mt-4 flex gap-4 text-xs">
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-[#2d5a3d]" /> Must-Have ({mustHaves.length})
+      {/* Instruction chips */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <span className="inline-flex items-center gap-2 rounded-full border-2 border-[#2d5a3d] bg-[#2d5a3d]/10 px-3 py-1 text-sm font-semibold text-[#2d5a3d]">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#2d5a3d]" /> 1st click — Must-Have
+          <span className="ml-1 rounded-full bg-[#2d5a3d] px-1.5 text-xs text-white">{mustHaves.length}</span>
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-[#d4956a]" /> Nice-to-Have ({niceToHaves.length})
+        <span className="inline-flex items-center gap-2 rounded-full border-2 border-[#d4956a] bg-[#d4956a]/10 px-3 py-1 text-sm font-semibold text-[#d4956a]">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#d4956a]" /> 2nd click — Nice-to-Have
+          <span className="ml-1 rounded-full bg-[#d4956a] px-1.5 text-xs text-white">{niceToHaves.length}</span>
+        </span>
+        <span className="inline-flex items-center gap-2 rounded-full border-2 border-[#d5d3cd] bg-[#f0efeb] px-3 py-1 text-sm font-medium text-[#6a6a7a]">
+          3rd click — Remove
         </span>
       </div>
 
@@ -432,12 +435,12 @@ function MustHavesStep() {
             <button
               key={item.slug}
               onClick={() => cycle(item.label)}
-              className={`group relative flex flex-col overflow-hidden rounded-xl border-2 text-left transition-all ${
+              className={`group relative flex flex-col overflow-hidden rounded-xl text-left transition-all ${
                 isMust
-                  ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/30"
+                  ? "border-4 border-[#2d5a3d]"
                   : isNice
-                    ? "border-[#d4956a] ring-2 ring-[#d4956a]/30"
-                    : "border-[#e8e6e1] hover:border-[#d5d3cd] hover:shadow-md"
+                    ? "border-4 border-[#d4956a]"
+                    : "border-2 border-[#e8e6e1] hover:border-[#d5d3cd] hover:shadow-md"
               }`}
             >
               {/* Image */}
@@ -458,10 +461,9 @@ function MustHavesStep() {
                   </span>
                 )}
               </div>
-              {/* Text */}
-              <div className="flex flex-1 flex-col p-3">
+              {/* Label */}
+              <div className="px-3 py-2.5">
                 <span className="text-sm font-semibold text-[#1a1a2e] leading-tight">{item.label}</span>
-                <span className="mt-1 text-[11px] leading-snug text-[#6a6a7a] line-clamp-2">{item.desc}</span>
               </div>
             </button>
           );
@@ -504,21 +506,36 @@ function BudgetStep() {
         </p>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
-          {BATHROOM_SIZES.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setBathroomSize(s.id)}
-              className={`rounded-xl border-2 p-4 text-left transition ${
-                bathroomSize === s.id
-                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-              }`}
-            >
-              <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
-              <div className="text-xs text-[#6a6a7a]">{s.desc}</div>
-              <div className="mt-1 text-xs font-medium text-[#2d5a3d]">{s.sqft}</div>
-            </button>
-          ))}
+          {BATHROOM_SIZES.map((s) => {
+            const sizeIcon = {
+              "half-bath": <FaToilet className="text-lg" />,
+              "three-quarter": <FaShower className="text-lg" />,
+              "full-bath": <FaBath className="text-lg" />,
+              primary: <FaCrown className="text-lg" />,
+            }[s.id];
+            return (
+              <button
+                key={s.id}
+                onClick={() => setBathroomSize(s.id)}
+                className={`rounded-xl border-2 p-4 text-left transition ${
+                  bathroomSize === s.id
+                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#2d5a3d]">{sizeIcon}</span>
+                    <div>
+                      <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
+                      <div className="text-xs text-[#6a6a7a]">{s.desc}</div>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-xs font-medium text-[#2d5a3d]">{s.sqft}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
