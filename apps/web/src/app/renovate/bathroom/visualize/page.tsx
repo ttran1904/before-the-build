@@ -112,7 +112,7 @@ export default function VisualizePage() {
       {/* Header */}
       <header className="border-b border-[#e8e6e1] bg-white px-6 py-3">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between">
-          <Link href="/dashboard/projects/new/bathroom" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
+          <Link href="/renovate/bathroom" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
             <FaArrowLeft className="text-xs" /> Back to Questionnaire
           </Link>
           <div className="flex items-center gap-4">
@@ -325,7 +325,7 @@ export default function VisualizePage() {
               </span>
             </div>
             <Link
-              href="/dashboard/projects/new/bathroom/timeline"
+              href="/renovate/bathroom/timeline"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d5a3d] py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
             >
               <FaWandMagicSparkles className="text-xs" /> Continue to Timeline

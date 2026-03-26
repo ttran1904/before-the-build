@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import {
   FaArrowLeft, FaArrowRight, FaList, FaTableColumns, FaChartGantt,
@@ -41,7 +41,18 @@ export default function TimelinePage() {
   const [syncing, setSyncing] = useState(false);
   const [synced, setSynced] = useState(false);
 
+  /* Dirty-check: only re-fetch when wizard inputs actually change */
+  const inputHash = useMemo(
+    () => [store.scope, store.goal, store.budgetTier].join("|"),
+    [store.scope, store.goal, store.budgetTier],
+  );
+  const fetchedHashRef = useRef("");
+
   const fetchTasks = useCallback(async () => {
+    if (fetchedHashRef.current === inputHash && tasks.length > 0) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/ai/generate-tasks", {
@@ -55,11 +66,12 @@ export default function TimelinePage() {
       });
       const data = await res.json();
       setTasks(data.tasks || []);
+      fetchedHashRef.current = inputHash;
     } catch {
       setTasks([]);
     }
     setLoading(false);
-  }, [store.scope, store.goal, store.budgetTier]);
+  }, [inputHash, store.scope, store.goal, store.budgetTier, tasks.length]);
 
   useEffect(() => {
     fetchTasks();
@@ -104,7 +116,7 @@ export default function TimelinePage() {
       {/* Header */}
       <header className="border-b border-[#e8e6e1] bg-white">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-3">
-          <Link href="/dashboard/projects/new/bathroom/visualize" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
+          <Link href="/renovate/bathroom/visualize" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
             <FaArrowLeft className="text-xs" /> Back to Design
           </Link>
           <div className="flex items-center gap-3">
@@ -276,73 +288,206 @@ function KanbanView({
   );
 }
 
-/* ── Gantt View ── */
+/* ── Gantt View (frappe-gantt) ── */
 function GanttView({ tasks }: { tasks: Task[] }) {
-  // Calculate start offsets based on dependencies
-  const taskPositions = new Map<string, { start: number; end: number }>();
-  let maxEnd = 0;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const ganttRef = useRef<unknown>(null);
 
-  tasks.forEach((task) => {
-    let start = 0;
-    for (const dep of task.dependencies) {
-      const depPos = taskPositions.get(dep);
-      if (depPos && depPos.end > start) {
-        start = depPos.end;
+  useEffect(() => {
+    if (!containerRef.current || tasks.length === 0) return;
+
+    // Build start dates based on dependency offsets
+    const taskPositions = new Map<string, { start: number; end: number }>();
+    tasks.forEach((task) => {
+      let start = 0;
+      for (const dep of task.dependencies) {
+        const depPos = taskPositions.get(dep);
+        if (depPos && depPos.end > start) start = depPos.end;
       }
-    }
-    const end = start + task.duration_days;
-    taskPositions.set(task.name, { start, end });
-    if (end > maxEnd) maxEnd = end;
-  });
+      taskPositions.set(task.name, { start, end: start + task.duration_days });
+    });
 
-  const totalDays = Math.max(maxEnd, 1);
+    // Convert to frappe-gantt format
+    const baseDate = new Date();
+    const frappeTaskList = tasks.map((task, i) => {
+      const pos = taskPositions.get(task.name)!;
+      const startDate = new Date(baseDate);
+      startDate.setDate(startDate.getDate() + pos.start);
+      const endDate = new Date(baseDate);
+      endDate.setDate(endDate.getDate() + pos.end);
+
+      // Format as YYYY-MM-DD strings for frappe-gantt v1.x
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+      return {
+        id: `task-${i}`,
+        name: task.name,
+        start: fmt(startDate),
+        end: fmt(endDate),
+        progress: task.status === "done" ? 100 : task.status === "in_progress" ? 50 : 0,
+        dependencies: task.dependencies
+          .map((dep) => {
+            const depIndex = tasks.findIndex((t) => t.name === dep);
+            return depIndex >= 0 ? `task-${depIndex}` : null;
+          })
+          .filter(Boolean)
+          .join(", "),
+        custom_class: `gantt-phase-${task.phase.toLowerCase().replace(/\s+/g, "-")}`,
+      };
+    });
+
+    // Build a map of task index → phase for direct coloring
+    const taskPhaseMap = new Map(
+      tasks.map((t, i) => [`task-${i}`, t.phase])
+    );
+
+    // Dynamically import frappe-gantt (DOM-dependent, no SSR)
+    import("frappe-gantt").then((mod) => {
+      const Gantt = mod.default;
+      // Clear previous chart
+      if (!containerRef.current) return;
+
+      // Inject frappe-gantt CSS if not already loaded
+      if (!document.getElementById("frappe-gantt-css")) {
+        const link = document.createElement("link");
+        link.id = "frappe-gantt-css";
+        link.rel = "stylesheet";
+        link.href = "/frappe-gantt.css";
+        document.head.appendChild(link);
+      }
+
+      containerRef.current.innerHTML = "";
+
+      ganttRef.current = new Gantt(containerRef.current, frappeTaskList, {
+        view_mode: "Day",
+        bar_height: 28,
+        bar_corner_radius: 4,
+        arrow_curve: 6,
+        padding: 18,
+        language: "en",
+        on_click: () => {},
+        on_date_change: () => {},
+        on_progress_change: () => {},
+        on_view_change: () => {},
+      });
+
+      // Directly color bars by phase after render
+      requestAnimationFrame(() => {
+        if (!containerRef.current) return;
+        const barWrappers = containerRef.current.querySelectorAll(".bar-wrapper");
+        barWrappers.forEach((wrapper) => {
+          const dataId = wrapper.getAttribute("data-id");
+          if (!dataId) return;
+          const phase = taskPhaseMap.get(dataId);
+          const color = phase ? PHASE_COLORS[phase] : "#2d5a3d";
+          if (color) {
+            const bar = wrapper.querySelector(".bar") as SVGRectElement | null;
+            if (bar) bar.setAttribute("fill", color);
+            const progress = wrapper.querySelector(".bar-progress") as SVGRectElement | null;
+            if (progress) progress.setAttribute("fill", color);
+          }
+        });
+      });
+    });
+  }, [tasks]);
 
   return (
-    <div className="rounded-xl border border-[#e8e6e1] bg-white p-6 shadow-sm">
-      <h3 className="mb-4 text-lg font-semibold text-[#1a1a2e]">Project Timeline</h3>
-
-      {/* Week headers */}
-      <div className="mb-2 ml-52 flex">
-        {Array.from({ length: Math.ceil(totalDays / 7) }).map((_, i) => (
-          <div
-            key={i}
-            className="text-center text-[10px] text-[#9a9aaa]"
-            style={{ width: `${(7 / totalDays) * 100}%` }}
-          >
-            Week {i + 1}
-          </div>
-        ))}
+    <div className="rounded-xl border border-[#e8e6e1] bg-white shadow-sm overflow-hidden">
+      {/* Title + legend header */}
+      <div className="border-b border-[#e8e6e1] px-6 py-4">
+        <h3 className="mb-2 text-lg font-semibold text-[#1a1a2e]">Project Timeline</h3>
+        <p className="mb-3 text-xs text-[#9a9aaa]">
+          AI-generated renovation schedule. Phases are color-coded with dependency arrows shown.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          {Object.entries(PHASE_COLORS).map(([phase, color]) => (
+            <span key={phase} className="flex items-center gap-1.5 text-xs text-[#6a6a7a]">
+              <span className="h-2.5 w-2.5 rounded" style={{ background: color }} />
+              {phase}
+            </span>
+          ))}
+        </div>
       </div>
 
-      {/* Gantt rows */}
-      <div className="space-y-1.5">
-        {tasks.map((task) => {
-          const pos = taskPositions.get(task.name);
-          if (!pos) return null;
-          const leftPct = (pos.start / totalDays) * 100;
-          const widthPct = Math.max((task.duration_days / totalDays) * 100, 2);
-
-          return (
-            <div key={task.name} className="flex items-center gap-3 py-1">
-              <span className="w-48 shrink-0 truncate text-xs text-[#4a4a5a]">{task.name}</span>
-              <div className="relative h-7 flex-1 rounded bg-[#f3f2ef]">
-                <div
-                  className="absolute top-0 h-full rounded transition-all"
-                  style={{
-                    background: PHASE_COLORS[task.phase] || "#9a9aaa",
-                    left: `${leftPct}%`,
-                    width: `${widthPct}%`,
-                  }}
-                >
-                  <span className="absolute inset-0 flex items-center px-2 text-[9px] font-medium text-white">
-                    {task.duration_days}d
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      {/* frappe-gantt renders here */}
+      <div className="w-full overflow-x-auto">
+        <div ref={containerRef} className="gantt-container min-w-[900px]" />
       </div>
+
+      {/* Phase-specific bar color overrides */}
+      <style jsx global>{`
+        .gantt-container {
+          --g-bar-color: #2d5a3d;
+          --g-bar-border: #2d5a3d;
+        }
+        .gantt-container .grid-header {
+          background-color: #fafaf8;
+        }
+        .gantt-container .gantt .grid-row {
+          fill: #ffffff;
+        }
+        .gantt-container .gantt .grid-row:nth-child(even) {
+          fill: #fdfcfa;
+        }
+        .gantt-container .gantt .row-line {
+          stroke: #f3f2ef;
+        }
+        .gantt-container .gantt .tick {
+          stroke: #f0efeb;
+          stroke-dasharray: none;
+        }
+        .gantt-container .gantt .today-highlight {
+          fill: rgba(45, 90, 61, 0.06);
+        }
+        .gantt-container .gantt .arrow {
+          stroke: #8a8a9a;
+          stroke-width: 1.8;
+        }
+        .gantt-container .gantt .bar-label {
+          font-size: 11px;
+          font-weight: 600;
+          fill: #fff;
+        }
+        .gantt-container .gantt .bar-wrapper .bar-label.big {
+          font-size: 11px;
+          fill: #1a1a2e;
+        }
+        .gantt-container .lower-text,
+        .gantt-container .upper-text {
+          font-size: 11px;
+          color: #9a9aaa;
+          font-weight: 500;
+        }
+        .gantt-container .gantt .lower-text,
+        .gantt-container .gantt .upper-text {
+          font-size: 11px;
+          fill: #9a9aaa;
+          font-weight: 500;
+        }
+        .gantt-container .gantt .bar-wrapper:hover .bar {
+          filter: brightness(1.08);
+        }
+        /* Phase colors */
+        .gantt .bar-wrapper.gantt-phase-planning .bar {
+          fill: #87CEEB !important;
+        }
+        .gantt .bar-wrapper.gantt-phase-demolition .bar {
+          fill: #d4956a !important;
+        }
+        .gantt .bar-wrapper.gantt-phase-rough-work .bar {
+          fill: #2d5a3d !important;
+        }
+        .gantt .bar-wrapper.gantt-phase-installation .bar {
+          fill: #d4c5e8 !important;
+        }
+        .gantt .bar-wrapper.gantt-phase-finishing .bar {
+          fill: #bde0c0 !important;
+        }
+        /* Popup styling */
+        .gantt-container .popup-wrapper .pointer {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }

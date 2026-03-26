@@ -150,7 +150,7 @@ export default function BuildBookPage() {
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-[#e8e6e1] bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Link href="/dashboard/projects/new/bathroom/timeline" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
+          <Link href="/renovate/bathroom/timeline" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
             <FaArrowLeft className="text-xs" /> Back to Timeline
           </Link>
           <div className="flex gap-2">

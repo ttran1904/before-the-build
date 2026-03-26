@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -12,7 +12,7 @@ import {
   FaCompass, FaTrash, FaPlus,
   FaCalendarDays, FaHelmetSafety, FaStar, FaStarHalfStroke,
   FaCircleCheck, FaThumbsUp, FaClock, FaDiamond,
-  FaArrowUpRightFromSquare, FaLocationDot, FaShieldHalved,
+  FaArrowUpRightFromSquare, FaLocationDot, FaShieldHalved, FaMagnifyingGlass,
 } from "react-icons/fa6";
 import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier } from "@/lib/store";
 import Link from "next/link";
@@ -43,7 +43,7 @@ interface TimelineTask {
 interface Contractor {
   name: string; rating: number; reviewCount: number; specialty: string;
   location: string; price: string; thumbtackUrl: string; hiredCount: string;
-  responseTime: string; verified: boolean;
+  responseTime: string; verified: boolean; thumbnail?: string;
 }
 
 export default function BathroomWizardPage() {
@@ -60,6 +60,7 @@ export default function BathroomWizardPage() {
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [contractorLoading, setContractorLoading] = useState(false);
   const contractorHashRef = useRef("");
+  const [contractorZip, setContractorZip] = useState("");
 
   const currentHash = useMemo(() => wizardInputHash(store), [store.goal, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
 
@@ -81,27 +82,29 @@ export default function BathroomWizardPage() {
       timelineHashRef.current = currentHash;
     } catch { /* keep existing data */ }
     setTimelineLoading(false);
-  }, [currentHash, store, timelineTasks.length]);
+  }, [currentHash, store.goal, store.scope, store.budgetTier, store.bathroomSize, store.mustHaves, store.style, timelineTasks.length]);
 
-  /* Fetch contractors — only if inputs changed */
-  const fetchContractors = useCallback(async () => {
-    if (currentHash === contractorHashRef.current && contractors.length > 0) return;
+  /* Fetch contractors — user-triggered with zip code */
+  const fetchContractors = useCallback(async (zip: string) => {
+    const contractorKey = `${currentHash}|${zip}`;
+    if (contractorKey === contractorHashRef.current && contractors.length > 0) return;
     setContractorLoading(true);
     try {
-      const params = new URLSearchParams({ scope: store.scope || "full", zip: "94103" });
+      const params = new URLSearchParams({ scope: store.scope || "full", zip });
       const res = await fetch(`/api/ai/search-contractors?${params}`);
       const data = await res.json();
       setContractors(data.contractors || []);
-      contractorHashRef.current = currentHash;
+      contractorHashRef.current = contractorKey;
     } catch { /* keep existing data */ }
     setContractorLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentHash, store.scope, contractors.length]);
+
+  const needsTimelineRefresh = currentHash !== timelineHashRef.current || timelineTasks.length === 0;
 
   const next = () => {
     const nextIdx = Math.min(currentStep + 1, STEPS.length - 1);
-    // Trigger AI when entering Timeline or Contractor steps
-    if (STEPS[nextIdx]?.id === "timeline") fetchTimeline();
-    if (STEPS[nextIdx]?.id === "contractor") fetchContractors();
+    if (STEPS[nextIdx]?.id === "timeline" && needsTimelineRefresh) fetchTimeline();
     setCurrentStep(nextIdx);
   };
   const back = () => setCurrentStep((s) => Math.max(s - 1, 0));
@@ -109,100 +112,105 @@ export default function BathroomWizardPage() {
   const progress = ((currentStep + 1) / STEPS.length) * 100;
 
   return (
-    <div className="min-h-screen bg-[#f8f7f4]">
-      {/* Header */}
-      <header className="border-b border-[#e8e6e1] bg-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Link href="/explore" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
-            <FaArrowLeft className="text-xs" /> Back to Explore
-          </Link>
-          <span className="text-sm font-medium text-[#4a4a5a]">
-            Bathroom Renovation • Step {currentStep + 1} of {STEPS.length}
-          </span>
+    <div className="flex min-h-screen bg-[#f8f7f4]">
+      {/* ── Green left sidebar ── */}
+      <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-[#2d5a3d]">
+        {/* Brand */}
+        <div className="px-6 pt-6 pb-2">
+          <h1 className="text-lg font-bold text-white">Before The Build</h1>
+          <p className="mt-1 text-xs text-white/60">Bathroom Renovation</p>
         </div>
-        {/* Progress bar */}
-        <div className="h-1 bg-[#e8e6e1]">
-          <div className="h-full bg-[#2d5a3d] transition-all duration-500" style={{ width: `${progress}%` }} />
-        </div>
-      </header>
 
-      {/* Horizontal step bar */}
-      <div className="mx-auto mt-6 max-w-5xl overflow-x-auto px-6">
-        <div className="flex items-center min-w-max">
+        {/* Progress bar */}
+        <div className="mx-6 mt-4 h-1 rounded-full bg-white/15">
+          <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="mx-6 mt-2 text-[10px] text-white/50">Step {currentStep + 1} of {STEPS.length}</p>
+
+        {/* Step list */}
+        <nav className="mt-4 flex-1 space-y-1 px-3 overflow-y-auto">
           {STEPS.map((step, i) => {
             const done = i < currentStep;
             const active = i === currentStep;
             return (
-              <div key={step.id} className="contents">
-                <button
-                  onClick={() => done && setCurrentStep(i)}
-                  className={`group flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 transition ${
-                    active
-                      ? "border-[#2d5a3d] bg-[#2d5a3d] text-white shadow-md shadow-[#2d5a3d]/20"
-                      : done
-                        ? "cursor-pointer border-[#2d5a3d]/20 bg-[#2d5a3d]/10 text-[#2d5a3d] hover:bg-[#2d5a3d]/20"
-                        : "border-[#d5d3cd] text-[#b0b0ba]"
-                  }`}
-                >
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${
-                    active ? "bg-white/20" : done ? "bg-[#2d5a3d] text-white" : "bg-[#e8e6e1]"
-                  }`}>
-                    {done ? <FaCheck /> : <step.icon />}
-                  </span>
-                  <span className="text-xs font-semibold">{step.label}</span>
-                </button>
-                {i < STEPS.length - 1 && (
-                  <div className={`mx-2 h-[2px] min-w-[20px] flex-1 rounded-full transition-colors ${
-                    done ? "bg-[#2d5a3d]" : "bg-[#d5d3cd]"
-                  }`} />
+              <button
+                key={step.id}
+                onClick={() => done && setCurrentStep(i)}
+                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${
+                  active
+                    ? "bg-white/15 text-white"
+                    : done
+                      ? "cursor-pointer text-white/80 hover:bg-white/10"
+                      : "text-white/35"
+                }`}
+              >
+                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs transition ${
+                  active
+                    ? "bg-white text-[#2d5a3d]"
+                    : done
+                      ? "bg-white/25 text-white"
+                      : "bg-white/10 text-white/40"
+                }`}>
+                  {done ? <FaCheck className="text-[10px]" /> : <step.icon className="text-[11px]" />}
+                </span>
+                <span className="text-sm font-medium">{step.label}</span>
+                {done && (
+                  <FaCircleCheck className="ml-auto text-xs text-white/40" />
                 )}
-              </div>
+              </button>
             );
           })}
-        </div>
-      </div>
+        </nav>
 
-      {/* Step content */}
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className={`rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5 ${
-          currentStep === 5 ? "max-w-none !mx-0" : ""
-        }`}>
-          {currentStep === 0 && <GoalStep />}
-          {currentStep === 1 && <ScopeStep />}
-          {currentStep === 2 && <MustHavesStep />}
-          {currentStep === 3 && <BudgetStep />}
-          {currentStep === 4 && <MoodboardStep />}
-          {currentStep === 5 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
-          {currentStep === 6 && <ContractorStep contractors={contractors} loading={contractorLoading} />}
-          {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractors={contractors} />}
+        {/* Back to explore link */}
+        <div className="border-t border-white/10 px-6 py-4">
+          <Link href="/explore" className="flex items-center gap-2 text-xs text-white/50 transition hover:text-white/80">
+            <FaArrowLeft className="text-[10px]" /> Back to Explore
+          </Link>
         </div>
+      </aside>
 
-        {/* Navigation */}
-        <div className="mt-6 flex justify-between">
-          <button
-            onClick={back}
-            disabled={currentStep === 0}
-            className="flex items-center gap-2 rounded-lg border border-[#d5d3cd] px-6 py-2.5 text-sm font-medium text-[#4a4a5a] transition hover:bg-white disabled:opacity-30"
-          >
-            <FaArrowLeft className="text-xs" /> Back
-          </button>
-          {currentStep < STEPS.length - 1 ? (
+      {/* ── Main content ── */}
+      <main className="flex-1 overflow-y-auto">
+        <div className={`mx-auto px-8 py-10 ${currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}>
+          <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
+            {currentStep === 0 && <GoalStep />}
+            {currentStep === 1 && <ScopeStep />}
+            {currentStep === 2 && <MustHavesStep />}
+            {currentStep === 3 && <BudgetStep />}
+            {currentStep === 4 && <MoodboardStep />}
+            {currentStep === 5 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
+            {currentStep === 6 && <ContractorStep contractors={contractors} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
+            {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractors={contractors} />}
+          </div>
+
+          {/* Navigation */}
+          <div className="mt-6 flex justify-between">
             <button
-              onClick={next}
-              className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
+              onClick={back}
+              disabled={currentStep === 0}
+              className="flex items-center gap-2 rounded-lg border border-[#d5d3cd] px-6 py-2.5 text-sm font-medium text-[#4a4a5a] transition hover:bg-white disabled:opacity-30"
             >
-              Next <FaArrowRight className="text-xs" />
+              <FaArrowLeft className="text-xs" /> Back
             </button>
-          ) : (
-            <button
-              onClick={() => router.push("/dashboard/projects/new/bathroom/visualize")}
-              className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
-            >
-              <FaWandMagicSparkles className="text-xs" /> See Your Design
-            </button>
-          )}
+            {currentStep < STEPS.length - 1 ? (
+              <button
+                onClick={next}
+                className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
+              >
+                Next <FaArrowRight className="text-xs" />
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push("/renovate/bathroom/visualize")}
+                className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
+              >
+                <FaWandMagicSparkles className="text-xs" /> See Your Design
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
@@ -482,29 +490,44 @@ function BudgetStep() {
 
 /* ── Moodboard Step ── */
 function MoodboardStep() {
-  const { style, setStyle } = useWizardStore();
   const { items, removeItem } = useMoodboardStore();
-
-  const STYLES: { id: DesignStyle; label: string; desc: string }[] = [
-    { id: "modern", label: "Modern", desc: "Floating vanity, large-format tile, frameless glass" },
-    { id: "minimalist", label: "Minimalist", desc: "Clean lines, neutral palette, zero clutter" },
-    { id: "farmhouse", label: "Farmhouse", desc: "Shiplap, clawfoot tub, reclaimed wood" },
-    { id: "coastal", label: "Coastal", desc: "Light blues, natural textures, breezy feel" },
-    { id: "industrial", label: "Industrial", desc: "Exposed pipe, concrete, matte black fixtures" },
-    { id: "scandinavian", label: "Scandinavian", desc: "White + wood, functional, warm minimal" },
-    { id: "mid_century_modern", label: "Mid-Century Modern", desc: "Retro tile, bold color, organic shapes" },
-    { id: "japandi", label: "Japandi", desc: "Japanese minimalism + Scandinavian warmth" },
-    { id: "traditional", label: "Traditional", desc: "Classic fixtures, marble, ornate details" },
-    { id: "bohemian", label: "Bohemian", desc: "Colorful tile, eclectic mix, bold patterns" },
-    { id: "art_deco", label: "Art Deco", desc: "Gold accents, geometric tile, glamour" },
-  ];
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Moodboard</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
-        Review your saved inspiration images, add more from Explore, and pick your preferred style.
+        Review your saved inspiration images — these will guide your renovation design.
       </p>
+
+      {/* Delete confirmation modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-[#e8e6e1] bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-[#1a1a2e]">Remove from Moodboard?</h3>
+            <p className="mt-2 text-sm text-[#6a6a7a]">
+              Are you sure you want to remove this image from your moodboard?
+            </p>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="rounded-lg border border-[#d5d3cd] px-4 py-2 text-sm font-medium text-[#4a4a5a] transition hover:bg-[#f8f7f4]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  removeItem(confirmDeleteId);
+                  setConfirmDeleteId(null);
+                }}
+                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Saved moodboard images */}
       <div className="mt-6">
@@ -513,7 +536,7 @@ function MoodboardStep() {
             Saved Inspiration ({items.length})
           </h3>
           <Link
-            href="/explore"
+            href="/explore?from=moodboard"
             className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d]/10 px-3 py-1.5 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20"
           >
             <FaCompass className="text-[10px]" /> Browse Explore
@@ -534,7 +557,7 @@ function MoodboardStep() {
                     unoptimized
                   />
                   <button
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => setConfirmDeleteId(item.id)}
                     className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition group-hover:opacity-100 hover:bg-red-500"
                   >
                     <FaTrash className="text-[9px]" />
@@ -549,7 +572,7 @@ function MoodboardStep() {
             ))}
             {/* Add more card */}
             <Link
-              href="/explore"
+              href="/explore?from=moodboard"
               className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] text-[#9a9aaa] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
             >
               <FaPlus className="text-lg" />
@@ -558,7 +581,7 @@ function MoodboardStep() {
           </div>
         ) : (
           <Link
-            href="/explore"
+            href="/explore?from=moodboard"
             className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-10 transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
           >
             <FaImages className="text-3xl text-[#9a9aaa]" />
@@ -571,43 +594,21 @@ function MoodboardStep() {
           </Link>
         )}
       </div>
-
-      {/* Style picker */}
-      <div className="mt-8">
-        <h3 className="mb-3 text-sm font-semibold text-[#1a1a2e]">Design Style</h3>
-        <p className="mb-4 text-xs text-[#6a6a7a]">
-          Pick a style to guide AI visualizations and product recommendations.
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {STYLES.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setStyle(s.id)}
-              className={`rounded-xl border-2 p-4 text-left transition ${
-                style === s.id
-                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-              }`}
-            >
-              <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
-              <div className="mt-0.5 text-xs text-[#6a6a7a]">{s.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
 
-/* ── Timeline Step (Bryntum-inspired Gantt chart) ── */
+/* ── Timeline Step (frappe-gantt) ── */
+const TIMELINE_PHASE_COLORS: Record<string, string> = {
+  Planning: "#3b82f6",
+  Demolition: "#ef4444",
+  "Rough-In": "#f97316",
+  Installation: "#22c55e",
+  Finishing: "#a855f7",
+};
+
 function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: boolean }) {
-  const PHASE_COLORS: Record<string, string> = {
-    Planning: "#3b82f6",
-    Demolition: "#ef4444",
-    "Rough-In": "#f97316",
-    Installation: "#22c55e",
-    Finishing: "#a855f7",
-  };
+  const PHASE_COLORS = TIMELINE_PHASE_COLORS;
 
   const totalDays = tasks.length > 0
     ? Math.max(...tasks.map((t) => t.startDay + t.duration))
@@ -615,6 +616,88 @@ function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: bool
   const totalWeeks = Math.ceil(totalDays / 7);
   const milestones = tasks.filter((t) => t.milestone);
   const phases = [...new Set(tasks.map((t) => t.phase))];
+
+  const ganttContainerRef = useRef<HTMLDivElement>(null);
+  const ganttInstanceRef = useRef<unknown>(null);
+
+  useEffect(() => {
+    if (!ganttContainerRef.current || tasks.length === 0) return;
+
+    const baseDate = new Date();
+    const frappeTaskList = tasks.map((task) => {
+      const startDate = new Date(baseDate);
+      startDate.setDate(startDate.getDate() + task.startDay);
+      const endDate = new Date(baseDate);
+      endDate.setDate(endDate.getDate() + task.startDay + task.duration);
+
+      // Format as YYYY-MM-DD strings for frappe-gantt v1.x
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+      return {
+        id: `task-${task.id}`,
+        name: task.name,
+        start: fmt(startDate),
+        end: fmt(endDate),
+        progress: 0,
+        dependencies: task.dependencies
+          .map((depId) => `task-${depId}`)
+          .join(", "),
+        custom_class: `gantt-phase-${task.phase.toLowerCase().replace(/[\s-]+/g, "-")}`,
+      };
+    });
+
+    // Build a map of task id → phase for direct coloring
+    const taskPhaseMap = new Map(
+      tasks.map((t) => [`task-${t.id}`, t.phase])
+    );
+
+    import("frappe-gantt").then((mod) => {
+      const Gantt = mod.default;
+      if (!ganttContainerRef.current) return;
+
+      // Inject frappe-gantt CSS if not already loaded
+      if (!document.getElementById("frappe-gantt-css")) {
+        const link = document.createElement("link");
+        link.id = "frappe-gantt-css";
+        link.rel = "stylesheet";
+        link.href = "/frappe-gantt.css";
+        document.head.appendChild(link);
+      }
+
+      ganttContainerRef.current.innerHTML = "";
+
+      ganttInstanceRef.current = new Gantt(ganttContainerRef.current, frappeTaskList, {
+        view_mode: "Day",
+        bar_height: 26,
+        bar_corner_radius: 4,
+        arrow_curve: 6,
+        padding: 16,
+        language: "en",
+        on_click: () => {},
+        on_date_change: () => {},
+        on_progress_change: () => {},
+        on_view_change: () => {},
+      });
+
+      // Directly color bars by phase after render
+      requestAnimationFrame(() => {
+        if (!ganttContainerRef.current) return;
+        const barWrappers = ganttContainerRef.current.querySelectorAll(".bar-wrapper");
+        barWrappers.forEach((wrapper) => {
+          const dataId = wrapper.getAttribute("data-id");
+          if (!dataId) return;
+          const phase = taskPhaseMap.get(dataId);
+          const color = phase ? PHASE_COLORS[phase] : "#2d5a3d";
+          if (color) {
+            const bar = wrapper.querySelector(".bar") as SVGRectElement | null;
+            if (bar) bar.setAttribute("fill", color);
+            const progress = wrapper.querySelector(".bar-progress") as SVGRectElement | null;
+            if (progress) progress.setAttribute("fill", color);
+          }
+        });
+      });
+    });
+  }, [tasks, PHASE_COLORS]);
 
   return (
     <div>
@@ -658,54 +741,36 @@ function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: bool
             ))}
           </div>
 
-          {/* Gantt chart */}
+          {/* Frappe-gantt chart */}
           <div className="mt-4 overflow-x-auto rounded-xl border border-[#e8e6e1]">
-            <div className="min-w-[700px]">
-              {/* Week headers */}
-              <div className="flex border-b border-[#e8e6e1] bg-[#f8f7f4]">
-                <div className="w-52 shrink-0 border-r border-[#e8e6e1] px-3 py-2 text-xs font-semibold text-[#4a4a5a]">
-                  Task
-                </div>
-                <div className="flex flex-1">
-                  {Array.from({ length: totalWeeks }, (_, i) => (
-                    <div key={i} className="flex-1 border-r border-[#e8e6e1] px-1 py-2 text-center text-[10px] text-[#6a6a7a]">
-                      Wk {i + 1}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Task rows */}
-              {tasks.map((task) => {
-                const pct = totalDays > 0 ? 100 / totalDays : 0;
-                const left = task.startDay * pct;
-                const width = Math.max(task.duration * pct, 1.5);
-                const color = PHASE_COLORS[task.phase] || "#94a3b8";
-
-                return (
-                  <div key={task.id} className="group flex border-b border-[#e8e6e1] last:border-b-0 hover:bg-[#f8f7f4]/50">
-                    <div className="w-52 shrink-0 border-r border-[#e8e6e1] px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        {task.milestone && <FaDiamond className="shrink-0 text-[8px] text-[#d4956a]" />}
-                        <span className="truncate text-xs font-medium text-[#1a1a2e]">{task.name}</span>
-                      </div>
-                      <div className="mt-0.5 text-[10px] text-[#9a9aaa]">{task.assignee}</div>
-                    </div>
-                    <div className="relative flex-1 py-2">
-                      <div
-                        className="absolute top-1/2 h-5 -translate-y-1/2 rounded transition-all group-hover:h-6"
-                        style={{ left: `${left}%`, width: `${width}%`, background: color, opacity: 0.85 }}
-                      >
-                        <span className="absolute inset-0 flex items-center justify-center overflow-hidden text-[9px] font-medium text-white">
-                          {task.duration}d
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <div ref={ganttContainerRef} className="gantt-container min-w-[700px]" />
           </div>
+
+          {/* Phase color overrides */}
+          <style jsx global>{`
+            .gantt-container {
+              --g-bar-color: #2d5a3d;
+              --g-bar-border: #2d5a3d;
+            }
+            .gantt-container .grid-header { background-color: #f8f7f4; }
+            .gantt-container .gantt .grid-row { fill: #fff; }
+            .gantt-container .gantt .grid-row:nth-child(even) { fill: #fdfcfa; }
+            .gantt-container .gantt .row-line { stroke: #e8e6e1; }
+            .gantt-container .gantt .tick { stroke: #f0efeb; }
+            .gantt-container .gantt .today-highlight { fill: rgba(45, 90, 61, 0.06); }
+            .gantt-container .gantt .arrow { stroke: #6a6a7a; stroke-width: 1.8; }
+            .gantt-container .gantt .bar-label { font-size: 11px; font-weight: 600; fill: #fff; }
+            .gantt-container .gantt .bar-wrapper .bar-label.big { font-size: 11px; fill: #1a1a2e; }
+            .gantt-container .lower-text,
+            .gantt-container .upper-text { font-size: 11px; color: #9a9aaa; font-weight: 500; }
+            .gantt-container .gantt .lower-text,
+            .gantt-container .gantt .upper-text { font-size: 11px; fill: #9a9aaa; font-weight: 500; }
+            .gantt .bar-wrapper.gantt-phase-planning .bar { fill: #3b82f6 !important; }
+            .gantt .bar-wrapper.gantt-phase-demolition .bar { fill: #ef4444 !important; }
+            .gantt .bar-wrapper.gantt-phase-rough-in .bar { fill: #f97316 !important; }
+            .gantt .bar-wrapper.gantt-phase-installation .bar { fill: #22c55e !important; }
+            .gantt .bar-wrapper.gantt-phase-finishing .bar { fill: #a855f7 !important; }
+          `}</style>
         </>
       )}
     </div>
@@ -713,7 +778,10 @@ function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: bool
 }
 
 /* ── Contractor Step (Thumbtack search) ── */
-function ContractorStep({ contractors, loading }: { contractors: Contractor[]; loading: boolean }) {
+function ContractorStep({ contractors, loading, zip, onZipChange, onSearch }: {
+  contractors: Contractor[]; loading: boolean; zip: string;
+  onZipChange: (z: string) => void; onSearch: (zip: string) => void;
+}) {
   const renderStars = (rating: number) => {
     const full = Math.floor(rating);
     const half = rating - full >= 0.5;
@@ -725,29 +793,66 @@ function ContractorStep({ contractors, loading }: { contractors: Contractor[]; l
     );
   };
 
+  const isValidZip = /^\d{5}$/.test(zip);
+
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">Find Contractors</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">Find Contractors</h2>
+        <span className="text-[11px] text-[#9a9aaa]">
+          Powered by{" "}
+          <a href="https://www.thumbtack.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#009fd9] hover:underline">Thumbtack</a>
+        </span>
+      </div>
       <p className="mt-2 text-sm text-[#6a6a7a]">
-        Top-rated bathroom contractors from Thumbtack, matched to your project scope.
+        Enter your zip code to find top-rated bathroom contractors near you.
       </p>
+
+      {/* Zip code input + search button */}
+      <div className="mt-6 flex items-end gap-3">
+        <div className="flex-1 max-w-xs">
+          <label htmlFor="zip" className="mb-1.5 block text-sm font-medium text-[#4a4a5a]">Zip Code</label>
+          <input
+            id="zip"
+            type="text"
+            inputMode="numeric"
+            maxLength={5}
+            value={zip}
+            onChange={(e) => onZipChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
+            placeholder="e.g. 94103"
+            className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white px-4 py-2.5 text-sm text-[#1a1a2e] placeholder:text-[#9a9aaa] transition focus:border-[#2d5a3d] focus:outline-none"
+          />
+        </div>
+        <button
+          onClick={() => onSearch(zip)}
+          disabled={!isValidZip || loading}
+          className="flex items-center gap-2 rounded-xl bg-[#2d5a3d] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31] disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <FaMagnifyingGlass className="text-xs" /> Search Contractors
+        </button>
+      </div>
 
       {loading ? (
         <div className="mt-10 flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#2d5a3d] border-t-transparent" />
           <span className="text-sm text-[#6a6a7a]">Searching for contractors near you...</span>
         </div>
-      ) : contractors.length === 0 ? (
-        <div className="mt-10 text-center text-sm text-[#6a6a7a]">No contractors found.</div>
-      ) : (
+      ) : contractors.length > 0 ? (
         <div className="mt-6 space-y-4">
           {contractors.map((c, i) => (
             <div
               key={i}
               className="rounded-xl border border-[#e8e6e1] p-5 transition hover:border-[#d5d3cd] hover:shadow-md"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
+              <div className="flex items-start gap-4">
+                {/* Thumbnail */}
+                {c.thumbnail && (
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+                    <Image src={c.thumbnail} alt={c.name} fill className="object-cover" sizes="64px" unoptimized />
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-[#1a1a2e]">{c.name}</h3>
                     {c.verified && (
@@ -774,7 +879,7 @@ function ContractorStep({ contractors, loading }: { contractors: Contractor[]; l
 
                   {c.hiredCount && (
                     <div className="mt-2 flex items-center gap-1.5 text-xs text-[#2d5a3d]">
-                      <FaThumbsUp className="text-[10px]" /> Hired {c.hiredCount} times on Thumbtack
+                      <FaThumbsUp className="text-[10px]" /> {c.hiredCount} hires
                     </div>
                   )}
                 </div>
@@ -797,7 +902,7 @@ function ContractorStep({ contractors, loading }: { contractors: Contractor[]; l
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

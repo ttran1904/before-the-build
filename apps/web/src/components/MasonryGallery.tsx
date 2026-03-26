@@ -79,22 +79,7 @@ export default function MasonryGallery({ images, loading }: MasonryGalleryProps)
                 sizes="(max-width: 768px) 50vw, 25vw"
                 unoptimized
               />
-              {/* Hover overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                <div className="absolute inset-x-0 bottom-0 p-4">
-                  <p className="text-sm font-medium text-white">{img.title}</p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {img.tags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white backdrop-blur-sm"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+
               {/* Save button */}
               <button
                 onClick={() =>

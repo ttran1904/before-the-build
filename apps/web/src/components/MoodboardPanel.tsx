@@ -95,7 +95,7 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
         {items.length > 0 && (
           <div className="border-t border-[#e8e6e1] p-4">
             <Link
-              href="/dashboard/projects/new/bathroom"
+              href="/renovate/bathroom"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d5a3d] py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
             >
               Plan Your Renovation

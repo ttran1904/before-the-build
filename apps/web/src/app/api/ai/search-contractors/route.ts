@@ -11,6 +11,7 @@ interface Contractor {
   hiredCount: string;
   responseTime: string;
   verified: boolean;
+  thumbnail?: string;
 }
 
 export async function GET(req: NextRequest) {
@@ -32,8 +33,9 @@ export async function GET(req: NextRequest) {
         const contractors: Contractor[] = results
           .filter((r: { link?: string }) => r.link?.includes("thumbtack.com"))
           .slice(0, 8)
-          .map((r: { title?: string; snippet?: string; link?: string }, i: number) => {
+          .map((r: { title?: string; snippet?: string; link?: string; thumbnail?: string; pagemap?: { cse_thumbnail?: { src?: string }[] } }, i: number) => {
             const title = (r.title || "").replace(/ - Thumbtack.*$| \| Thumbtack.*$/i, "").trim();
+            const thumb = r.thumbnail || r.pagemap?.cse_thumbnail?.[0]?.src || undefined;
             return {
               name: title || `Bathroom Contractor ${i + 1}`,
               rating: parseFloat((4.2 + Math.random() * 0.8).toFixed(1)),
@@ -42,9 +44,10 @@ export async function GET(req: NextRequest) {
               location: `Near ${zip}`,
               price: estimatePrice(scope),
               thumbtackUrl: r.link || `https://www.thumbtack.com/k/bathroom-remodeling/near-me/`,
-              hiredCount: `${Math.floor(10 + Math.random() * 90)}+ hires on Thumbtack`,
+              hiredCount: `${Math.floor(10 + Math.random() * 90)}+`,
               responseTime: ["Responds within a few hours", "Responds within 1 hour", "Responds within minutes", "Typically responds in 1 day"][Math.floor(Math.random() * 4)],
               verified: Math.random() > 0.3,
+              thumbnail: thumb,
             };
           });
 
@@ -78,12 +81,13 @@ function estimatePrice(scope: string): string {
 }
 
 function getDefaultContractors(scope: string, zip: string): Contractor[] {
+  const searchUrl = `https://www.thumbtack.com/k/bathroom-remodeling/near-me/?zip=${encodeURIComponent(zip)}`;
   return [
-    { name: "ProBath Renovations", rating: 4.9, reviewCount: 147, specialty: "Full Bathroom Remodeling", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: "https://www.thumbtack.com/k/bathroom-remodeling/near-me/", hiredCount: "87+ hires on Thumbtack", responseTime: "Responds within minutes", verified: true },
-    { name: "Modern Tile & Bath Co.", rating: 4.8, reviewCount: 93, specialty: "Tile & Flooring Specialist", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: "https://www.thumbtack.com/k/bathroom-remodeling/near-me/", hiredCount: "62+ hires on Thumbtack", responseTime: "Responds within a few hours", verified: true },
-    { name: "Cascade Plumbing & Bath", rating: 4.7, reviewCount: 118, specialty: "Plumbing & Bath Fixtures", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: "https://www.thumbtack.com/k/bathroom-remodeling/near-me/", hiredCount: "104+ hires on Thumbtack", responseTime: "Responds within 1 hour", verified: true },
-    { name: "Elite Home Remodeling", rating: 4.6, reviewCount: 76, specialty: "Bathroom Renovation Specialist", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: "https://www.thumbtack.com/k/bathroom-remodeling/near-me/", hiredCount: "45+ hires on Thumbtack", responseTime: "Typically responds in 1 day", verified: false },
-    { name: "AquaDesign Bathrooms", rating: 4.9, reviewCount: 201, specialty: "Shower & Tub Installation", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: "https://www.thumbtack.com/k/bathroom-remodeling/near-me/", hiredCount: "156+ hires on Thumbtack", responseTime: "Responds within minutes", verified: true },
-    { name: "Summit Construction LLC", rating: 4.5, reviewCount: 54, specialty: "Vanity & Countertop Expert", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: "https://www.thumbtack.com/k/bathroom-remodeling/near-me/", hiredCount: "31+ hires on Thumbtack", responseTime: "Responds within a few hours", verified: true },
+    { name: "ProBath Renovations", rating: 4.9, reviewCount: 147, specialty: "Full Bathroom Remodeling", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: searchUrl, hiredCount: "87+", responseTime: "Responds within minutes", verified: true },
+    { name: "Modern Tile & Bath Co.", rating: 4.8, reviewCount: 93, specialty: "Tile & Flooring Specialist", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: searchUrl, hiredCount: "62+", responseTime: "Responds within a few hours", verified: true },
+    { name: "Cascade Plumbing & Bath", rating: 4.7, reviewCount: 118, specialty: "Plumbing & Bath Fixtures", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: searchUrl, hiredCount: "104+", responseTime: "Responds within 1 hour", verified: true },
+    { name: "Elite Home Remodeling", rating: 4.6, reviewCount: 76, specialty: "Bathroom Renovation Specialist", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: searchUrl, hiredCount: "45+", responseTime: "Typically responds in 1 day", verified: false },
+    { name: "AquaDesign Bathrooms", rating: 4.9, reviewCount: 201, specialty: "Shower & Tub Installation", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: searchUrl, hiredCount: "156+", responseTime: "Responds within minutes", verified: true },
+    { name: "Summit Construction LLC", rating: 4.5, reviewCount: 54, specialty: "Vanity & Countertop Expert", location: `Near ${zip}`, price: estimatePrice(scope), thumbtackUrl: searchUrl, hiredCount: "31+", responseTime: "Responds within a few hours", verified: true },
   ];
 }

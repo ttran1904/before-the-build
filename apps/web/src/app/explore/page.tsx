@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
-  FaHouse, FaBookmark, FaMagnifyingGlass,
+  FaHouse, FaBookmark, FaMagnifyingGlass, FaArrowLeft,
 } from "react-icons/fa6";
 import RoomCategoryBar from "@/components/RoomCategoryBar";
 import StyleFilterBar from "@/components/StyleFilterBar";
@@ -21,6 +22,8 @@ interface GalleryImage {
 }
 
 export default function ExplorePage() {
+  const searchParams = useSearchParams();
+  const fromMoodboard = searchParams.get("from") === "moodboard";
   const [selectedRoom, setSelectedRoom] = useState("bathroom");
   const [selectedStyle, setSelectedStyle] = useState("all");
   const [search, setSearch] = useState("");
@@ -50,8 +53,26 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Back to Moodboard bar — only shown when navigated from renovation step 5 */}
+      {fromMoodboard && (
+        <div className="sticky top-0 z-40 border-b border-[#2d5a3d]/20 bg-[#2d5a3d]/5 backdrop-blur-md">
+          <div className="mx-auto flex max-w-7xl items-center px-6 py-2.5">
+            <Link
+              href="/renovate/bathroom"
+              className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234a31]"
+            >
+              <FaArrowLeft className="text-xs" />
+              Back to Moodboard
+            </Link>
+            <span className="ml-4 text-sm text-[#4a4a5a]">
+              Save images to your moodboard, then return to continue your renovation.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Top Nav */}
-      <header className="sticky top-0 z-30 border-b border-[#e8e6e1] bg-white/90 backdrop-blur-md">
+      <header className={`sticky ${fromMoodboard ? 'top-[52px]' : 'top-0'} z-30 border-b border-[#e8e6e1] bg-white/90 backdrop-blur-md`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2">
             <FaHouse className="text-xl text-[#2d5a3d]" />
