@@ -13,15 +13,15 @@ import {
   FaCalendarDays, FaHelmetSafety, FaStar, FaStarHalfStroke,
   FaCircleCheck, FaThumbsUp, FaClock, FaDiamond,
   FaArrowUpRightFromSquare, FaLocationDot, FaShieldHalved, FaMagnifyingGlass,
+  FaExpand, FaSwatchbook, FaCartShopping, FaSpinner, FaCrosshairs,
 } from "react-icons/fa6";
-import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier } from "@/lib/store";
+import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
 
 /* ── Step definitions ── */
 const STEPS = [
   { id: "goal", label: "Goal", icon: FaBullseye },
-  { id: "scope", label: "Scope", icon: FaRulerCombined },
   { id: "must-haves", label: "Must-Haves", icon: FaClipboardList },
   { id: "budget", label: "Budget", icon: FaCoins },
   { id: "moodboard", label: "Moodboard", icon: FaImages },
@@ -107,6 +107,7 @@ export default function BathroomWizardPage() {
   const next = () => {
     const nextIdx = Math.min(currentStep + 1, STEPS.length - 1);
     if (STEPS[nextIdx]?.id === "timeline" && needsTimelineRefresh) fetchTimeline();
+    if (STEPS[nextIdx]?.id === "contractor") { /* contractor step */ }
     setCurrentStep(nextIdx);
   };
   const back = () => setCurrentStep((s) => Math.max(s - 1, 0));
@@ -174,17 +175,18 @@ export default function BathroomWizardPage() {
 
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto">
-        <div className={`mx-auto px-8 py-10 ${currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}>
+        <div className={`mx-auto px-8 py-10 ${currentStep === 3 || currentStep === 4 ? "max-w-6xl" : "max-w-3xl"}`}>
+          {currentStep === 0 && <GoalAndScopeStep />}
+          {currentStep !== 0 && (
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
-            {currentStep === 0 && <GoalStep />}
-            {currentStep === 1 && <ScopeStep />}
-            {currentStep === 2 && <MustHavesStep />}
-            {currentStep === 3 && <BudgetStep />}
-            {currentStep === 4 && <MoodboardStep />}
-            {currentStep === 5 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
-            {currentStep === 6 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
-            {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} />}
+            {currentStep === 1 && <MustHavesStep />}
+            {currentStep === 2 && <BudgetStep />}
+            {currentStep === 3 && <MoodboardStep />}
+            {currentStep === 4 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
+            {currentStep === 5 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
+            {currentStep === 6 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} />}
           </div>
+          )}
 
           {/* Navigation */}
           <div className="mt-6 flex justify-between">
@@ -217,9 +219,11 @@ export default function BathroomWizardPage() {
   );
 }
 
-/* ── Goal Step ── */
-function GoalStep() {
-  const { goal, setGoal } = useWizardStore();
+/* ── Goal + Scope Step (combined, TurboTax-style) ── */
+function GoalAndScopeStep() {
+  const { goal, setGoal, scope, setScope } = useWizardStore();
+  const scopeRef = useRef<HTMLDivElement>(null);
+  const prevGoalRef = useRef(goal);
 
   const GOALS = [
     { id: "increase_value", label: "Increase Home Value", desc: "Focus on ROI upgrades — vanity, tile, fixtures", icon: FaChartLine },
@@ -233,75 +237,94 @@ function GoalStep() {
     { id: "luxury_spa", label: "Create a Spa Experience", desc: "Soaking tub, rain shower, heated floors", icon: FaSpa },
   ];
 
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">
-        What&apos;s the main goal of your bathroom renovation?
-      </h2>
-      <p className="mt-2 text-sm text-[#6a6a7a]">
-        This helps us tailor recommendations, budget estimates, and product suggestions.
-      </p>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {GOALS.map((g) => (
-          <button
-            key={g.id}
-            onClick={() => setGoal(g.id)}
-            className={`flex items-start gap-3 rounded-xl border-2 p-4 text-left transition ${
-              goal === g.id
-                ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-            }`}
-          >
-            <span className="mt-0.5 text-lg text-[#2d5a3d]"><g.icon /></span>
-            <div>
-              <div className="font-semibold text-[#1a1a2e]">{g.label}</div>
-              <div className="mt-0.5 text-xs text-[#6a6a7a]">{g.desc}</div>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── Scope Step ── */
-function ScopeStep() {
-  const { scope, setScope } = useWizardStore();
-
-  const SCOPES: { id: BathroomScope; label: string; desc: string; price: string; icon: typeof FaPaintbrush }[] = [
-    { id: "cosmetic", label: "Cosmetic Refresh", desc: "Paint, fixtures, hardware, accessories. Minimal disruption.", price: "$1,000 – $5,000", icon: FaPaintbrush },
-    { id: "partial", label: "Partial Remodel", desc: "New vanity, flooring, paint. Keep existing layout.", price: "$5,000 – $20,000", icon: FaScrewdriverWrench },
-    { id: "full", label: "Full Remodel", desc: "Gut everything and rebuild. New layout possible.", price: "$15,000 – $50,000", icon: FaHammer },
-    { id: "addition", label: "Addition / Expansion", desc: "Expand bathroom footprint. Structural changes.", price: "$30,000 – $100,000+", icon: FaRuler },
+  const SCOPES: { id: BathroomScope; label: string; desc: string; icon: typeof FaPaintbrush }[] = [
+    { id: "cosmetic", label: "Cosmetic Refresh", desc: "Paint, fixtures, hardware, accessories. Minimal disruption.", icon: FaPaintbrush },
+    { id: "partial", label: "Partial Remodel", desc: "New vanity, flooring, paint. Keep existing layout.", icon: FaScrewdriverWrench },
+    { id: "full", label: "Full Remodel", desc: "Gut everything and rebuild. New layout possible.", icon: FaHammer },
+    { id: "addition", label: "Addition / Expansion", desc: "Expand bathroom footprint. Structural changes.", icon: FaRuler },
   ];
 
+  /* Auto-scroll to Scope when a goal is first selected and scope is still empty */
+  useEffect(() => {
+    if (goal && !prevGoalRef.current && !scope) {
+      setTimeout(() => {
+        scopeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+    prevGoalRef.current = goal;
+  }, [goal, scope]);
+
+  const handleGoalSelect = (id: string) => {
+    const wasEmpty = !goal;
+    setGoal(id);
+    if (wasEmpty && !scope) {
+      setTimeout(() => {
+        scopeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+  };
+
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s the scope of work?</h2>
-      <p className="mt-2 text-sm text-[#6a6a7a]">
-        This determines the complexity, timeline, and budget range.
-      </p>
-      <div className="mt-6 space-y-3">
-        {SCOPES.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setScope(s.id)}
-            className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
-              scope === s.id
-                ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-            }`}
-          >
-            <span className="text-xl text-[#2d5a3d]"><s.icon /></span>
-            <div className="flex-1">
-              <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
-              <div className="mt-0.5 text-sm text-[#6a6a7a]">{s.desc}</div>
-            </div>
-            <span className="shrink-0 rounded-full bg-[#f8f7f4] px-3 py-1 text-sm font-medium text-[#2d5a3d]">
-              {s.price}
-            </span>
-          </button>
-        ))}
+    <div className="space-y-8">
+      {/* ── Goal Card ── */}
+      <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">
+          What&apos;s the main goal of your bathroom renovation?
+        </h2>
+        <p className="mt-2 text-sm text-[#6a6a7a]">
+          This helps us tailor recommendations, budget estimates, and product suggestions.
+        </p>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {GOALS.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => handleGoalSelect(g.id)}
+              className={`flex items-start gap-3 rounded-xl border-2 p-4 text-left transition ${
+                goal === g.id
+                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+              }`}
+            >
+              <span className="mt-0.5 text-2xl text-[#2d5a3d]"><g.icon /></span>
+              <div>
+                <div className="font-semibold text-[#1a1a2e]">{g.label}</div>
+                <div className="mt-0.5 text-xs text-[#6a6a7a]">{g.desc}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Scope Card ── */}
+      <div
+        ref={scopeRef}
+        className={`rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5 transition-all duration-500 ${
+          !goal ? "opacity-40 pointer-events-none" : "opacity-100"
+        }`}
+      >
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s the scope of work?</h2>
+        <p className="mt-2 text-sm text-[#6a6a7a]">
+          This determines the complexity, timeline, and budget range.
+        </p>
+        <div className="mt-6 space-y-3">
+          {SCOPES.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setScope(s.id)}
+              className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
+                scope === s.id
+                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+              }`}
+            >
+              <span className="text-2xl text-[#2d5a3d]"><s.icon /></span>
+              <div className="flex-1">
+                <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
+                <div className="mt-0.5 text-sm text-[#6a6a7a]">{s.desc}</div>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -490,17 +513,114 @@ function BudgetStep() {
   );
 }
 
-/* ── Moodboard Step ── */
+/* ── Moodboard Step (discover items + moodboard view) ── */
+
+interface PointedItem {
+  id: string;
+  cropBox: { x: number; y: number; w: number; h: number };
+  label: string;
+  loading: boolean;
+  products: { title: string; price: string; source: string; url: string; thumbnail: string }[];
+}
+
 function MoodboardStep() {
   const { items, removeItem } = useMoodboardStore();
+  const [activeSection, setActiveSection] = useState<"discover" | "moodboard">("discover");
+  const [pointedItems, setPointedItems] = useState<Record<string, PointedItem[]>>({});
+  const [selectingImageId, setSelectingImageId] = useState<string | null>(null);
+  const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
+  const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"select" | "products" | "styleboard">("select");
+  const [productResults, setProductResults] = useState<Record<string, { title: string; price: string; source: string; url: string; thumbnail: string }[]>>({});
+  const [searchingId, setSearchingId] = useState<string | null>(null);
+  const [collageUrl, setCollageUrl] = useState<string | null>(null);
+  const [generatingCollage, setGeneratingCollage] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedCount = selectedIds.size;
+  const selectedItems = items.filter((i) => selectedIds.has(i.id));
+
+  const searchProducts = async (item: MoodboardItem) => {
+    setSearchingId(item.id);
+    try {
+      const res = await fetch("/api/ai/search-products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: item.imageUrl, title: item.title }),
+      });
+      const data = await res.json();
+      setProductResults((prev) => ({ ...prev, [item.id]: data.products || [] }));
+    } catch {
+      setProductResults((prev) => ({ ...prev, [item.id]: [] }));
+    }
+    setSearchingId(null);
+  };
+
+  const generateCollage = async () => {
+    setGeneratingCollage(true);
+    try {
+      const imageUrls = selectedItems.map((i) => i.imageUrl);
+      const res = await fetch("/api/ai/generate-styleboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrls, products: Object.values(productResults).flat() }),
+      });
+      const data = await res.json();
+      setCollageUrl(data.imageUrl || null);
+    } catch { /* keep null */ }
+    setGeneratingCollage(false);
+  };
+
+  const TABS = [
+    { id: "select" as const, label: "Select Photos", icon: FaImages },
+    { id: "products" as const, label: "Find Products", icon: FaCartShopping },
+    { id: "styleboard" as const, label: "Style Board", icon: FaSwatchbook },
+  ];
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Moodboard</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
-        Review your saved inspiration images — these will guide your renovation design.
+        Curate your inspiration, find matching products, and generate your style board &mdash; all in one place.
       </p>
+
+      {/* Preview modal */}
+      {previewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPreviewItem(null)}>
+          <div className="relative mx-4 max-h-[85vh] max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewItem(null)}
+              className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
+            >
+              ✕
+            </button>
+            <div className="relative" style={{ minHeight: "300px", maxHeight: "75vh" }}>
+              <Image
+                src={previewItem.imageUrl}
+                alt={previewItem.title || "Preview"}
+                width={800}
+                height={600}
+                className="h-auto max-h-[75vh] w-full object-contain"
+                unoptimized
+              />
+            </div>
+            {previewItem.title && (
+              <div className="border-t border-[#e8e6e1] px-6 py-3">
+                <p className="text-sm font-medium text-[#1a1a2e]">{previewItem.title}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {confirmDeleteId && (
@@ -520,6 +640,7 @@ function MoodboardStep() {
               <button
                 onClick={() => {
                   removeItem(confirmDeleteId);
+                  setSelectedIds((prev) => { const next = new Set(prev); next.delete(confirmDeleteId); return next; });
                   setConfirmDeleteId(null);
                 }}
                 className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
@@ -531,71 +652,285 @@ function MoodboardStep() {
         </div>
       )}
 
-      {/* Saved moodboard images */}
-      <div className="mt-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#1a1a2e]">
-            Saved Inspiration ({items.length})
-          </h3>
-          <Link
-            href="/explore?from=moodboard"
-            className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d]/10 px-3 py-1.5 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20"
+      {/* Tab navigation */}
+      <div className="mt-5 flex gap-1 rounded-xl bg-[#f8f7f4] p-1">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+              activeTab === tab.id
+                ? "bg-white text-[#2d5a3d] shadow-sm"
+                : "text-[#6a6a7a] hover:text-[#4a4a5a]"
+            }`}
           >
-            <FaCompass className="text-[10px]" /> Browse Explore
-          </Link>
-        </div>
+            <tab.icon className="text-xs" />
+            {tab.label}
+            {tab.id === "select" && items.length > 0 && (
+              <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">{selectedCount}</span>
+            )}
+          </button>
+        ))}
+      </div>
 
-        {items.length > 0 ? (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-            {items.map((item) => (
-              <div key={item.id} className="group relative overflow-hidden rounded-xl border border-[#e8e6e1]">
-                <div className="relative aspect-square">
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.title || "Moodboard image"}
-                    fill
-                    className="object-cover"
-                    sizes="160px"
-                    unoptimized
-                  />
-                  <button
-                    onClick={() => setConfirmDeleteId(item.id)}
-                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition group-hover:opacity-100 hover:bg-red-500"
-                  >
-                    <FaTrash className="text-[9px]" />
-                  </button>
-                </div>
-                {item.title && (
-                  <div className="px-2 py-1.5">
-                    <p className="truncate text-[11px] text-[#4a4a5a]">{item.title}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-            {/* Add more card */}
+      {/* ── Tab: Select Photos ── */}
+      {activeTab === "select" && (
+        <div className="mt-5">
+          {/* Selection summary bar */}
+          {items.length > 0 && (
+            <div className="mb-4 flex items-center gap-3 rounded-xl bg-[#f8f7f4] px-4 py-2.5">
+              <span className="text-sm text-[#4a4a5a]">
+                <span className="font-semibold text-[#2d5a3d]">{selectedCount}</span> of {items.length} selected
+              </span>
+              <button
+                onClick={() => setSelectedIds(selectedCount === items.length ? new Set() : new Set(items.map((i) => i.id)))}
+                className="ml-auto text-xs font-medium text-[#2d5a3d] transition hover:underline"
+              >
+                {selectedCount === items.length ? "Deselect All" : "Select All"}
+              </button>
+            </div>
+          )}
+
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[#1a1a2e]">
+              Saved Inspiration ({items.length})
+            </h3>
             <Link
               href="/explore?from=moodboard"
-              className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] text-[#9a9aaa] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
+              className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d]/10 px-3 py-1.5 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20"
             >
-              <FaPlus className="text-lg" />
-              <span className="text-[11px] font-medium">Add More</span>
+              <FaCompass className="text-[10px]" /> Browse Explore
             </Link>
           </div>
-        ) : (
-          <Link
-            href="/explore?from=moodboard"
-            className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-10 transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
-          >
-            <FaImages className="text-3xl text-[#9a9aaa]" />
-            <span className="text-sm font-medium text-[#6a6a7a]">
-              No images saved yet — go to Explore to build your moodboard
-            </span>
-            <span className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white">
-              <FaCompass className="text-[10px]" /> Open Explore
-            </span>
-          </Link>
-        )}
-      </div>
+
+          {items.length > 0 ? (
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {items.map((item) => {
+                const isSelected = selectedIds.has(item.id);
+                return (
+                  <div
+                    key={item.id}
+                    className={`group relative cursor-pointer overflow-hidden rounded-xl border-2 transition ${
+                      isSelected ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/20" : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+                    }`}
+                    onClick={() => toggleSelect(item.id)}
+                  >
+                    <div className="relative aspect-square">
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.title || "Moodboard image"}
+                        fill
+                        className="object-cover"
+                        sizes="160px"
+                        unoptimized
+                      />
+                      {/* Select checkmark */}
+                      <div className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 transition ${
+                        isSelected
+                          ? "border-[#2d5a3d] bg-[#2d5a3d] text-white"
+                          : "border-white/70 bg-black/30 text-transparent"
+                      }`}>
+                        <FaCheck className="text-[10px]" />
+                      </div>
+                      {/* Action buttons */}
+                      <div className="absolute right-1.5 top-1.5 flex flex-col gap-1 opacity-0 transition group-hover:opacity-100">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setPreviewItem(item); }}
+                          className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
+                          title="View larger"
+                        >
+                          <FaExpand className="text-[9px]" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(item.id); }}
+                          className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-red-500"
+                          title="Remove"
+                        >
+                          <FaTrash className="text-[9px]" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {/* Add more card */}
+              <Link
+                href="/explore?from=moodboard"
+                className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] text-[#9a9aaa] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
+              >
+                <FaPlus className="text-lg" />
+                <span className="text-[11px] font-medium">Add More</span>
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href="/explore?from=moodboard"
+              className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-10 transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+            >
+              <FaImages className="text-3xl text-[#9a9aaa]" />
+              <span className="text-sm font-medium text-[#6a6a7a]">
+                No images saved yet — go to Explore to build your moodboard
+              </span>
+              <span className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white">
+                <FaCompass className="text-[10px]" /> Open Explore
+              </span>
+            </Link>
+          )}
+
+          {/* CTA to go to products tab */}
+          {items.length > 0 && selectedCount > 0 && (
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={() => setActiveTab("products")}
+                className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl"
+              >
+                <FaCartShopping className="text-sm" />
+                Find Matching Products
+                <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs">{selectedCount}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Find Products ── */}
+      {activeTab === "products" && (
+        <div className="mt-5">
+          {selectedItems.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-10">
+              <FaCartShopping className="text-3xl text-[#9a9aaa]" />
+              <p className="text-sm text-[#6a6a7a]">Select images in the &quot;Select Photos&quot; tab first.</p>
+              <button onClick={() => setActiveTab("select")} className="text-xs font-semibold text-[#2d5a3d] hover:underline">Go to Select Photos</button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-xs text-[#6a6a7a]">
+                Click &quot;Find Products&quot; on any image to search for real products that match.
+              </p>
+              {selectedItems.map((item) => {
+                const products = productResults[item.id];
+                const isSearching = searchingId === item.id;
+
+                return (
+                  <div key={item.id} className="rounded-xl border border-[#e8e6e1] p-3">
+                    <div className="flex gap-3">
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+                        <Image src={item.imageUrl} alt={item.title || ""} fill className="object-cover" sizes="80px" unoptimized />
+                      </div>
+                      <div className="flex flex-1 flex-col justify-between">
+                        <p className="text-sm font-medium text-[#1a1a2e] line-clamp-2">{item.title || "Inspiration image"}</p>
+                        <button
+                          onClick={() => searchProducts(item)}
+                          disabled={isSearching}
+                          className="mt-1 flex w-fit items-center gap-1.5 rounded-lg bg-[#2d5a3d]/10 px-3 py-1.5 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20 disabled:opacity-50"
+                        >
+                          {isSearching ? (
+                            <><FaSpinner className="animate-spin text-[10px]" /> Searching...</>
+                          ) : products ? (
+                            <><FaMagnifyingGlass className="text-[10px]" /> Search Again</>
+                          ) : (
+                            <><FaMagnifyingGlass className="text-[10px]" /> Find Products</>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {products && products.length > 0 && (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        {products.slice(0, 4).map((p, i) => (
+                          <a
+                            key={i}
+                            href={p.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex gap-2 rounded-lg border border-[#e8e6e1] p-2 transition hover:bg-[#f8f7f4]"
+                          >
+                            {p.thumbnail && (
+                              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-[#f8f7f4]">
+                                <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="48px" unoptimized />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[11px] font-medium text-[#1a1a2e]">{p.title}</p>
+                              <p className="text-[10px] text-[#6a6a7a]">{p.source}</p>
+                              {p.price && <p className="text-[11px] font-semibold text-[#2d5a3d]">{p.price}</p>}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {products && products.length === 0 && (
+                      <p className="mt-2 text-xs text-[#9a9aaa]">No matching products found.</p>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* CTA to style board */}
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => setActiveTab("styleboard")}
+                  className="flex items-center gap-2 rounded-xl bg-[#2d5a3d] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#234a31]"
+                >
+                  <FaSwatchbook className="text-sm" /> Generate Style Board
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Style Board ── */}
+      {activeTab === "styleboard" && (
+        <div className="mt-5">
+          <p className="mb-4 text-xs text-[#6a6a7a]">
+            Generate a curated mood board collage from your selected images and matched products.
+          </p>
+
+          {collageUrl ? (
+            <div className="overflow-hidden rounded-xl border border-[#e8e6e1] shadow-md">
+              <Image
+                src={collageUrl}
+                alt="Generated style board"
+                width={600}
+                height={500}
+                className="h-auto w-full"
+                unoptimized
+              />
+              <div className="border-t border-[#e8e6e1] p-4">
+                <button
+                  onClick={generateCollage}
+                  disabled={generatingCollage}
+                  className="flex items-center gap-2 rounded-lg bg-[#2d5a3d]/10 px-4 py-2 text-xs font-semibold text-[#2d5a3d] transition hover:bg-[#2d5a3d]/20"
+                >
+                  <FaWandMagicSparkles className="text-[10px]" /> Regenerate
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-12">
+              <FaSwatchbook className="text-4xl text-[#d5d3cd]" />
+              <p className="text-center text-sm text-[#6a6a7a]">
+                Your AI-generated style board will appear here.
+              </p>
+              <button
+                onClick={generateCollage}
+                disabled={generatingCollage || selectedCount === 0}
+                className="flex items-center gap-2 rounded-xl bg-[#2d5a3d] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#234a31] disabled:opacity-50"
+              >
+                {generatingCollage ? (
+                  <><FaSpinner className="animate-spin" /> Generating...</>
+                ) : (
+                  <><FaWandMagicSparkles /> Generate Style Board</>
+                )}
+              </button>
+              {selectedCount === 0 && (
+                <p className="text-xs text-[#9a9aaa]">Select images first to generate a style board.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
