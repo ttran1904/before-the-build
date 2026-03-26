@@ -42,8 +42,8 @@ interface TimelineTask {
 }
 interface Contractor {
   name: string; rating: number; reviewCount: number; specialty: string;
-  location: string; price: string; thumbtackUrl: string; hiredCount: string;
-  responseTime: string; verified: boolean; thumbnail?: string;
+  location: string; url: string; hiredCount: string;
+  responseTime: string; verified: boolean; thumbnail?: string; snippet?: string;
 }
 
 export default function BathroomWizardPage() {
@@ -57,7 +57,8 @@ export default function BathroomWizardPage() {
   const timelineHashRef = useRef("");
 
   /* AI data for Contractor step */
-  const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [thumbtackResults, setThumbtackResults] = useState<Contractor[]>([]);
+  const [googleResults, setGoogleResults] = useState<Contractor[]>([]);
   const [contractorLoading, setContractorLoading] = useState(false);
   const contractorHashRef = useRef("");
   const [contractorZip, setContractorZip] = useState("");
@@ -87,18 +88,19 @@ export default function BathroomWizardPage() {
   /* Fetch contractors — user-triggered with zip code */
   const fetchContractors = useCallback(async (zip: string) => {
     const contractorKey = `${currentHash}|${zip}`;
-    if (contractorKey === contractorHashRef.current && contractors.length > 0) return;
+    if (contractorKey === contractorHashRef.current && thumbtackResults.length > 0) return;
     setContractorLoading(true);
     try {
       const params = new URLSearchParams({ scope: store.scope || "full", zip });
       const res = await fetch(`/api/ai/search-contractors?${params}`);
       const data = await res.json();
-      setContractors(data.contractors || []);
+      setThumbtackResults(data.thumbtack || []);
+      setGoogleResults(data.google || []);
       contractorHashRef.current = contractorKey;
     } catch { /* keep existing data */ }
     setContractorLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentHash, store.scope, contractors.length]);
+  }, [currentHash, store.scope, thumbtackResults.length]);
 
   const needsTimelineRefresh = currentHash !== timelineHashRef.current || timelineTasks.length === 0;
 
@@ -180,8 +182,8 @@ export default function BathroomWizardPage() {
             {currentStep === 3 && <BudgetStep />}
             {currentStep === 4 && <MoodboardStep />}
             {currentStep === 5 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
-            {currentStep === 6 && <ContractorStep contractors={contractors} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
-            {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractors={contractors} />}
+            {currentStep === 6 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
+            {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} />}
           </div>
 
           {/* Navigation */}
@@ -777,12 +779,13 @@ function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: bool
   );
 }
 
-/* ── Contractor Step (Thumbtack search) ── */
-function ContractorStep({ contractors, loading, zip, onZipChange, onSearch }: {
-  contractors: Contractor[]; loading: boolean; zip: string;
+/* ── Contractor Step (Thumbtack vs Google side-by-side) ── */
+function ContractorStep({ thumbtack, google, loading, zip, onZipChange, onSearch }: {
+  thumbtack: Contractor[]; google: Contractor[]; loading: boolean; zip: string;
   onZipChange: (z: string) => void; onSearch: (zip: string) => void;
 }) {
   const renderStars = (rating: number) => {
+    if (rating === 0) return null;
     const full = Math.floor(rating);
     const half = rating - full >= 0.5;
     return (
@@ -794,18 +797,83 @@ function ContractorStep({ contractors, loading, zip, onZipChange, onSearch }: {
   };
 
   const isValidZip = /^\d{5}$/.test(zip);
+  const hasResults = thumbtack.length > 0 || google.length > 0;
+
+  const renderCard = (c: Contractor, i: number, showThumbtackMeta: boolean) => (
+    <div
+      key={i}
+      className="rounded-xl border border-[#e8e6e1] p-4 transition hover:border-[#d5d3cd] hover:shadow-md"
+    >
+      <div className="flex items-start gap-3">
+        {/* Thumbnail */}
+        {c.thumbnail && (
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+            <Image src={c.thumbnail} alt={c.name} fill className="object-cover" sizes="48px" unoptimized />
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[#1a1a2e] truncate">{c.name}</h3>
+            {c.verified && (
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#2d5a3d]">
+                <FaShieldHalved className="text-[7px]" /> Verified
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-[11px] text-[#6a6a7a]">{c.specialty}</p>
+
+          {showThumbtackMeta && (
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-[#4a4a5a]">
+              {c.rating > 0 && (
+                <span className="flex items-center gap-1">
+                  {renderStars(c.rating)}
+                  <span className="ml-0.5 font-medium">{c.rating}</span>
+                  <span className="text-[#9a9aaa]">({c.reviewCount})</span>
+                </span>
+              )}
+              <span className="flex items-center gap-1">
+                <FaLocationDot className="text-[9px] text-[#9a9aaa]" /> {c.location}
+              </span>
+              {c.responseTime && (
+                <span className="flex items-center gap-1">
+                  <FaClock className="text-[9px] text-[#9a9aaa]" /> {c.responseTime}
+                </span>
+              )}
+            </div>
+          )}
+
+          {!showThumbtackMeta && c.snippet && (
+            <p className="mt-1.5 text-[11px] text-[#6a6a7a] line-clamp-2">{c.snippet}</p>
+          )}
+
+          {showThumbtackMeta && c.hiredCount && (
+            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#2d5a3d]">
+              <FaThumbsUp className="text-[9px]" /> {c.hiredCount} hires
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* View button */}
+      {c.url && (
+        <a
+          href={c.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#2d5a3d] py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#234a31]"
+        >
+          View <FaArrowUpRightFromSquare className="text-[8px]" />
+        </a>
+      )}
+    </div>
+  );
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">Find Contractors</h2>
-        <span className="text-[11px] text-[#9a9aaa]">
-          Powered by{" "}
-          <a href="https://www.thumbtack.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#009fd9] hover:underline">Thumbtack</a>
-        </span>
-      </div>
+      <h2 className="text-2xl font-bold text-[#1a1a2e]">Find Contractors</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
-        Enter your zip code to find top-rated bathroom contractors near you.
+        Enter your zip code to compare contractor results side by side.
       </p>
 
       {/* Zip code input + search button */}
@@ -837,70 +905,29 @@ function ContractorStep({ contractors, loading, zip, onZipChange, onSearch }: {
           <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#2d5a3d] border-t-transparent" />
           <span className="text-sm text-[#6a6a7a]">Searching for contractors near you...</span>
         </div>
-      ) : contractors.length > 0 ? (
-        <div className="mt-6 space-y-4">
-          {contractors.map((c, i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-[#e8e6e1] p-5 transition hover:border-[#d5d3cd] hover:shadow-md"
-            >
-              <div className="flex items-start gap-4">
-                {/* Thumbnail */}
-                {c.thumbnail && (
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
-                    <Image src={c.thumbnail} alt={c.name} fill className="object-cover" sizes="64px" unoptimized />
-                  </div>
-                )}
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-[#1a1a2e]">{c.name}</h3>
-                    {c.verified && (
-                      <span className="flex items-center gap-1 rounded-full bg-[#2d5a3d]/10 px-2 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">
-                        <FaShieldHalved className="text-[8px]" /> Verified
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs text-[#6a6a7a]">{c.specialty}</p>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-[#4a4a5a]">
-                    <span className="flex items-center gap-1">
-                      {renderStars(c.rating)}
-                      <span className="ml-1 font-medium">{c.rating}</span>
-                      <span className="text-[#9a9aaa]">({c.reviewCount} reviews)</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <FaLocationDot className="text-[10px] text-[#9a9aaa]" /> {c.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <FaClock className="text-[10px] text-[#9a9aaa]" /> {c.responseTime}
-                    </span>
-                  </div>
-
-                  {c.hiredCount && (
-                    <div className="mt-2 flex items-center gap-1.5 text-xs text-[#2d5a3d]">
-                      <FaThumbsUp className="text-[10px]" /> {c.hiredCount} hires
-                    </div>
-                  )}
-                </div>
-
-                <div className="shrink-0 text-right">
-                  <div className="text-lg font-bold text-[#2d5a3d]">{c.price}</div>
-                  <div className="text-[10px] text-[#9a9aaa]">estimated</div>
-                  {c.thumbtackUrl && (
-                    <a
-                      href={c.thumbtackUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-flex items-center gap-1 rounded-lg bg-[#2d5a3d] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#234a31]"
-                    >
-                      View <FaArrowUpRightFromSquare className="text-[8px]" />
-                    </a>
-                  )}
-                </div>
-              </div>
+      ) : hasResults ? (
+        <div className="mt-6 grid grid-cols-2 gap-6">
+          {/* Left column: Thumbtack */}
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[#1a1a2e]">Thumbtack Results</h3>
+              <span className="text-[10px] text-[#009fd9] font-medium">Powered by Thumbtack</span>
             </div>
-          ))}
+            <div className="space-y-3">
+              {thumbtack.map((c, i) => renderCard(c, i, true))}
+            </div>
+          </div>
+
+          {/* Right column: Google */}
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[#1a1a2e]">Google Search Results</h3>
+              <span className="text-[10px] text-[#4285f4] font-medium">Powered by Google</span>
+            </div>
+            <div className="space-y-3">
+              {google.map((c, i) => renderCard(c, i, false))}
+            </div>
+          </div>
         </div>
       ) : null}
     </div>
@@ -908,7 +935,7 @@ function ContractorStep({ contractors, loading, zip, onZipChange, onSearch }: {
 }
 
 /* ── Summary Step ── */
-function SummaryStep({ tasks, contractors }: { tasks: TimelineTask[]; contractors: Contractor[] }) {
+function SummaryStep({ tasks, contractorCount }: { tasks: TimelineTask[]; contractorCount: number }) {
   const store = useWizardStore();
   const moodboardCount = useMoodboardStore.getState().items.length;
 
@@ -952,7 +979,7 @@ function SummaryStep({ tasks, contractors }: { tasks: TimelineTask[]; contractor
         <SummaryRow label="Must-Haves" value={store.mustHaves.join(", ") || "None selected"} />
         <SummaryRow label="Nice-to-Haves" value={store.niceToHaves.join(", ") || "None selected"} />
         <SummaryRow label="Timeline" value={tasks.length > 0 ? `${tasks.length} tasks over ${totalDays} days` : "—"} />
-        <SummaryRow label="Contractors" value={contractors.length > 0 ? `${contractors.length} matched pros` : "—"} />
+        <SummaryRow label="Contractors" value={contractorCount > 0 ? `${contractorCount} matched pros` : "—"} />
       </div>
 
       {/* Ready banner */}
