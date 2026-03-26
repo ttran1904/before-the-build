@@ -546,6 +546,48 @@ function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record
   const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // Draggable moodboard canvas state
+  const [dragPositions, setDragPositions] = useState<Record<number, { x: number; y: number }>>({});
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  const getDefaultPosition = (idx: number, total: number, cw: number, ch: number) => {
+    const cols = total <= 2 ? total : total <= 4 ? 2 : 3;
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    const cellW = cw / cols;
+    const cellH = ch / Math.ceil(total / cols);
+    return { x: col * cellW + (cellW - 180) / 2, y: row * cellH + (cellH - 180) / 2 };
+  };
+
+  const handleCanvasMouseDown = (e: React.MouseEvent, idx: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const pos = dragPositions[idx] || getDefaultPosition(idx, selectedProducts.length, rect.width, rect.height);
+    dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    setDraggingIdx(idx);
+  };
+
+  useEffect(() => {
+    if (draggingIdx === null) return;
+    const handleMove = (e: MouseEvent) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width - 180, e.clientX - dragOffset.current.x));
+      const y = Math.max(0, Math.min(rect.height - 180, e.clientY - dragOffset.current.y));
+      setDragPositions(prev => ({ ...prev, [draggingIdx]: { x, y } }));
+    };
+    const handleUp = () => setDraggingIdx(null);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    return () => { window.removeEventListener("mousemove", handleMove); window.removeEventListener("mouseup", handleUp); };
+  }, [draggingIdx]);
+
   const totalFoundItems = Object.values(pointedItems).flat().filter(p => !p.loading).length;
   const selectedProducts = Object.values(pointedItems).flat()
     .filter(p => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
@@ -943,7 +985,7 @@ function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record
           {/* White canvas moodboard */}
           <div className="mt-6 overflow-hidden rounded-2xl border border-[#e8e6e1] bg-white shadow-sm">
             {selectedProducts.length === 0 ? (
-              <div className="flex h-[500px] flex-col items-center justify-center text-center">
+              <div className="flex h-[400px] flex-col items-center justify-center text-center">
                 <FaImages className="mb-3 text-4xl text-[#e8e6e1]" />
                 <p className="text-sm font-medium text-[#9a9aaa]">No items selected yet</p>
                 <p className="mt-1 text-xs text-[#c5c3bd]">
@@ -957,58 +999,44 @@ function MoodboardStep({ pointedItems, setPointedItems }: { pointedItems: Record
                 </button>
               </div>
             ) : (
-              <div className="relative" style={{ minHeight: "500px" }}>
-                {/* Scattered collage layout */}
-                <div className="grid gap-6 p-8" style={{
-                  gridTemplateColumns: selectedProducts.length === 1
-                    ? "1fr"
-                    : selectedProducts.length === 2
-                      ? "1fr 1fr"
-                      : selectedProducts.length <= 4
-                        ? "repeat(2, 1fr)"
-                        : "repeat(3, 1fr)",
-                }}>
-                  {selectedProducts.map((p, i) => {
-                    // Alternate sizes for visual interest
-                    const isLarge = i === 0 || (selectedProducts.length > 3 && i === 3);
-                    const rotation = ["-2deg", "1.5deg", "-1deg", "2deg", "-1.5deg", "0.5deg"][i % 6];
+              <div
+                ref={canvasRef}
+                className="relative h-[450px] select-none"
+                style={{ cursor: draggingIdx !== null ? "grabbing" : "default" }}
+              >
+                {selectedProducts.map((p, i) => {
+                  const canvas = canvasRef.current;
+                  const pos = dragPositions[i] || (canvas
+                    ? getDefaultPosition(i, selectedProducts.length, canvas.clientWidth, canvas.clientHeight)
+                    : { x: 30 + i * 200, y: 30 });
 
-                    return (
-                      <div
-                        key={i}
-                        className={`group relative flex flex-col items-center transition-transform duration-300 hover:scale-105 ${isLarge && selectedProducts.length > 2 ? "row-span-2" : ""}`}
-                        style={{ transform: `rotate(${rotation})` }}
-                      >
-                        {/* Product image with shadow */}
-                        <div className="overflow-hidden rounded-xl bg-white p-2 shadow-md ring-1 ring-black/5 transition group-hover:shadow-lg">
-                          {p.thumbnail ? (
-                            <div className={`relative overflow-hidden rounded-lg bg-[#fafafa] ${isLarge && selectedProducts.length > 2 ? "h-56 w-56" : "h-40 w-40"}`}>
-                              <Image
-                                src={p.thumbnail}
-                                alt={p.title}
-                                fill
-                                className="object-contain p-1"
-                                sizes={isLarge ? "224px" : "160px"}
-                                unoptimized
-                              />
-                            </div>
-                          ) : (
-                            <div className={`flex items-center justify-center rounded-lg bg-[#f8f7f4] ${isLarge && selectedProducts.length > 2 ? "h-56 w-56" : "h-40 w-40"}`}>
-                              <FaCartShopping className="text-2xl text-[#d5d3cd]" />
-                            </div>
-                          )}
+                  return (
+                    <div
+                      key={i}
+                      className={`absolute transition-shadow duration-150 ${draggingIdx === i ? "z-20 shadow-lg" : "z-10 hover:shadow-md"}`}
+                      style={{ left: pos.x, top: pos.y, cursor: draggingIdx === i ? "grabbing" : "grab" }}
+                      onMouseDown={(e) => handleCanvasMouseDown(e, i)}
+                    >
+                      {p.thumbnail ? (
+                        <div className="relative h-[180px] w-[180px]">
+                          <Image
+                            src={p.thumbnail}
+                            alt={p.title}
+                            fill
+                            className="object-contain"
+                            sizes="180px"
+                            draggable={false}
+                            unoptimized
+                          />
                         </div>
-                        {/* Label */}
-                        <div className="mt-2 max-w-[180px] text-center">
-                          <p className="truncate text-[11px] font-medium text-[#4a4a5a]">{p.title}</p>
-                          {p.price && (
-                            <p className="mt-0.5 text-xs font-semibold text-[#2d5a3d]">{p.price}</p>
-                          )}
+                      ) : (
+                        <div className="flex h-[180px] w-[180px] items-center justify-center rounded-lg bg-[#f8f7f4]">
+                          <FaCartShopping className="text-2xl text-[#d5d3cd]" />
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
