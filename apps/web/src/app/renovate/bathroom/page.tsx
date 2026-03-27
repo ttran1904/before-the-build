@@ -541,9 +541,9 @@ function BudgetStep() {
 
       {/* ── Question 2: Budget ── */}
       <div>
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s your budget?</h2>
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">What is your Budget?</h2>
         <p className="mt-2 text-sm text-[#6a6a7a]">
-          Enter your comfortable budget for each tier, then select the range you&apos;re aiming for.
+          Type a dollar amount for each tier, then pick the one you&apos;re aiming for.
         </p>
 
         <div className="mt-5 space-y-3">
@@ -559,6 +559,12 @@ function BudgetStep() {
                     : "border-[#e8e6e1] hover:border-[#d5d3cd]"
                 }`}
               >
+                {/* Radio circle */}
+                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                  budgetTier === t.id ? "border-[#2d5a3d]" : "border-[#d5d3cd]"
+                }`}>
+                  {budgetTier === t.id && <span className="h-2.5 w-2.5 rounded-full bg-[#2d5a3d]" />}
+                </span>
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: t.color, color: '#fff' }}>
                   {t.icon}
                 </div>
@@ -569,15 +575,16 @@ function BudgetStep() {
                 <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
                   <FaDollarSign className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#6a6a7a]" />
                   <input
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0"
-                    value={amount ?? ""}
+                    value={amount != null ? amount.toLocaleString("en-US") : ""}
                     onChange={(e) => {
-                      const val = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      const val = raw === "" ? null : Math.max(0, Number(raw));
                       setBudgetAmounts(t.id, val);
                     }}
-                    className="w-32 rounded-lg border border-[#d5d3cd] bg-white py-2 pl-7 pr-3 text-right text-sm font-semibold text-[#1a1a2e] outline-none focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="w-32 rounded-lg border border-[#d5d3cd] bg-white py-2 pl-7 pr-3 text-right text-sm font-semibold text-[#1a1a2e] outline-none focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]"
                   />
                 </div>
               </button>
