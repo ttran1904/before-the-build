@@ -474,27 +474,188 @@ function MustHavesStep() {
 }
 
 /* ── Budget Step ── */
+
+const BREAKDOWN_COLORS = ["#2d5a3d", "#d4a24c", "#d4956a", "#5b8c6e", "#87CEEB"];
+
+function PieChart({ segments, size = 180 }: { segments: { pct: number; color: string; label: string; amount?: string }[]; size?: number }) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = (size - 4) / 2;
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  // Build pie wedge paths
+  let cumulativeAngle = -90; // start at 12 o'clock
+  const wedges = segments.map((seg) => {
+    const startAngle = cumulativeAngle;
+    const sweepAngle = (seg.pct / 100) * 360;
+    cumulativeAngle += sweepAngle;
+    return { ...seg, startAngle, sweepAngle };
+  });
+
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {wedges.map((w, i) => {
+          const isHovered = hovered === i;
+          const r = isHovered ? radius : radius - 2;
+          const startRad = toRad(w.startAngle);
+          const endRad = toRad(w.startAngle + w.sweepAngle);
+          const x1 = cx + r * Math.cos(startRad);
+          const y1 = cy + r * Math.sin(startRad);
+          const x2 = cx + r * Math.cos(endRad);
+          const y2 = cy + r * Math.sin(endRad);
+          const largeArc = w.sweepAngle > 180 ? 1 : 0;
+          const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+          return (
+            <path
+              key={i}
+              d={d}
+              fill={w.color}
+              stroke="#f8f7f4"
+              strokeWidth={2}
+              className="transition-all duration-150"
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+              style={{ cursor: "pointer", filter: isHovered ? "brightness(1.15)" : undefined }}
+            />
+          );
+        })}
+      </svg>
+      {/* Tooltip on hover */}
+      {hovered !== null && (
+        <div
+          className="pointer-events-none absolute rounded-md bg-[#1a1a2e]/90 px-2.5 py-1.5 text-white shadow-lg"
+          style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
+        >
+          <div className="text-[10px] text-white/70">{segments[hovered].label}</div>
+          <div className="text-sm font-bold">
+            {segments[hovered].amount ?? `${segments[hovered].pct}%`}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BudgetStep() {
-  const { budgetTier, setBudgetTier, bathroomSize, setBathroomSize, budgetAmounts, setBudgetAmounts } = useWizardStore();
+  const { goal, scope, mustHaves, niceToHaves, budgetTier, setBudgetTier, bathroomSize, setBathroomSize, budgetAmounts, setBudgetAmounts } = useWizardStore();
+
+  const [estimate, setEstimate] = useState<{
+    estimatedLow: number;
+    estimatedHigh: number;
+    breakdown: { category: string; pct: number; lowAmount: number; highAmount: number }[];
+    budgetWarning: string | null;
+    rationale: string;
+  } | null>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [includeNiceToHaves, setIncludeNiceToHaves] = useState(true);
+  const estimateFetchedRef = useRef(false);
 
   const tiers: { id: BudgetTier; label: string; desc: string; color: string; icon: React.ReactNode }[] = [
-    { id: "basic", label: "Basic", desc: "Builder-grade materials, standard fixtures, functional finishes", color: "#87CEEB", icon: <FaDollarSign className="text-base" /> },
-    { id: "mid", label: "Mid-Range", desc: "Quality materials, one statement piece or upgraded tiling", color: "#2d5a3d", icon: <FaSackDollar className="text-base" /> },
-    { id: "high", label: "High-End", desc: "Premium materials, statement pieces throughout, luxury fixtures", color: "#d4956a", icon: <FaGem className="text-base" /> },
-  ];
-
-  const BREAKDOWN = [
-    { label: "Materials (40–50%)", pct: 45 },
-    { label: "Labor (30–40%)", pct: 35 },
-    { label: "Permits & Fees (5%)", pct: 5 },
-    { label: "Contingency (10%)", pct: 10 },
-    { label: "Design & Planning (5%)", pct: 5 },
+    { id: "basic", label: "Basic", desc: "Builder-grade materials, standard fixtures", color: "#87CEEB", icon: <FaDollarSign className="text-base" /> },
+    { id: "mid", label: "Mid-Range", desc: "Quality materials, ~1 statement piece", color: "#2d5a3d", icon: <FaSackDollar className="text-base" /> },
+    { id: "high", label: "High-End", desc: "Premium materials, more statement pieces", color: "#d4956a", icon: <FaGem className="text-base" /> },
   ];
 
   const selectedAmount = budgetTier ? budgetAmounts[budgetTier] : null;
 
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+
+  // Fetch engine estimate
+  const fetchEstimate = useCallback(async () => {
+    setEstimateLoading(true);
+    try {
+      const res = await fetch("/api/ai/budget-estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal,
+          scope,
+          mustHaves,
+          niceToHaves: includeNiceToHaves ? niceToHaves : [],
+          bathroomSize,
+          customerBudget: selectedAmount,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEstimate(data);
+      }
+    } catch {
+      // Silently fail — static breakdown still visible
+    } finally {
+      setEstimateLoading(false);
+    }
+  }, [goal, scope, mustHaves, niceToHaves, includeNiceToHaves, bathroomSize, selectedAmount]);
+
+  // Auto-fetch when the user picks a budget tier
+  useEffect(() => {
+    if (budgetTier && !estimateFetchedRef.current) {
+      estimateFetchedRef.current = true;
+      fetchEstimate();
+    }
+  }, [budgetTier, fetchEstimate]);
+
+  // Re-fetch on customer budget change (debounced)
+  const prevAmountRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (selectedAmount != null && prevAmountRef.current != null && selectedAmount !== prevAmountRef.current) {
+      const timer = setTimeout(() => fetchEstimate(), 800);
+      return () => clearTimeout(timer);
+    }
+    prevAmountRef.current = selectedAmount ?? null;
+  }, [selectedAmount, fetchEstimate]);
+
+  // Re-fetch when nice-to-haves toggle changes
+  useEffect(() => {
+    if (budgetTier) {
+      fetchEstimate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includeNiceToHaves]);
+
+  const breakdownRows = estimate?.breakdown ?? [
+    { category: "Materials", pct: 45, lowAmount: 0, highAmount: 0 },
+    { category: "Labor", pct: 35, lowAmount: 0, highAmount: 0 },
+    { category: "Permits & Fees", pct: 5, lowAmount: 0, highAmount: 0 },
+    { category: "Contingency", pct: 10, lowAmount: 0, highAmount: 0 },
+    { category: "Design & Planning", pct: 5, lowAmount: 0, highAmount: 0 },
+  ];
+
+  const pieSegments = breakdownRows.map((item, i) => {
+    const midAmount = item.lowAmount > 0 ? Math.round((item.lowAmount + item.highAmount) / 2) : null;
+    return {
+      pct: item.pct,
+      color: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length],
+      label: item.category,
+      amount: midAmount !== null ? formatCurrency(midAmount) : undefined,
+    };
+  });
+
+  // Dynamic budget warning — recomputes on every render so switching tiers updates instantly
+  const dynamicWarning = useMemo(() => {
+    if (!estimate || selectedAmount == null || selectedAmount <= 0) return null;
+    if (selectedAmount < estimate.estimatedLow) {
+      const midpoint = (estimate.estimatedLow + estimate.estimatedHigh) / 2;
+      const pctBelow = Math.round(((estimate.estimatedLow - selectedAmount) / midpoint) * 100);
+      return (
+        `Your budget of ${formatCurrency(selectedAmount)} is about ${pctBelow}% below our estimated range ` +
+        `(${formatCurrency(estimate.estimatedLow)}–${formatCurrency(estimate.estimatedHigh)}). ` +
+        `Consider increasing your budget or reducing scope to avoid mid-project cost surprises.`
+      );
+    }
+    if (selectedAmount > estimate.estimatedHigh) {
+      return (
+        `Your budget of ${formatCurrency(selectedAmount)} exceeds our estimated range ` +
+        `(${formatCurrency(estimate.estimatedLow)}–${formatCurrency(estimate.estimatedHigh)}). ` +
+        `You have room to upgrade materials or add nice-to-haves.`
+      );
+    }
+    return null;
+  }, [estimate, selectedAmount]);
 
   return (
     <div className="space-y-10">
@@ -516,7 +677,10 @@ function BudgetStep() {
             return (
               <button
                 key={s.id}
-                onClick={() => setBathroomSize(s.id)}
+                onClick={() => {
+                  setBathroomSize(s.id);
+                  estimateFetchedRef.current = false;
+                }}
                 className={`rounded-xl border-2 p-4 text-left transition ${
                   bathroomSize === s.id
                     ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
@@ -559,7 +723,6 @@ function BudgetStep() {
                     : "border-[#e8e6e1] hover:border-[#d5d3cd]"
                 }`}
               >
-                {/* Radio circle */}
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${
                   budgetTier === t.id ? "border-[#2d5a3d]" : "border-[#d5d3cd]"
                 }`}>
@@ -593,34 +756,140 @@ function BudgetStep() {
         </div>
       </div>
 
-      {/* ── Estimated Breakdown ── */}
+      {/* ── Estimated Breakdown (SmartAsset-style) ── */}
       {budgetTier && (
-        <div className="rounded-xl bg-[#f8f7f4] p-5">
-          <h4 className="mb-4 text-sm font-semibold text-[#1a1a2e]">Estimated Breakdown</h4>
-          <div className="space-y-2.5">
-            {BREAKDOWN.map((item) => {
-              const dollarAmount = selectedAmount ? Math.round((selectedAmount * item.pct) / 100) : null;
-              return (
-                <div key={item.label} className="flex items-center gap-3">
-                  <span className="w-44 text-xs text-[#4a4a5a]">{item.label}</span>
-                  <div className="h-2 flex-1 rounded-full bg-[#e8e6e1]">
-                    <div
-                      className="h-full rounded-full bg-[#2d5a3d]"
-                      style={{ width: `${item.pct}%` }}
-                    />
-                  </div>
-                  <span className="w-20 text-right text-xs font-medium text-[#4a4a5a]">
-                    {dollarAmount !== null ? formatCurrency(dollarAmount) : `${item.pct}%`}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          {selectedAmount && (
-            <div className="mt-4 flex items-center justify-between border-t border-[#e8e6e1] pt-3">
-              <span className="text-sm font-semibold text-[#1a1a2e]">Total Budget</span>
-              <span className="text-sm font-bold text-[#2d5a3d]">{formatCurrency(selectedAmount)}</span>
+        <div className="rounded-xl bg-[#f8f7f4] p-6">
+          {/* Header row: title + nice-to-haves toggle */}
+          <div className="mb-5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h4 className="text-lg font-bold text-[#1a1a2e]">Where is your money going?</h4>
+              {estimateLoading && <FaSpinner className="animate-spin text-sm text-[#6a6a7a]" />}
             </div>
+            {niceToHaves.length > 0 && (
+              <button
+                onClick={() => setIncludeNiceToHaves((v) => !v)}
+                className="flex items-center gap-2 text-xs text-[#6a6a7a] hover:text-[#1a1a2e] transition"
+              >
+                <span>Include Nice-to-Haves</span>
+                <div className={`relative h-5 w-9 rounded-full transition-colors ${includeNiceToHaves ? "bg-[#2d5a3d]" : "bg-[#d5d3cd]"}`}>
+                  <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${includeNiceToHaves ? "translate-x-4" : "translate-x-0.5"}`} />
+                </div>
+              </button>
+            )}
+          </div>
+
+          {/* ── Our Estimate vs Your Budget header ── */}
+          <div className="mb-5 flex items-stretch gap-3">
+            {/* Our Estimate card */}
+            <div className="flex-1 rounded-lg border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 p-3">
+              <div className="text-xs font-medium text-[#6a6a7a]">Our Estimated Range</div>
+              <div className="mt-1 text-lg font-bold text-[#2d5a3d]">
+                {estimate ? `${formatCurrency(estimate.estimatedLow)} – ${formatCurrency(estimate.estimatedHigh)}` : "—"}
+              </div>
+            </div>
+            {/* Your Budget card */}
+            {selectedAmount != null && (
+              <div className={`flex-1 rounded-lg border p-3 ${
+                estimate && selectedAmount < estimate.estimatedLow
+                  ? "border-[#c0392b]/20 bg-[#c0392b]/5"
+                  : estimate && selectedAmount > estimate.estimatedHigh
+                    ? "border-[#2980b9]/20 bg-[#2980b9]/5"
+                    : "border-[#e8e6e1] bg-white"
+              }`}>
+                <div className="text-xs font-medium text-[#6a6a7a]">Your Budget</div>
+                <div className={`mt-1 text-lg font-bold ${
+                  estimate && selectedAmount < estimate.estimatedLow
+                    ? "text-[#c0392b]"
+                    : estimate && selectedAmount > estimate.estimatedHigh
+                      ? "text-[#2980b9]"
+                      : "text-[#1a1a2e]"
+                }`}>
+                  {formatCurrency(selectedAmount)}
+                </div>
+                {estimate && selectedAmount < estimate.estimatedLow && (
+                  <div className="mt-0.5 text-[10px] font-medium text-[#c0392b]">Below estimated range</div>
+                )}
+                {estimate && selectedAmount > estimate.estimatedHigh && (
+                  <div className="mt-0.5 text-[10px] font-medium text-[#2980b9]">Above estimated range</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Budget warning — dynamically computed from current selectedAmount */}
+          {dynamicWarning && (
+            <div className={`mb-5 flex items-start gap-3 rounded-lg border p-3 ${
+              selectedAmount != null && estimate && selectedAmount < estimate.estimatedLow
+                ? "border-[#e8a838]/40 bg-[#fef9ee]"
+                : "border-[#2980b9]/30 bg-[#eef6fc]"
+            }`}>
+              <FaCircleExclamation className={`mt-0.5 shrink-0 text-base ${
+                selectedAmount != null && estimate && selectedAmount < estimate.estimatedLow
+                  ? "text-[#d4956a]"
+                  : "text-[#2980b9]"
+              }`} />
+              <p className="text-xs leading-relaxed text-[#4a4a5a]">{dynamicWarning}</p>
+            </div>
+          )}
+
+          {/* ── Chart + Table layout ── */}
+          <div className="flex items-start gap-6">
+            {/* Table side */}
+            <div className="flex-1 min-w-0">
+              {/* Header row */}
+              <div className="flex items-center border-b-2 border-[#1a1a2e] pb-2 mb-1">
+                <span className="flex-1 text-sm font-bold text-[#1a1a2e]">Estimated Budget</span>
+                <span className="w-28 text-right text-sm font-bold text-[#1a1a2e]">
+                  {estimate ? formatCurrency((estimate.estimatedLow + estimate.estimatedHigh) / 2) : "—"}
+                </span>
+              </div>
+
+              {/* Breakdown rows */}
+              {breakdownRows.map((item, i) => {
+                const midAmount = item.lowAmount > 0
+                  ? Math.round((item.lowAmount + item.highAmount) / 2)
+                  : null;
+                return (
+                  <div key={item.category} className="flex items-center border-b border-[#e8e6e1] py-2.5 group hover:bg-[#e8e6e1]/40 -mx-2 px-2 rounded transition">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      <span
+                        className="h-3 w-3 rounded-sm shrink-0"
+                        style={{ backgroundColor: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length] }}
+                      />
+                      <span className="text-sm text-[#1a1a2e]">{item.category}</span>
+                    </div>
+                    <span className="w-16 text-right text-sm text-[#6a6a7a]">{item.pct}%</span>
+                    <span className="w-28 text-right text-sm font-medium text-[#1a1a2e]">
+                      {midAmount !== null ? formatCurrency(midAmount) : "—"}
+                    </span>
+                  </div>
+                );
+              })}
+
+              {/* Total row */}
+              <div className="flex items-center pt-3 mt-1">
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                  <span className="h-3 w-3 shrink-0" />
+                  <span className="text-sm font-bold text-[#2d5a3d]">Estimated Total</span>
+                </div>
+                <span className="w-16" />
+                <span className="w-28 text-right text-sm font-bold text-[#2d5a3d]">
+                  {estimate
+                    ? `${formatCurrency(estimate.estimatedLow)} – ${formatCurrency(estimate.estimatedHigh)}`
+                    : "—"}
+                </span>
+              </div>
+            </div>
+
+            {/* Pie chart side */}
+            <div className="hidden sm:flex shrink-0 items-center justify-center">
+              <PieChart segments={pieSegments} size={180} />
+            </div>
+          </div>
+
+          {/* Engine rationale */}
+          {estimate?.rationale && (
+            <p className="mt-4 text-xs leading-relaxed text-[#6a6a7a] italic border-t border-[#e8e6e1] pt-3">{estimate.rationale}</p>
           )}
         </div>
       )}
