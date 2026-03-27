@@ -653,7 +653,7 @@ function BudgetStep() {
     <div className="space-y-10">
       {/* ── Question 1: Bathroom Size ── */}
       <div>
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">What is the size?</h2>
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">What is the room size?</h2>
         <p className="mt-2 text-sm text-[#6a6a7a]">
           Choose the category that best matches your space.
         </p>
@@ -684,7 +684,10 @@ function BudgetStep() {
                       <div className="text-xs text-[#6a6a7a]">{s.desc}</div>
                     </div>
                   </div>
-                  <div className="shrink-0 text-xs font-medium text-[#2d5a3d]">{s.sqft}</div>
+                  <div className="shrink-0 text-right font-medium text-[#2d5a3d]">
+                    <div className="text-sm">{s.sqft.replace(/ sqft$/, '')}</div>
+                    <div className="text-[10px] uppercase tracking-wide">sqft</div>
+                  </div>
                 </div>
               </button>
             );
@@ -694,9 +697,9 @@ function BudgetStep() {
 
       {/* ── Question 2: Budget ── */}
       <div>
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">What is your Budget?</h2>
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">If you have 3 budget ranges, what are they?</h2>
         <p className="mt-2 text-sm text-[#6a6a7a]">
-          Type a dollar amount for each tier, then pick the one you&apos;re aiming for.
+          Then pick the one you&apos;re aiming for.
         </p>
 
         <div className="mt-5 space-y-3">

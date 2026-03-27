@@ -23,10 +23,10 @@ Nice-to-Haves : ${input.niceToHaves.length ? input.niceToHaves.join(", ") : "Non
 
 SIZE REFERENCE (use these for area estimates)
 ──────────────
-- half-bath / powder room : 15–30 sqft
-- three-quarter bath      : 30–50 sqft
-- full-bath               : 50–80 sqft
-- primary / master bath   : 80–120+ sqft
+- half-bath          : 15–30 sqft
+- three-quarter bath  : 30–50 sqft
+- full-bath           : 50–80 sqft
+- master bath         : 80–120+ sqft
 
 COST ESTIMATION RULES
 ─────────────────────
