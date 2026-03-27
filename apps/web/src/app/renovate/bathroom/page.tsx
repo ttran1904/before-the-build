@@ -551,7 +551,6 @@ function BudgetStep() {
   } | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [includeNiceToHaves, setIncludeNiceToHaves] = useState(true);
-  const estimateFetchedRef = useRef(false);
 
   const tiers: { id: BudgetTier; label: string; desc: string; color: string; icon: React.ReactNode }[] = [
     { id: "basic", label: "Basic", desc: "Builder-grade materials, standard fixtures", color: "#87CEEB", icon: <FaDollarSign className="text-base" /> },
@@ -564,8 +563,20 @@ function BudgetStep() {
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
-  // Fetch engine estimate
+  // Build a hash of the inputs that actually affect the estimate —
+  // customer budget / tier selection are NOT included since they're
+  // only used for client-side comparison, not the estimate itself.
+  const estimateInputHash = useMemo(
+    () => [goal, scope, mustHaves.join(","), (includeNiceToHaves ? niceToHaves : []).join(","), bathroomSize].join("|"),
+    [goal, scope, mustHaves, niceToHaves, includeNiceToHaves, bathroomSize],
+  );
+  const lastFetchedHashRef = useRef("");
+
+  // Fetch engine estimate — only called when inputs that matter change
   const fetchEstimate = useCallback(async () => {
+    // Skip if we already fetched for these exact inputs
+    if (lastFetchedHashRef.current === estimateInputHash) return;
+    lastFetchedHashRef.current = estimateInputHash;
     setEstimateLoading(true);
     try {
       const res = await fetch("/api/ai/budget-estimate", {
@@ -577,7 +588,6 @@ function BudgetStep() {
           mustHaves,
           niceToHaves: includeNiceToHaves ? niceToHaves : [],
           bathroomSize,
-          customerBudget: selectedAmount,
         }),
       });
       if (res.ok) {
@@ -589,33 +599,15 @@ function BudgetStep() {
     } finally {
       setEstimateLoading(false);
     }
-  }, [goal, scope, mustHaves, niceToHaves, includeNiceToHaves, bathroomSize, selectedAmount]);
+  }, [goal, scope, mustHaves, niceToHaves, includeNiceToHaves, bathroomSize, estimateInputHash]);
 
-  // Auto-fetch when the user picks a budget tier
-  useEffect(() => {
-    if (budgetTier && !estimateFetchedRef.current) {
-      estimateFetchedRef.current = true;
-      fetchEstimate();
-    }
-  }, [budgetTier, fetchEstimate]);
-
-  // Re-fetch on customer budget change (debounced)
-  const prevAmountRef = useRef<number | null>(null);
-  useEffect(() => {
-    if (selectedAmount != null && prevAmountRef.current != null && selectedAmount !== prevAmountRef.current) {
-      const timer = setTimeout(() => fetchEstimate(), 800);
-      return () => clearTimeout(timer);
-    }
-    prevAmountRef.current = selectedAmount ?? null;
-  }, [selectedAmount, fetchEstimate]);
-
-  // Re-fetch when nice-to-haves toggle changes
+  // Auto-fetch once when the step is shown and a tier is selected,
+  // and re-fetch only when the estimate inputs actually change.
   useEffect(() => {
     if (budgetTier) {
       fetchEstimate();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeNiceToHaves]);
+  }, [budgetTier, fetchEstimate]);
 
   const breakdownRows = estimate?.breakdown ?? [
     { category: "Materials", pct: 45, lowAmount: 0, highAmount: 0 },
@@ -677,10 +669,7 @@ function BudgetStep() {
             return (
               <button
                 key={s.id}
-                onClick={() => {
-                  setBathroomSize(s.id);
-                  estimateFetchedRef.current = false;
-                }}
+                onClick={() => setBathroomSize(s.id)}
                 className={`rounded-xl border-2 p-4 text-left transition ${
                   bathroomSize === s.id
                     ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
