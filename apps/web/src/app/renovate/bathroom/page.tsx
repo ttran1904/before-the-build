@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -53,6 +53,14 @@ interface Contractor {
 }
 
 export default function BathroomWizardPage() {
+  return (
+    <Suspense>
+      <BathroomWizardPageContent />
+    </Suspense>
+  );
+}
+
+function BathroomWizardPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const store = useWizardStore();
