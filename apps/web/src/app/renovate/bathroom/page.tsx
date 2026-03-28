@@ -1132,6 +1132,8 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [zOrders, setZOrders] = useState<Record<number, number>>({});
+  const zCounter = useRef(1);
 
   const getDefaultPosition = (idx: number, total: number, cw: number, ch: number) => {
     const cols = total <= 2 ? total : total <= 4 ? 2 : 3;
@@ -1150,6 +1152,8 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
     const rect = canvas.getBoundingClientRect();
     const pos = dragPositions[idx] || getDefaultPosition(idx, selectedProducts.length, rect.width, rect.height);
     dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    zCounter.current += 1;
+    setZOrders(prev => ({ ...prev, [idx]: zCounter.current }));
     setDraggingIdx(idx);
   };
 
@@ -1785,8 +1789,8 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
                   return (
                     <div
                       key={i}
-                      className={`absolute transition-shadow duration-150 ${draggingIdx === i ? "z-20 shadow-lg" : "z-10 hover:shadow-md"}`}
-                      style={{ left: pos.x, top: pos.y, cursor: draggingIdx === i ? "grabbing" : "grab" }}
+                      className={`absolute transition-shadow duration-150 ${draggingIdx === i ? "shadow-lg" : "hover:shadow-md"}`}
+                      style={{ left: pos.x, top: pos.y, cursor: draggingIdx === i ? "grabbing" : "grab", zIndex: draggingIdx === i ? 9999 : (zOrders[i] || 0) }}
                       onMouseDown={(e) => handleCanvasMouseDown(e, i)}
                     >
                       {p.thumbnail ? (
