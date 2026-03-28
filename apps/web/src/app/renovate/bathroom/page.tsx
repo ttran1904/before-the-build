@@ -115,6 +115,7 @@ interface Contractor {
   name: string; rating: number; reviewCount: number; specialty: string;
   location: string; url: string; hiredCount: string;
   responseTime: string; verified: boolean; thumbnail?: string; snippet?: string;
+  yearsInBusiness?: string;
 }
 
 export default function BathroomWizardPage() {
@@ -2127,69 +2128,115 @@ function ContractorStep({ thumbtack, google, loading, zip, onZipChange, onSearch
   const isValidZip = /^\d{5}$/.test(zip);
   const hasResults = thumbtack.length > 0 || google.length > 0;
 
-  const renderCard = (c: Contractor, i: number, showThumbtackMeta: boolean) => (
+  /* Thumbtack card — horizontal row with View button on the right */
+  const renderThumbtackCard = (c: Contractor, i: number) => (
     <div
       key={i}
-      className="rounded-xl border border-[#e8e6e1] p-4 transition hover:border-[#d5d3cd] hover:shadow-md"
+      className="flex items-center gap-4 rounded-xl border border-[#e8e6e1] p-4 transition hover:border-[#d5d3cd] hover:shadow-md"
     >
-      <div className="flex items-start gap-3">
-        {/* Thumbnail */}
-        {c.thumbnail && (
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
-            <Image src={c.thumbnail} alt={c.name} fill className="object-cover" sizes="48px" unoptimized />
-          </div>
-        )}
+      {/* Thumbnail */}
+      {c.thumbnail && (
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+          <Image src={c.thumbnail} alt={c.name} fill className="object-cover" sizes="48px" unoptimized />
+        </div>
+      )}
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-[#1a1a2e] truncate">{c.name}</h3>
-            {c.verified && (
-              <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#2d5a3d]">
-                <FaShieldHalved className="text-[7px]" /> Verified
-              </span>
-            )}
-          </div>
-          <p className="mt-0.5 text-[11px] text-[#6a6a7a]">{c.specialty}</p>
-
-          {showThumbtackMeta && (
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-[#4a4a5a]">
-              {c.rating > 0 && (
-                <span className="flex items-center gap-1">
-                  {renderStars(c.rating)}
-                  <span className="ml-0.5 font-medium">{c.rating}</span>
-                  <span className="text-[#9a9aaa]">({c.reviewCount})</span>
-                </span>
-              )}
-              <span className="flex items-center gap-1">
-                <FaLocationDot className="text-[9px] text-[#9a9aaa]" /> {c.location}
-              </span>
-              {c.responseTime && (
-                <span className="flex items-center gap-1">
-                  <FaClock className="text-[9px] text-[#9a9aaa]" /> {c.responseTime}
-                </span>
-              )}
-            </div>
-          )}
-
-          {!showThumbtackMeta && c.snippet && (
-            <p className="mt-1.5 text-[11px] text-[#6a6a7a] line-clamp-2">{c.snippet}</p>
-          )}
-
-          {showThumbtackMeta && c.hiredCount && (
-            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#2d5a3d]">
-              <FaThumbsUp className="text-[9px]" /> {c.hiredCount} hires
-            </div>
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-[#1a1a2e] truncate">{c.name}</h3>
+          {c.verified && (
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#2d5a3d]">
+              <FaShieldHalved className="text-[7px]" /> Verified
+            </span>
           )}
         </div>
+        <p className="mt-0.5 text-[11px] text-[#6a6a7a]">{c.specialty}</p>
+
+        <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-[#4a4a5a]">
+          {c.rating > 0 && (
+            <span className="flex items-center gap-1">
+              {renderStars(c.rating)}
+              <span className="ml-0.5 font-medium">{c.rating}</span>
+              <span className="text-[#9a9aaa]">({c.reviewCount})</span>
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <FaLocationDot className="text-[9px] text-[#9a9aaa]" /> {c.location}
+          </span>
+          {c.responseTime && (
+            <span className="flex items-center gap-1">
+              <FaClock className="text-[9px] text-[#9a9aaa]" /> {c.responseTime}
+            </span>
+          )}
+        </div>
+
+        {c.hiredCount && (
+          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#2d5a3d]">
+            <FaThumbsUp className="text-[9px]" /> {c.hiredCount} hires
+          </div>
+        )}
       </div>
 
-      {/* View button */}
+      {/* View button — right side */}
       {c.url && (
         <a
           href={c.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#2d5a3d] py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#234a31]"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-[11px] font-semibold text-white transition hover:bg-[#234a31]"
+        >
+          View <FaArrowUpRightFromSquare className="text-[8px]" />
+        </a>
+      )}
+    </div>
+  );
+
+  /* Google Reviews card — shows rating, location zip, years in business, View on right */
+  const renderGoogleCard = (c: Contractor, i: number) => (
+    <div
+      key={i}
+      className="flex items-center gap-4 rounded-xl border border-[#e8e6e1] p-4 transition hover:border-[#d5d3cd] hover:shadow-md"
+    >
+      {/* Thumbnail */}
+      {c.thumbnail && (
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+          <Image src={c.thumbnail} alt={c.name} fill className="object-cover" sizes="48px" unoptimized />
+        </div>
+      )}
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-semibold text-[#1a1a2e] truncate">{c.name}</h3>
+        <p className="mt-0.5 text-[11px] text-[#6a6a7a]">{c.specialty}</p>
+
+        <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-[#4a4a5a]">
+          {c.rating > 0 && (
+            <span className="flex items-center gap-1">
+              {renderStars(c.rating)}
+              <span className="ml-0.5 font-medium">{c.rating}</span>
+              <span className="text-[#9a9aaa]">({c.reviewCount} reviews)</span>
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <FaLocationDot className="text-[9px] text-[#9a9aaa]" /> {c.location}
+          </span>
+        </div>
+
+        {c.yearsInBusiness && (
+          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#6a6a7a]">
+            <FaDiamond className="text-[7px] text-[#9a9aaa]" /> {c.yearsInBusiness}
+          </div>
+        )}
+      </div>
+
+      {/* View button — right side */}
+      {c.url && (
+        <a
+          href={c.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-[11px] font-semibold text-white transition hover:bg-[#234a31]"
         >
           View <FaArrowUpRightFromSquare className="text-[8px]" />
         </a>
@@ -2198,7 +2245,7 @@ function ContractorStep({ thumbtack, google, loading, zip, onZipChange, onSearch
   );
 
   return (
-    <div>
+    <div className="max-w-5xl">
       <h2 className="text-2xl font-bold text-[#1a1a2e]">Find Contractors</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
         Enter your zip code to compare contractor results side by side.
@@ -2234,7 +2281,7 @@ function ContractorStep({ thumbtack, google, loading, zip, onZipChange, onSearch
           <span className="text-sm text-[#6a6a7a]">Searching for contractors near you...</span>
         </div>
       ) : hasResults ? (
-        <div className="mt-6 grid grid-cols-2 gap-6">
+        <div className="mt-6 grid grid-cols-2 gap-8">
           {/* Left column: Thumbtack */}
           <div>
             <div className="mb-3 flex items-center justify-between">
@@ -2242,18 +2289,18 @@ function ContractorStep({ thumbtack, google, loading, zip, onZipChange, onSearch
               <span className="text-[10px] text-[#009fd9] font-medium">Powered by Thumbtack</span>
             </div>
             <div className="space-y-3">
-              {thumbtack.map((c, i) => renderCard(c, i, true))}
+              {thumbtack.slice(0, 10).map((c, i) => renderThumbtackCard(c, i))}
             </div>
           </div>
 
-          {/* Right column: Google */}
+          {/* Right column: Google Reviews */}
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-[#1a1a2e]">Google Search Results</h3>
               <span className="text-[10px] text-[#4285f4] font-medium">Powered by Google</span>
             </div>
             <div className="space-y-3">
-              {google.map((c, i) => renderCard(c, i, false))}
+              {google.slice(0, 10).map((c, i) => renderGoogleCard(c, i))}
             </div>
           </div>
         </div>
