@@ -33,6 +33,16 @@ import type { BathroomSize } from "@/lib/room-sizes/bathroom";
 
 /* ─── Types ─── */
 
+/** A price override from a real moodboard selection */
+export interface PriceOverride {
+  /** The must-have / nice-to-have label this replaces */
+  itemLabel: string;
+  /** Actual material cost from the product listing */
+  materialCost: number;
+  /** Estimated labor cost (can be auto-calculated) */
+  laborCost: number;
+}
+
 export interface BudgetGraphInput {
   roomSize: BathroomSize;
   scope: string | null;
@@ -40,6 +50,8 @@ export interface BudgetGraphInput {
   niceToHaves: string[];
   includeNiceToHaves: boolean;
   customerBudget: number | null;
+  /** Real prices from moodboard product selections */
+  priceOverrides?: PriceOverride[];
 }
 
 export interface BudgetGraphBreakdownItem {
@@ -50,11 +62,27 @@ export interface BudgetGraphBreakdownItem {
   highAmount: number;
 }
 
+/** Per-item cost breakdown (material + labor) */
+export interface ItemCostBreakdown {
+  label: string;
+  materialLow: number;
+  materialHigh: number;
+  laborLow: number;
+  laborHigh: number;
+  totalLow: number;
+  totalHigh: number;
+  /** True when a real moodboard price replaced the estimate */
+  overridden: boolean;
+  source: "must-have" | "nice-to-have";
+}
+
 export interface BudgetGraphResult {
   estimatedLow: number;
   estimatedHigh: number;
   estimatedMid: number;
   breakdown: BudgetGraphBreakdownItem[];
+  /** Per-item material + labor breakdown */
+  itemBreakdown: ItemCostBreakdown[];
   budgetWarning: string | null;
   rationale: string;
   /** Individual cost nodes — lets callers see what changed */
@@ -98,6 +126,40 @@ function resolveScopeMultiplier(scope: string | null): number {
 
 /* ─── Node 3: Item installed costs ─── */
 
+/** Material vs labor split — percentage of total that is material cost */
+const MATERIAL_PCT: Record<string, number> = {
+  // Tile & surfaces: ~45% material, ~55% labor (installation-heavy)
+  "New tile (floor)":           0.45,
+  "New tile (shower walls)":    0.45,
+  "Non-slip flooring":          0.45,
+  "Heated floors":              0.45,
+  // Vanities: ~55% material (fixture), ~45% labor (plumbing + install)
+  "Single vanity":              0.55,
+  "Double vanity":              0.55,
+  // Toilet / bidet: ~50/50
+  "Comfort-height toilet":      0.50,
+  "Bidet/bidet seat":           0.50,
+  // Electrical: ~35% material, ~65% labor (licensed electrician)
+  "Exhaust fan upgrade":        0.35,
+  "Recessed lighting":          0.35,
+  "Dimmer switches":            0.40,
+  "Under-cabinet lighting":     0.40,
+  "LED mirror":                 0.65,
+  // Shower & tub: ~45% material, ~55% labor
+  "Walk-in shower":             0.45,
+  "Bathtub":                    0.45,
+  "Glass shower door":          0.55,
+  "Rain showerhead":            0.60,
+  "Handheld showerhead":        0.60,
+  // Storage & fixtures
+  "Medicine cabinet":           0.55,
+  "Built-in shelving":          0.40,
+  "Towel warmer":               0.60,
+  "Grab bars":                  0.45,
+};
+
+const DEFAULT_MATERIAL_PCT = 0.50;
+
 const ITEM_COST: Record<string, { low: number; high: number }> = {
   // Tile & Flooring
   "New tile (floor)":           { low: 1_200, high: 3_500 },
@@ -131,26 +193,57 @@ const ITEM_COST: Record<string, { low: number; high: number }> = {
 
 const DEFAULT_ITEM_COST = { low: 500, high: 1_500 };
 
-function resolveItemCosts(items: string[]): { low: number; high: number } {
-  let low = 0;
-  let high = 0;
-  for (const item of items) {
-    const cost = ITEM_COST[item] ?? DEFAULT_ITEM_COST;
-    low += cost.low;
-    high += cost.high;
+/** Build per-item breakdown with material/labor split and price overrides */
+function resolveItemBreakdown(
+  items: string[],
+  source: "must-have" | "nice-to-have",
+  overrides: PriceOverride[],
+): { breakdown: ItemCostBreakdown[]; totalLow: number; totalHigh: number } {
+  const result: ItemCostBreakdown[] = [];
+  let totalLow = 0;
+  let totalHigh = 0;
+
+  for (const label of items) {
+    const override = overrides.find((o) => o.itemLabel === label);
+    if (override) {
+      const total = override.materialCost + override.laborCost;
+      result.push({
+        label,
+        materialLow: override.materialCost,
+        materialHigh: override.materialCost,
+        laborLow: override.laborCost,
+        laborHigh: override.laborCost,
+        totalLow: total,
+        totalHigh: total,
+        overridden: true,
+        source,
+      });
+      totalLow += total;
+      totalHigh += total;
+    } else {
+      const cost = ITEM_COST[label] ?? DEFAULT_ITEM_COST;
+      const matPct = MATERIAL_PCT[label] ?? DEFAULT_MATERIAL_PCT;
+      const labPct = 1 - matPct;
+      result.push({
+        label,
+        materialLow: Math.round(cost.low * matPct),
+        materialHigh: Math.round(cost.high * matPct),
+        laborLow: Math.round(cost.low * labPct),
+        laborHigh: Math.round(cost.high * labPct),
+        totalLow: cost.low,
+        totalHigh: cost.high,
+        overridden: false,
+        source,
+      });
+      totalLow += cost.low;
+      totalHigh += cost.high;
+    }
   }
-  return { low, high };
+
+  return { breakdown: result, totalLow, totalHigh };
 }
 
-/* ─── Node 4: Breakdown percentages ─── */
-
-const BREAKDOWN_PCTS: { category: string; pct: number }[] = [
-  { category: "Materials",         pct: 45 },
-  { category: "Labor",             pct: 35 },
-  { category: "Permits & Fees",    pct: 5 },
-  { category: "Contingency",       pct: 10 },
-  { category: "Design & Planning", pct: 5 },
-];
+/* ─── Node 4: Breakdown — computed bottom-up from item data ─── */
 
 /* ─── Node 5: Budget comparison / warning ─── */
 
@@ -193,34 +286,99 @@ export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
   // Node 2: scope multiplier
   const scopeMultiplier = resolveScopeMultiplier(input.scope);
 
-  // Node 3a: must-have items
-  const mustHaveCosts = resolveItemCosts(input.mustHaves);
+  // Node 3: per-item breakdown with price overrides
+  const overrides = input.priceOverrides ?? [];
+  const mustHaveBreakdown = resolveItemBreakdown(input.mustHaves, "must-have", overrides);
 
-  // Node 3b: nice-to-have items (only if included)
   const activeNiceToHaves = input.includeNiceToHaves ? input.niceToHaves : [];
-  const niceToHaveCosts = resolveItemCosts(activeNiceToHaves);
+  const niceToHaveBreakdown = resolveItemBreakdown(activeNiceToHaves, "nice-to-have", overrides);
 
-  // Aggregate: total = base × scope + items
+  // Combined item breakdown
+  const itemBreakdown = [...mustHaveBreakdown.breakdown, ...niceToHaveBreakdown.breakdown];
+
+  // ─── Bottom-up category computation ───
+  // Sum item-level material and labor
+  const itemMaterialLow = itemBreakdown.reduce((s, i) => s + i.materialLow, 0);
+  const itemMaterialHigh = itemBreakdown.reduce((s, i) => s + i.materialHigh, 0);
+  const itemLaborLow = itemBreakdown.reduce((s, i) => s + i.laborLow, 0);
+  const itemLaborHigh = itemBreakdown.reduce((s, i) => s + i.laborHigh, 0);
+
+  // Base/overhead (demolition, rough-in, general prep)
+  // Split: ~30% materials (supplies, disposal), ~70% labor
+  const overheadLow = Math.round(base.low * scopeMultiplier);
+  const overheadHigh = Math.round(base.high * scopeMultiplier);
+
+  const materialsLow = itemMaterialLow + Math.round(overheadLow * 0.30);
+  const materialsHigh = itemMaterialHigh + Math.round(overheadHigh * 0.30);
+  const laborLow = itemLaborLow + Math.round(overheadLow * 0.70);
+  const laborHigh = itemLaborHigh + Math.round(overheadHigh * 0.70);
+
+  // Construction subtotal
+  const constructionLow = materialsLow + laborLow;
+  const constructionHigh = materialsHigh + laborHigh;
+
+  // Soft costs as percentages of construction subtotal
+  const permitsLow = Math.round(constructionLow * 0.05);
+  const permitsHigh = Math.round(constructionHigh * 0.05);
+  const contingencyLow = Math.round(constructionLow * 0.10);
+  const contingencyHigh = Math.round(constructionHigh * 0.10);
+  const designLow = Math.round(constructionLow * 0.05);
+  const designHigh = Math.round(constructionHigh * 0.05);
+
+  // Grand total
   const estimatedLow = Math.round(
-    (base.low * scopeMultiplier + mustHaveCosts.low + niceToHaveCosts.low) / 100
+    (constructionLow + permitsLow + contingencyLow + designLow) / 100
   ) * 100;
   const estimatedHigh = Math.round(
-    (base.high * scopeMultiplier + mustHaveCosts.high + niceToHaveCosts.high) / 100
+    (constructionHigh + permitsHigh + contingencyHigh + designHigh) / 100
   ) * 100;
   const estimatedMid = Math.round((estimatedLow + estimatedHigh) / 2);
 
-  // Node 4: breakdown
-  const breakdown: BudgetGraphBreakdownItem[] = BREAKDOWN_PCTS.map((b) => {
-    const lowAmount = Math.round((estimatedLow * b.pct) / 100);
-    const highAmount = Math.round((estimatedHigh * b.pct) / 100);
-    return {
-      category: b.category,
-      pct: b.pct,
-      amount: Math.round((lowAmount + highAmount) / 2),
-      lowAmount,
-      highAmount,
-    };
-  });
+  // Dynamic percentages based on actual amounts
+  const grandMid = estimatedMid || 1;
+
+  // Node 4: category breakdown (bottom-up)
+  const breakdown: BudgetGraphBreakdownItem[] = [
+    {
+      category: "Materials",
+      pct: Math.round(((materialsLow + materialsHigh) / 2 / grandMid) * 100),
+      amount: Math.round((materialsLow + materialsHigh) / 2),
+      lowAmount: materialsLow,
+      highAmount: materialsHigh,
+    },
+    {
+      category: "Labor",
+      pct: Math.round(((laborLow + laborHigh) / 2 / grandMid) * 100),
+      amount: Math.round((laborLow + laborHigh) / 2),
+      lowAmount: laborLow,
+      highAmount: laborHigh,
+    },
+    {
+      category: "Permits & Fees",
+      pct: Math.round(((permitsLow + permitsHigh) / 2 / grandMid) * 100),
+      amount: Math.round((permitsLow + permitsHigh) / 2),
+      lowAmount: permitsLow,
+      highAmount: permitsHigh,
+    },
+    {
+      category: "Contingency",
+      pct: Math.round(((contingencyLow + contingencyHigh) / 2 / grandMid) * 100),
+      amount: Math.round((contingencyLow + contingencyHigh) / 2),
+      lowAmount: contingencyLow,
+      highAmount: contingencyHigh,
+    },
+    {
+      category: "Design & Planning",
+      pct: Math.round(((designLow + designHigh) / 2 / grandMid) * 100),
+      amount: Math.round((designLow + designHigh) / 2),
+      lowAmount: designLow,
+      highAmount: designHigh,
+    },
+  ];
+
+  // Keep old-style totals for backward compat (used in nodes)
+  const mustHaveCosts = { low: mustHaveBreakdown.totalLow, high: mustHaveBreakdown.totalHigh };
+  const niceToHaveCosts = { low: niceToHaveBreakdown.totalLow, high: niceToHaveBreakdown.totalHigh };
 
   // Node 5: warning
   const budgetWarning = resolveWarning(input.customerBudget, estimatedLow, estimatedHigh);
@@ -249,6 +407,7 @@ export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
     estimatedHigh,
     estimatedMid,
     breakdown,
+    itemBreakdown,
     budgetWarning,
     rationale,
     nodes: {

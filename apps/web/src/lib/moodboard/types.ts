@@ -20,6 +20,8 @@ export interface PointedItem {
   loading: boolean;
   products: Product[];
   selectedProductIdx: number | null;
+  /** Matched must-have or nice-to-have label for budget updates */
+  matchedItemLabel?: string;
 }
 
 export interface IdentificationResult {

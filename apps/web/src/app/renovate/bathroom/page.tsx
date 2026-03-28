@@ -162,14 +162,33 @@ function BathroomWizardPageContent() {
   const [budgetBuilderOpen, setBudgetBuilderOpen] = useState(false);
   const [includeNiceToHaves, setIncludeNiceToHaves] = useState(true);
 
+  /* Items Checklist — computed from moodboard pointed items */
+  const allPointedFlat = useMemo(() => Object.values(moodboardPointedItems).flat(), [moodboardPointedItems]);
+
+  const matchedLabels = useMemo(() => {
+    const set = new Set<string>();
+    for (const pi of allPointedFlat) {
+      if (pi.matchedItemLabel && pi.selectedProductIdx !== null) {
+        set.add(pi.matchedItemLabel);
+      }
+    }
+    return set;
+  }, [allPointedFlat]);
+
+  const unmatchedItems = useMemo(() =>
+    allPointedFlat.filter((pi) => !pi.loading && !pi.matchedItemLabel && pi.selectedProductIdx !== null),
+  [allPointedFlat]);
+
+  /* Budget — nice-to-haves only included when matched in moodboard */
   const budgetGraph: BudgetGraphResult = useMemo(() => computeBudgetGraph({
     roomSize: store.bathroomSize,
     scope: store.scope,
     mustHaves: store.mustHaves,
-    niceToHaves: store.niceToHaves,
+    niceToHaves: store.niceToHaves.filter(nh => matchedLabels.has(nh)),
     includeNiceToHaves,
     customerBudget: store.budgetAmount,
-  }), [store.bathroomSize, store.scope, store.mustHaves, store.niceToHaves, store.budgetAmount, includeNiceToHaves]);
+    priceOverrides: store.priceOverrides,
+  }), [store.bathroomSize, store.scope, store.mustHaves, store.niceToHaves, store.budgetAmount, store.priceOverrides, includeNiceToHaves, matchedLabels]);
 
   const currentHash = useMemo(() => wizardInputHash(store), [store.goals, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
 
@@ -369,6 +388,100 @@ function BathroomWizardPageContent() {
           </div>
         </div>
       </main>
+
+      {/* ── Right sidebar: Items Checklist (Moodboard step only) ── */}
+      {currentStep === 4 && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) && (
+        <aside className="sticky top-0 flex h-screen w-48 shrink-0 flex-col border-l border-[#e8e6e1] bg-[#f5f4f0]/80 overflow-y-auto">
+          <div className="px-4 pt-5 pb-3">
+            <h3 className="flex items-center gap-1.5 text-xs font-bold text-[#1a1a2e]">
+              <FaClipboardList className="text-[10px] text-[#2d5a3d]" />
+              Your Items
+            </h3>
+            <p className="mt-0.5 text-[9px] text-[#9a9aaa]">Find products for each item</p>
+          </div>
+
+          <div className="flex-1 px-4 pb-4 space-y-4">
+            {/* Must-Haves */}
+            {store.mustHaves.length > 0 && (
+              <div>
+                <h4 className="flex items-center gap-1 text-[10px] font-semibold text-[#2d5a3d] uppercase tracking-wide">
+                  <FaStar className="text-[8px]" /> Must-Haves
+                </h4>
+                <div className="mt-1.5 space-y-1">
+                  {store.mustHaves.map((label) => {
+                    const found = matchedLabels.has(label);
+                    return (
+                      <div key={label} className={`relative flex items-center gap-1.5 rounded px-2 py-1 text-[11px] transition-all duration-500 ${found ? "bg-[#2d5a3d]/8" : ""}`}>
+                        {found ? (
+                          <FaCheck className="shrink-0 text-[8px] text-[#2d5a3d]" />
+                        ) : (
+                          <span className="shrink-0 text-[8px] text-red-300">✕</span>
+                        )}
+                        <span className={`flex-1 transition-all duration-500 ${found ? "text-[#2d5a3d]/60 line-through decoration-[#2d5a3d]/40" : "text-[#4a4a5a]"}`}>{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Nice-to-Haves */}
+            {store.niceToHaves.length > 0 && (
+              <div>
+                <h4 className="flex items-center gap-1 text-[10px] font-semibold text-[#d4a24c] uppercase tracking-wide">
+                  <FaStarHalfStroke className="text-[8px]" /> Nice-to-Haves
+                </h4>
+                <div className="mt-1.5 space-y-1">
+                  {store.niceToHaves.map((label) => {
+                    const found = matchedLabels.has(label);
+                    return (
+                      <div key={label} className={`relative flex items-center gap-1.5 rounded px-2 py-1 text-[11px] transition-all duration-500 ${found ? "bg-[#d4a24c]/8" : ""}`}>
+                        {found ? (
+                          <FaCheck className="shrink-0 text-[8px] text-[#d4a24c]" />
+                        ) : (
+                          <span className="shrink-0 text-[8px] text-[#c5c3bd]">○</span>
+                        )}
+                        <span className={`flex-1 transition-all duration-500 ${found ? "text-[#d4a24c]/60 line-through decoration-[#d4a24c]/40" : "text-[#9a9aaa]"}`}>{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* New Items (unmatched from moodboard) */}
+            {unmatchedItems.length > 0 && (
+              <div>
+                <h4 className="flex items-center gap-1 text-[10px] font-semibold text-[#6a6a7a] uppercase tracking-wide">
+                  <FaPlus className="text-[8px]" /> New Items
+                </h4>
+                <div className="mt-1.5 space-y-1">
+                  {unmatchedItems.map((pi) => (
+                    <div key={pi.id} className="flex items-center gap-1.5 rounded bg-[#2d5a3d]/5 px-2 py-1 text-[11px]">
+                      <FaCheck className="shrink-0 text-[8px] text-[#5b8c6e]" />
+                      <span className="flex-1 text-[#4a4a5a] truncate">{pi.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          <div className="border-t border-[#e8e6e1]/60 px-4 py-3">
+            <div className="flex items-center justify-between text-[9px] text-[#6a6a7a]">
+              <span>{matchedLabels.size}/{store.mustHaves.length + store.niceToHaves.length}</span>
+              <span className="font-semibold text-[#2d5a3d]">{Math.round((matchedLabels.size / (store.mustHaves.length + store.niceToHaves.length)) * 100)}%</span>
+            </div>
+            <div className="mt-1 h-1 rounded-full bg-[#e8e6e1]">
+              <div
+                className="h-full rounded-full bg-[#2d5a3d] transition-all duration-500"
+                style={{ width: `${(matchedLabels.size / (store.mustHaves.length + store.niceToHaves.length)) * 100}%` }}
+              />
+            </div>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }
@@ -449,7 +562,7 @@ function BudgetBuilderPopout({
             <div className="flex items-stretch gap-3">
               {/* Market estimate */}
               <div className="flex-1 rounded-lg border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 p-3">
-                <div className="text-xs font-medium text-[#6a6a7a]">Market Estimate</div>
+                <div className="text-xs font-medium text-[#6a6a7a]">Total Estimate</div>
                 <div className="mt-1 text-lg font-bold text-[#2d5a3d]">
                   {formatCurrency(graph.estimatedLow)} – {formatCurrency(graph.estimatedHigh)}
                 </div>
@@ -504,27 +617,30 @@ function BudgetBuilderPopout({
               {/* Table */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center border-b-2 border-[#1a1a2e] pb-2 mb-1">
-                  <span className="flex-1 text-sm font-bold text-[#1a1a2e]">Estimated Budget</span>
-                  <span className="w-28 text-right text-sm font-bold text-[#1a1a2e]">
+                  <span className="flex-1 text-sm font-bold text-[#1a1a2e]">Cost Breakdown</span>
+                  <span className="w-32 text-right text-sm font-bold text-[#1a1a2e]">
                     {formatCurrency(graph.estimatedMid)}
                   </span>
                 </div>
 
-                {graph.breakdown.map((item, i) => (
-                  <div key={item.category} className="flex items-center border-b border-[#e8e6e1] py-2.5 group hover:bg-[#e8e6e1]/40 -mx-2 px-2 rounded transition">
-                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                      <span
-                        className="h-3 w-3 rounded-sm shrink-0"
-                        style={{ backgroundColor: POPOUT_BREAKDOWN_COLORS[i % POPOUT_BREAKDOWN_COLORS.length] }}
-                      />
-                      <span className="text-sm text-[#1a1a2e]">{item.category}</span>
+                {graph.breakdown.map((item, i) => {
+                  const isFixed = item.lowAmount === item.highAmount;
+                  return (
+                    <div key={item.category} className="flex items-center border-b border-[#e8e6e1] py-2.5 group hover:bg-[#e8e6e1]/40 -mx-2 px-2 rounded transition">
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                        <span
+                          className="h-3 w-3 rounded-sm shrink-0"
+                          style={{ backgroundColor: POPOUT_BREAKDOWN_COLORS[i % POPOUT_BREAKDOWN_COLORS.length] }}
+                        />
+                        <span className="text-sm text-[#1a1a2e]">{item.category}</span>
+                      </div>
+                      <span className="w-12 text-right text-sm text-[#6a6a7a]">{item.pct}%</span>
+                      <span className="w-32 text-right text-sm font-medium text-[#1a1a2e]">
+                        {isFixed ? formatCurrency(item.amount) : `${formatCurrency(item.lowAmount)}–${formatCurrency(item.highAmount)}`}
+                      </span>
                     </div>
-                    <span className="w-16 text-right text-sm text-[#6a6a7a]">{item.pct}%</span>
-                    <span className="w-28 text-right text-sm font-medium text-[#1a1a2e]">
-                      {formatCurrency(item.amount)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* Total row */}
                 <div className="flex items-center pt-3 mt-1">
@@ -532,8 +648,8 @@ function BudgetBuilderPopout({
                     <span className="h-3 w-3 shrink-0" />
                     <span className="text-sm font-bold text-[#2d5a3d]">Estimated Total</span>
                   </div>
-                  <span className="w-16" />
-                  <span className="w-28 text-right text-sm font-bold text-[#2d5a3d]">
+                  <span className="w-12" />
+                  <span className="w-32 text-right text-sm font-bold text-[#2d5a3d]">
                     {formatCurrency(graph.estimatedLow)} – {formatCurrency(graph.estimatedHigh)}
                   </span>
                 </div>
@@ -549,6 +665,46 @@ function BudgetBuilderPopout({
             <p className="text-xs leading-relaxed text-[#6a6a7a] italic border-t border-[#e8e6e1] pt-3">
               {graph.rationale}
             </p>
+
+            {/* Item-level breakdown */}
+            {graph.itemBreakdown.length > 0 && (
+              <div className="border-t border-[#e8e6e1] pt-4">
+                <h4 className="text-sm font-bold text-[#1a1a2e] mb-3">Item Breakdown</h4>
+                <div className="space-y-1">
+                  <div className="flex items-center text-[10px] font-semibold text-[#6a6a7a] uppercase tracking-wide pb-1 border-b border-[#e8e6e1]">
+                    <span className="flex-1">Item</span>
+                    <span className="w-20 text-right">Material</span>
+                    <span className="w-20 text-right">Labor</span>
+                    <span className="w-24 text-right">Total</span>
+                  </div>
+                  {graph.itemBreakdown.map((item) => {
+                    const matFixed = item.materialLow === item.materialHigh;
+                    const labFixed = item.laborLow === item.laborHigh;
+                    const totFixed = item.totalLow === item.totalHigh;
+                    return (
+                      <div key={item.label} className="flex items-center py-2 border-b border-[#e8e6e1]/50 group hover:bg-[#e8e6e1]/30 -mx-2 px-2 rounded transition">
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                          <span className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${item.source === "must-have" ? "bg-[#2d5a3d]" : "bg-[#d4a24c]"}`} />
+                          <span className="text-xs text-[#1a1a2e] truncate">{item.label}</span>
+                          {item.overridden && (
+                            <span className="shrink-0 rounded bg-[#2d5a3d]/10 px-1 py-0.5 text-[8px] font-semibold text-[#2d5a3d]">REAL</span>
+                          )}
+                        </div>
+                        <span className="w-20 text-right text-[11px] text-[#6a6a7a]">
+                          {matFixed ? formatCurrency(item.materialLow) : `${formatCurrency(item.materialLow)}–${formatCurrency(item.materialHigh)}`}
+                        </span>
+                        <span className="w-20 text-right text-[11px] text-[#6a6a7a]">
+                          {labFixed ? formatCurrency(item.laborLow) : `${formatCurrency(item.laborLow)}–${formatCurrency(item.laborHigh)}`}
+                        </span>
+                        <span className="w-24 text-right text-xs font-medium text-[#1a1a2e]">
+                          {totFixed ? formatCurrency(item.totalLow) : `${formatCurrency(item.totalLow)}–${formatCurrency(item.totalHigh)}`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -960,6 +1116,7 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
   setDragPositions: React.Dispatch<React.SetStateAction<Record<number, { x: number; y: number }>>>;
 }) {
   const { items, removeItem } = useMoodboardStore();
+  const { mustHaves, niceToHaves, setPriceOverride, removePriceOverride } = useWizardStore();
   const [activeSection, setActiveSection] = useState<"discover" | "moodboard">("discover");
   const [selectingImageId, setSelectingImageId] = useState<string | null>(null);
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
@@ -1065,10 +1222,12 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
         body: JSON.stringify({ imageUrl, cropBox: box }),
       });
       const data = await res.json();
+      const label = data.label || "Unknown item";
+      const matched = autoMatchLabel(label);
       setPointedItems(prev => ({
         ...prev,
         [imageId]: (prev[imageId] || []).map(item =>
-          item.id === pointedId ? { ...item, label: data.label || "Unknown item", loading: false, products: data.products || [] } : item
+          item.id === pointedId ? { ...item, label, loading: false, products: data.products || [], matchedItemLabel: matched } : item
         ),
       }));
     } catch {
@@ -1082,10 +1241,66 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
   };
 
   const removePointedItem = (imageId: string, pointedId: string) => {
+    // If removing an item that had a price override, clean it up
+    const pi = (pointedItems[imageId] || []).find((p) => p.id === pointedId);
+    if (pi?.matchedItemLabel && pi.selectedProductIdx !== null) {
+      removePriceOverride(pi.matchedItemLabel);
+    }
     setPointedItems(prev => ({ ...prev, [imageId]: (prev[imageId] || []).filter(item => item.id !== pointedId) }));
   };
 
+  // Auto-match an identified label to a must-have/nice-to-have
+  const allWizardItems = useMemo(() => [...mustHaves, ...niceToHaves], [mustHaves, niceToHaves]);
+
+  const autoMatchLabel = useCallback((identifiedLabel: string): string | undefined => {
+    const lower = identifiedLabel.toLowerCase();
+    // Keywords from must-have labels to fuzzy-match
+    const MATCH_KEYWORDS: Record<string, string[]> = {
+      "New tile (floor)": ["floor tile", "floor", "porcelain tile", "ceramic tile"],
+      "New tile (shower walls)": ["shower tile", "wall tile", "subway tile", "shower wall"],
+      "Single vanity": ["vanity", "bathroom vanity", "single vanity", "sink cabinet"],
+      "Double vanity": ["double vanity", "dual vanity", "two sink"],
+      "Comfort-height toilet": ["toilet", "commode"],
+      "Bidet/bidet seat": ["bidet"],
+      "Exhaust fan upgrade": ["exhaust fan", "vent fan", "bathroom fan"],
+      "Recessed lighting": ["recessed light", "can light", "downlight"],
+      "Walk-in shower": ["walk-in shower", "shower enclosure", "curbless shower"],
+      "Bathtub": ["bathtub", "tub", "soaking tub", "freestanding tub"],
+      "Glass shower door": ["shower door", "glass door", "frameless"],
+      "Rain showerhead": ["rain showerhead", "rain shower", "rainfall"],
+      "Handheld showerhead": ["handheld shower", "hand shower", "detachable"],
+      "Medicine cabinet": ["medicine cabinet", "mirrored cabinet"],
+      "LED mirror": ["led mirror", "lighted mirror", "backlit mirror"],
+      "Heated floors": ["heated floor", "radiant floor", "floor heating"],
+      "Towel warmer": ["towel warmer", "towel rack", "heated towel"],
+      "Grab bars": ["grab bar", "safety bar"],
+      "Built-in shelving": ["shelf", "shelving", "niche", "built-in"],
+      "Non-slip flooring": ["non-slip", "anti-slip"],
+      "Dimmer switches": ["dimmer", "light switch"],
+      "Under-cabinet lighting": ["under-cabinet", "cabinet light", "vanity light"],
+    };
+
+    for (const wizardLabel of allWizardItems) {
+      const keywords = MATCH_KEYWORDS[wizardLabel];
+      if (keywords && keywords.some((kw) => lower.includes(kw))) return wizardLabel;
+      // Also try if the wizard label itself is a substring
+      if (lower.includes(wizardLabel.toLowerCase())) return wizardLabel;
+    }
+    return undefined;
+  }, [allWizardItems]);
+
+  // Parse dollar price string → number (e.g., "$1,299.00" → 1299)
+  const parsePrice = (priceStr: string): number | null => {
+    const match = priceStr.replace(/[^0-9.]/g, "");
+    const num = parseFloat(match);
+    return isNaN(num) ? null : num;
+  };
+
+  // Labor estimate: ~55% of material cost for most bathroom items
+  const estimateLabor = (materialCost: number): number => Math.round(materialCost * 0.55);
+
   const toggleProductSelection = (imageId: string, pointedId: string, productIdx: number) => {
+    // First: update local pointed items state
     setPointedItems(prev => ({
       ...prev,
       [imageId]: (prev[imageId] || []).map(item =>
@@ -1094,6 +1309,27 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
           : item
       ),
     }));
+
+    // Second: update budget price override (deferred to avoid setState-during-render)
+    const pi = (pointedItems[imageId] || []).find((p) => p.id === pointedId);
+    if (!pi?.matchedItemLabel) return;
+
+    const isDeselecting = pi.selectedProductIdx === productIdx;
+    if (isDeselecting) {
+      removePriceOverride(pi.matchedItemLabel);
+    } else {
+      const product = pi.products[productIdx];
+      if (product) {
+        const materialCost = parsePrice(product.price);
+        if (materialCost !== null) {
+          setPriceOverride({
+            itemLabel: pi.matchedItemLabel,
+            materialCost,
+            laborCost: estimateLabor(materialCost),
+          });
+        }
+      }
+    }
   };
 
   const handleManualLinkSubmit = async () => {
@@ -1334,7 +1570,14 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
                                     ) : pi.label === "Unknown item" || pi.label === "Could not identify" ? (
                                       <span className="text-xs text-red-400">Could not identify this item. Try a tighter selection.</span>
                                     ) : (
-                                      <span className="text-sm font-medium text-[#1a1a2e]">{pi.label}</span>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-sm font-medium text-[#1a1a2e]">{pi.label}</span>
+                                        {pi.matchedItemLabel && (
+                                          <span className="rounded bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[9px] font-medium text-[#2d5a3d]">
+                                            → {pi.matchedItemLabel}
+                                          </span>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
                                   <button

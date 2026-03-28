@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { DesignStyle, ProjectGoal } from "@before-the-build/shared";
 import type { BathroomSize } from "@/lib/room-sizes/bathroom";
+import type { PriceOverride } from "@/lib/budget-engine/budget-graph";
 
 /* ── Bathroom Wizard State ── */
 
@@ -24,6 +25,8 @@ export interface BathroomWizardState {
   // Metadata
   bathroomSize: BathroomSize;
   currentStep: number;
+  // Price overrides from moodboard selections
+  priceOverrides: PriceOverride[];
 }
 
 interface WizardActions {
@@ -37,6 +40,8 @@ interface WizardActions {
   setStyle: (style: DesignStyle) => void;
   setBathroomSize: (size: BathroomSize) => void;
   setCurrentStep: (step: number) => void;
+  setPriceOverride: (override: PriceOverride) => void;
+  removePriceOverride: (itemLabel: string) => void;
   reset: () => void;
 }
 
@@ -51,6 +56,7 @@ const initialState: BathroomWizardState = {
   style: null,
   bathroomSize: "full-bath",
   currentStep: 0,
+  priceOverrides: [],
 };
 
 export const useWizardStore = create<BathroomWizardState & WizardActions>((set) => ({
@@ -72,6 +78,15 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>((set) 
   setStyle: (style) => set({ style }),
   setBathroomSize: (bathroomSize) => set({ bathroomSize }),
   setCurrentStep: (currentStep) => set({ currentStep }),
+  setPriceOverride: (override) => set((state) => ({
+    priceOverrides: [
+      ...state.priceOverrides.filter((o) => o.itemLabel !== override.itemLabel),
+      override,
+    ],
+  })),
+  removePriceOverride: (itemLabel) => set((state) => ({
+    priceOverrides: state.priceOverrides.filter((o) => o.itemLabel !== itemLabel),
+  })),
   reset: () => set(initialState),
 }));
 
