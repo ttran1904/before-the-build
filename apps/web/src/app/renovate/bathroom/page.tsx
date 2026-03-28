@@ -20,6 +20,7 @@ import {
 } from "react-icons/fa6";
 import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
 import { BATHROOM_SIZES } from "@/lib/room-sizes/bathroom";
+import { computeBudgetGraph, type BudgetGraphResult } from "@/lib/budget-engine/budget-graph";
 import type { PointedItem, Product } from "@/lib/moodboard/types";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
@@ -83,6 +84,19 @@ export default function BathroomWizardPage() {
   const [moodboardPointedItems, setMoodboardPointedItems] = useState<Record<string, PointedItem[]>>({});
   const [moodboardManualProducts, setMoodboardManualProducts] = useState<Product[]>([]);
   const [moodboardDragPositions, setMoodboardDragPositions] = useState<Record<number, { x: number; y: number }>>({});
+
+  /* Budget Builder — deterministic graph engine */
+  const [budgetBuilderOpen, setBudgetBuilderOpen] = useState(false);
+  const [includeNiceToHaves, setIncludeNiceToHaves] = useState(true);
+
+  const budgetGraph: BudgetGraphResult = useMemo(() => computeBudgetGraph({
+    roomSize: store.bathroomSize,
+    scope: store.scope,
+    mustHaves: store.mustHaves,
+    niceToHaves: store.niceToHaves,
+    includeNiceToHaves,
+    customerBudget: store.budgetAmount,
+  }), [store.bathroomSize, store.scope, store.mustHaves, store.niceToHaves, store.budgetAmount, includeNiceToHaves]);
 
   const currentHash = useMemo(() => wizardInputHash(store), [store.goal, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
 
@@ -186,6 +200,35 @@ export default function BathroomWizardPage() {
           })}
         </nav>
 
+        {/* Budget Builder panel trigger */}
+        <div className="border-t border-white/10 px-3 py-3">
+          <button
+            onClick={() => setBudgetBuilderOpen((v) => !v)}
+            className="group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-white/10"
+          >
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 text-white text-xs">
+              <FaCoins className="text-[11px]" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold text-white">Budget Builder</div>
+              <div className="mt-0.5 flex items-baseline gap-2 text-[10px]">
+                <span className="text-white/60">Yours:</span>
+                <span className="font-bold text-white">
+                  {store.budgetAmount != null
+                    ? `$${store.budgetAmount.toLocaleString()}`
+                    : "—"}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2 text-[10px]">
+                <span className="text-white/60">Market:</span>
+                <span className="font-bold text-[#a8d5ba]">
+                  {`$${budgetGraph.estimatedLow.toLocaleString()} – $${budgetGraph.estimatedHigh.toLocaleString()}`}
+                </span>
+              </div>
+            </div>
+          </button>
+        </div>
+
         {/* Back to explore link */}
         <div className="border-t border-white/10 px-6 py-4">
           <Link href="/explore" className="flex items-center gap-2 text-xs text-white/50 transition hover:text-white/80">
@@ -193,6 +236,18 @@ export default function BathroomWizardPage() {
           </Link>
         </div>
       </aside>
+
+      {/* ── Budget Builder Popout ── */}
+      {budgetBuilderOpen && (
+        <BudgetBuilderPopout
+          graph={budgetGraph}
+          customerBudget={store.budgetAmount}
+          includeNiceToHaves={includeNiceToHaves}
+          setIncludeNiceToHaves={setIncludeNiceToHaves}
+          niceToHaveCount={store.niceToHaves.length}
+          onClose={() => setBudgetBuilderOpen(false)}
+        />
+      )}
 
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto">
@@ -237,6 +292,189 @@ export default function BathroomWizardPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+/* ── Budget Builder Popout (thought-bubble dialogue from sidebar) ── */
+
+const POPOUT_BREAKDOWN_COLORS = ["#2d5a3d", "#d4a24c", "#d4956a", "#5b8c6e", "#87CEEB"];
+
+function BudgetBuilderPopout({
+  graph,
+  customerBudget,
+  includeNiceToHaves,
+  setIncludeNiceToHaves,
+  niceToHaveCount,
+  onClose,
+}: {
+  graph: BudgetGraphResult;
+  customerBudget: number | null;
+  includeNiceToHaves: boolean;
+  setIncludeNiceToHaves: React.Dispatch<React.SetStateAction<boolean>>;
+  niceToHaveCount: number;
+  onClose: () => void;
+}) {
+  const formatCurrency = (n: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+
+  const pieSegments = graph.breakdown.map((item, i) => ({
+    pct: item.pct,
+    color: POPOUT_BREAKDOWN_COLORS[i % POPOUT_BREAKDOWN_COLORS.length],
+    label: item.category,
+    amount: formatCurrency(item.amount),
+  }));
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+
+      {/* Popout — thought bubble from the left panel */}
+      <div
+        className="fixed z-50 flex flex-col"
+        style={{ left: "264px", bottom: "70px", width: "520px", maxHeight: "calc(100vh - 100px)" }}
+      >
+        {/* Thought-bubble tail */}
+        <div className="absolute -left-2 bottom-8 h-4 w-4 rotate-45 rounded-sm bg-white shadow-md" />
+
+        {/* Main card */}
+        <div className="relative overflow-y-auto rounded-2xl border border-[#e8e6e1] bg-white shadow-2xl">
+          {/* Header */}
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e8e6e1] bg-white px-6 py-4">
+            <div className="flex items-center gap-2">
+              <FaCoins className="text-[#2d5a3d]" />
+              <h3 className="text-lg font-bold text-[#1a1a2e]">Budget Builder</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              {niceToHaveCount > 0 && (
+                <button
+                  onClick={() => setIncludeNiceToHaves((v) => !v)}
+                  className="flex items-center gap-2 text-xs text-[#6a6a7a] hover:text-[#1a1a2e] transition"
+                >
+                  <span>Nice-to-Haves</span>
+                  <div className={`relative h-5 w-9 rounded-full transition-colors ${includeNiceToHaves ? "bg-[#2d5a3d]" : "bg-[#d5d3cd]"}`}>
+                    <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${includeNiceToHaves ? "translate-x-4" : "translate-x-0.5"}`} />
+                  </div>
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-[#6a6a7a] transition hover:bg-[#f0efeb] hover:text-[#1a1a2e]"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-5">
+            {/* Budget comparison cards */}
+            <div className="flex items-stretch gap-3">
+              {/* Market estimate */}
+              <div className="flex-1 rounded-lg border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 p-3">
+                <div className="text-xs font-medium text-[#6a6a7a]">Market Estimate</div>
+                <div className="mt-1 text-lg font-bold text-[#2d5a3d]">
+                  {formatCurrency(graph.estimatedLow)} – {formatCurrency(graph.estimatedHigh)}
+                </div>
+              </div>
+              {/* Your budget */}
+              {customerBudget != null && customerBudget > 0 && (
+                <div className={`flex-1 rounded-lg border p-3 ${
+                  customerBudget < graph.estimatedLow
+                    ? "border-[#c0392b]/20 bg-[#c0392b]/5"
+                    : customerBudget > graph.estimatedHigh
+                      ? "border-[#2980b9]/20 bg-[#2980b9]/5"
+                      : "border-[#e8e6e1] bg-white"
+                }`}>
+                  <div className="text-xs font-medium text-[#6a6a7a]">Your Budget</div>
+                  <div className={`mt-1 text-lg font-bold ${
+                    customerBudget < graph.estimatedLow
+                      ? "text-[#c0392b]"
+                      : customerBudget > graph.estimatedHigh
+                        ? "text-[#2980b9]"
+                        : "text-[#1a1a2e]"
+                  }`}>
+                    {formatCurrency(customerBudget)}
+                  </div>
+                  {customerBudget < graph.estimatedLow && (
+                    <div className="mt-0.5 text-[10px] font-medium text-[#c0392b]">Below estimated range</div>
+                  )}
+                  {customerBudget > graph.estimatedHigh && (
+                    <div className="mt-0.5 text-[10px] font-medium text-[#2980b9]">Above estimated range</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Warning */}
+            {graph.budgetWarning && (
+              <div className={`flex items-start gap-3 rounded-lg border p-3 ${
+                customerBudget != null && customerBudget < graph.estimatedLow
+                  ? "border-[#e8a838]/40 bg-[#fef9ee]"
+                  : "border-[#2980b9]/30 bg-[#eef6fc]"
+              }`}>
+                <FaCircleExclamation className={`mt-0.5 shrink-0 text-base ${
+                  customerBudget != null && customerBudget < graph.estimatedLow
+                    ? "text-[#d4956a]"
+                    : "text-[#2980b9]"
+                }`} />
+                <p className="text-xs leading-relaxed text-[#4a4a5a]">{graph.budgetWarning}</p>
+              </div>
+            )}
+
+            {/* Breakdown table + pie chart */}
+            <div className="flex items-start gap-6">
+              {/* Table */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center border-b-2 border-[#1a1a2e] pb-2 mb-1">
+                  <span className="flex-1 text-sm font-bold text-[#1a1a2e]">Estimated Budget</span>
+                  <span className="w-28 text-right text-sm font-bold text-[#1a1a2e]">
+                    {formatCurrency(graph.estimatedMid)}
+                  </span>
+                </div>
+
+                {graph.breakdown.map((item, i) => (
+                  <div key={item.category} className="flex items-center border-b border-[#e8e6e1] py-2.5 group hover:bg-[#e8e6e1]/40 -mx-2 px-2 rounded transition">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      <span
+                        className="h-3 w-3 rounded-sm shrink-0"
+                        style={{ backgroundColor: POPOUT_BREAKDOWN_COLORS[i % POPOUT_BREAKDOWN_COLORS.length] }}
+                      />
+                      <span className="text-sm text-[#1a1a2e]">{item.category}</span>
+                    </div>
+                    <span className="w-16 text-right text-sm text-[#6a6a7a]">{item.pct}%</span>
+                    <span className="w-28 text-right text-sm font-medium text-[#1a1a2e]">
+                      {formatCurrency(item.amount)}
+                    </span>
+                  </div>
+                ))}
+
+                {/* Total row */}
+                <div className="flex items-center pt-3 mt-1">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <span className="h-3 w-3 shrink-0" />
+                    <span className="text-sm font-bold text-[#2d5a3d]">Estimated Total</span>
+                  </div>
+                  <span className="w-16" />
+                  <span className="w-28 text-right text-sm font-bold text-[#2d5a3d]">
+                    {formatCurrency(graph.estimatedLow)} – {formatCurrency(graph.estimatedHigh)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Pie chart */}
+              <div className="shrink-0 flex items-center justify-center">
+                <PieChart segments={pieSegments} size={160} />
+              </div>
+            </div>
+
+            {/* Rationale */}
+            <p className="text-xs leading-relaxed text-[#6a6a7a] italic border-t border-[#e8e6e1] pt-3">
+              {graph.rationale}
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -475,8 +713,6 @@ function MustHavesStep() {
 
 /* ── Budget Step ── */
 
-const BREAKDOWN_COLORS = ["#2d5a3d", "#d4a24c", "#d4956a", "#5b8c6e", "#87CEEB"];
-
 function PieChart({ segments, size = 180 }: { segments: { pct: number; color: string; label: string; amount?: string }[]; size?: number }) {
   const cx = size / 2;
   const cy = size / 2;
@@ -540,114 +776,13 @@ function PieChart({ segments, size = 180 }: { segments: { pct: number; color: st
 }
 
 function BudgetStep() {
-  const { goal, scope, mustHaves, niceToHaves, budgetTier, setBudgetTier, bathroomSize, setBathroomSize, budgetAmounts, setBudgetAmounts } = useWizardStore();
-
-  const [estimate, setEstimate] = useState<{
-    estimatedLow: number;
-    estimatedHigh: number;
-    breakdown: { category: string; pct: number; lowAmount: number; highAmount: number }[];
-    budgetWarning: string | null;
-    rationale: string;
-  } | null>(null);
-  const [estimateLoading, setEstimateLoading] = useState(false);
-  const [includeNiceToHaves, setIncludeNiceToHaves] = useState(true);
+  const { budgetTier, setBudgetTier, bathroomSize, setBathroomSize, budgetAmounts, setBudgetAmounts } = useWizardStore();
 
   const tiers: { id: BudgetTier; label: string; desc: string; color: string; icon: React.ReactNode }[] = [
     { id: "basic", label: "Basic", desc: "Builder-grade materials, standard fixtures", color: "#87CEEB", icon: <FaDollarSign className="text-base" /> },
     { id: "mid", label: "Mid-Range", desc: "Quality materials, ~1 statement piece", color: "#2d5a3d", icon: <FaSackDollar className="text-base" /> },
     { id: "high", label: "High-End", desc: "Premium materials, more statement pieces", color: "#d4956a", icon: <FaGem className="text-base" /> },
   ];
-
-  const selectedAmount = budgetTier ? budgetAmounts[budgetTier] : null;
-
-  const formatCurrency = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-
-  // Build a hash of the inputs that actually affect the estimate —
-  // customer budget / tier selection are NOT included since they're
-  // only used for client-side comparison, not the estimate itself.
-  const estimateInputHash = useMemo(
-    () => [goal, scope, mustHaves.join(","), (includeNiceToHaves ? niceToHaves : []).join(","), bathroomSize].join("|"),
-    [goal, scope, mustHaves, niceToHaves, includeNiceToHaves, bathroomSize],
-  );
-  const lastFetchedHashRef = useRef("");
-
-  // Fetch engine estimate — only called when inputs that matter change
-  const fetchEstimate = useCallback(async () => {
-    // Skip if we already fetched for these exact inputs
-    if (lastFetchedHashRef.current === estimateInputHash) return;
-    lastFetchedHashRef.current = estimateInputHash;
-    setEstimateLoading(true);
-    try {
-      const res = await fetch("/api/ai/budget-estimate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          goal,
-          scope,
-          mustHaves,
-          niceToHaves: includeNiceToHaves ? niceToHaves : [],
-          bathroomSize,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setEstimate(data);
-      }
-    } catch {
-      // Silently fail — static breakdown still visible
-    } finally {
-      setEstimateLoading(false);
-    }
-  }, [goal, scope, mustHaves, niceToHaves, includeNiceToHaves, bathroomSize, estimateInputHash]);
-
-  // Auto-fetch once when the step is shown and a tier is selected,
-  // and re-fetch only when the estimate inputs actually change.
-  useEffect(() => {
-    if (budgetTier) {
-      fetchEstimate();
-    }
-  }, [budgetTier, fetchEstimate]);
-
-  const breakdownRows = estimate?.breakdown ?? [
-    { category: "Materials", pct: 45, lowAmount: 0, highAmount: 0 },
-    { category: "Labor", pct: 35, lowAmount: 0, highAmount: 0 },
-    { category: "Permits & Fees", pct: 5, lowAmount: 0, highAmount: 0 },
-    { category: "Contingency", pct: 10, lowAmount: 0, highAmount: 0 },
-    { category: "Design & Planning", pct: 5, lowAmount: 0, highAmount: 0 },
-  ];
-
-  const pieSegments = breakdownRows.map((item, i) => {
-    const midAmount = item.lowAmount > 0 ? Math.round((item.lowAmount + item.highAmount) / 2) : null;
-    return {
-      pct: item.pct,
-      color: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length],
-      label: item.category,
-      amount: midAmount !== null ? formatCurrency(midAmount) : undefined,
-    };
-  });
-
-  // Dynamic budget warning — recomputes on every render so switching tiers updates instantly
-  const dynamicWarning = useMemo(() => {
-    if (!estimate || selectedAmount == null || selectedAmount <= 0) return null;
-    if (selectedAmount < estimate.estimatedLow) {
-      const midpoint = (estimate.estimatedLow + estimate.estimatedHigh) / 2;
-      const pctBelow = Math.round(((estimate.estimatedLow - selectedAmount) / midpoint) * 100);
-      return (
-        `Your budget of ${formatCurrency(selectedAmount)} is about ${pctBelow}% below our estimated range ` +
-        `(${formatCurrency(estimate.estimatedLow)}–${formatCurrency(estimate.estimatedHigh)}). ` +
-        `Consider increasing your budget or reducing scope to avoid mid-project cost surprises.`
-      );
-    }
-    if (selectedAmount > estimate.estimatedHigh) {
-      return (
-        `Your budget of ${formatCurrency(selectedAmount)} exceeds our estimated range ` +
-        `(${formatCurrency(estimate.estimatedLow)}–${formatCurrency(estimate.estimatedHigh)}). ` +
-        `You have room to upgrade materials or add nice-to-haves.`
-      );
-    }
-    return null;
-  }, [estimate, selectedAmount]);
 
   return (
     <div className="space-y-10">
@@ -748,143 +883,7 @@ function BudgetStep() {
         </div>
       </div>
 
-      {/* ── Estimated Breakdown (SmartAsset-style) ── */}
-      {budgetTier && (
-        <div className="rounded-xl bg-[#f8f7f4] p-6">
-          {/* Header row: title + nice-to-haves toggle */}
-          <div className="mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h4 className="text-lg font-bold text-[#1a1a2e]">Where is your money going?</h4>
-              {estimateLoading && <FaSpinner className="animate-spin text-sm text-[#6a6a7a]" />}
-            </div>
-            {niceToHaves.length > 0 && (
-              <button
-                onClick={() => setIncludeNiceToHaves((v) => !v)}
-                className="flex items-center gap-2 text-xs text-[#6a6a7a] hover:text-[#1a1a2e] transition"
-              >
-                <span>Include Nice-to-Haves</span>
-                <div className={`relative h-5 w-9 rounded-full transition-colors ${includeNiceToHaves ? "bg-[#2d5a3d]" : "bg-[#d5d3cd]"}`}>
-                  <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${includeNiceToHaves ? "translate-x-4" : "translate-x-0.5"}`} />
-                </div>
-              </button>
-            )}
-          </div>
-
-          {/* ── Our Estimate vs Your Budget header ── */}
-          <div className="mb-5 flex items-stretch gap-3">
-            {/* Our Estimate card */}
-            <div className="flex-1 rounded-lg border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 p-3">
-              <div className="text-xs font-medium text-[#6a6a7a]">Our Estimated Range</div>
-              <div className="mt-1 text-lg font-bold text-[#2d5a3d]">
-                {estimate ? `${formatCurrency(estimate.estimatedLow)} – ${formatCurrency(estimate.estimatedHigh)}` : "—"}
-              </div>
-            </div>
-            {/* Your Budget card */}
-            {selectedAmount != null && (
-              <div className={`flex-1 rounded-lg border p-3 ${
-                estimate && selectedAmount < estimate.estimatedLow
-                  ? "border-[#c0392b]/20 bg-[#c0392b]/5"
-                  : estimate && selectedAmount > estimate.estimatedHigh
-                    ? "border-[#2980b9]/20 bg-[#2980b9]/5"
-                    : "border-[#e8e6e1] bg-white"
-              }`}>
-                <div className="text-xs font-medium text-[#6a6a7a]">Your Budget</div>
-                <div className={`mt-1 text-lg font-bold ${
-                  estimate && selectedAmount < estimate.estimatedLow
-                    ? "text-[#c0392b]"
-                    : estimate && selectedAmount > estimate.estimatedHigh
-                      ? "text-[#2980b9]"
-                      : "text-[#1a1a2e]"
-                }`}>
-                  {formatCurrency(selectedAmount)}
-                </div>
-                {estimate && selectedAmount < estimate.estimatedLow && (
-                  <div className="mt-0.5 text-[10px] font-medium text-[#c0392b]">Below estimated range</div>
-                )}
-                {estimate && selectedAmount > estimate.estimatedHigh && (
-                  <div className="mt-0.5 text-[10px] font-medium text-[#2980b9]">Above estimated range</div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Budget warning — dynamically computed from current selectedAmount */}
-          {dynamicWarning && (
-            <div className={`mb-5 flex items-start gap-3 rounded-lg border p-3 ${
-              selectedAmount != null && estimate && selectedAmount < estimate.estimatedLow
-                ? "border-[#e8a838]/40 bg-[#fef9ee]"
-                : "border-[#2980b9]/30 bg-[#eef6fc]"
-            }`}>
-              <FaCircleExclamation className={`mt-0.5 shrink-0 text-base ${
-                selectedAmount != null && estimate && selectedAmount < estimate.estimatedLow
-                  ? "text-[#d4956a]"
-                  : "text-[#2980b9]"
-              }`} />
-              <p className="text-xs leading-relaxed text-[#4a4a5a]">{dynamicWarning}</p>
-            </div>
-          )}
-
-          {/* ── Chart + Table layout ── */}
-          <div className="flex items-start gap-6">
-            {/* Table side */}
-            <div className="flex-1 min-w-0">
-              {/* Header row */}
-              <div className="flex items-center border-b-2 border-[#1a1a2e] pb-2 mb-1">
-                <span className="flex-1 text-sm font-bold text-[#1a1a2e]">Estimated Budget</span>
-                <span className="w-28 text-right text-sm font-bold text-[#1a1a2e]">
-                  {estimate ? formatCurrency((estimate.estimatedLow + estimate.estimatedHigh) / 2) : "—"}
-                </span>
-              </div>
-
-              {/* Breakdown rows */}
-              {breakdownRows.map((item, i) => {
-                const midAmount = item.lowAmount > 0
-                  ? Math.round((item.lowAmount + item.highAmount) / 2)
-                  : null;
-                return (
-                  <div key={item.category} className="flex items-center border-b border-[#e8e6e1] py-2.5 group hover:bg-[#e8e6e1]/40 -mx-2 px-2 rounded transition">
-                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                      <span
-                        className="h-3 w-3 rounded-sm shrink-0"
-                        style={{ backgroundColor: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length] }}
-                      />
-                      <span className="text-sm text-[#1a1a2e]">{item.category}</span>
-                    </div>
-                    <span className="w-16 text-right text-sm text-[#6a6a7a]">{item.pct}%</span>
-                    <span className="w-28 text-right text-sm font-medium text-[#1a1a2e]">
-                      {midAmount !== null ? formatCurrency(midAmount) : "—"}
-                    </span>
-                  </div>
-                );
-              })}
-
-              {/* Total row */}
-              <div className="flex items-center pt-3 mt-1">
-                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                  <span className="h-3 w-3 shrink-0" />
-                  <span className="text-sm font-bold text-[#2d5a3d]">Estimated Total</span>
-                </div>
-                <span className="w-16" />
-                <span className="w-28 text-right text-sm font-bold text-[#2d5a3d]">
-                  {estimate
-                    ? `${formatCurrency(estimate.estimatedLow)} – ${formatCurrency(estimate.estimatedHigh)}`
-                    : "—"}
-                </span>
-              </div>
-            </div>
-
-            {/* Pie chart side */}
-            <div className="hidden sm:flex shrink-0 items-center justify-center">
-              <PieChart segments={pieSegments} size={180} />
-            </div>
-          </div>
-
-          {/* Engine rationale */}
-          {estimate?.rationale && (
-            <p className="mt-4 text-xs leading-relaxed text-[#6a6a7a] italic border-t border-[#e8e6e1] pt-3">{estimate.rationale}</p>
-          )}
-        </div>
-      )}
+      {/* Budget breakdown now lives in the Budget Builder popout (left panel) */}
     </div>
   );
 }
