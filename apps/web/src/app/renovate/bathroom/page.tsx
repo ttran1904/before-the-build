@@ -25,9 +25,74 @@ import type { PointedItem, Product } from "@/lib/moodboard/types";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
 
+/* ── Slot-machine animated number ──
+ * Rules:
+ *  1. Each digit animates independently with its own slide
+ *  2. Digits slide vertically from below when they change
+ *  3. Stagger delay: each position from left to right gets +50ms
+ *  4. Duration: 400ms with ease-out for satisfying deceleration
+ *  5. Only changed digits re-animate; unchanged digits stay still
+ *  6. Non-digit chars ($, comma, spaces, –) don't animate
+ */
+function SlotNumber({ value, className = "" }: { value: string; className?: string }) {
+  const prevRef = useRef(value);
+  const chars = value.split("");
+  const prevChars = prevRef.current.split("");
+
+  useEffect(() => {
+    prevRef.current = value;
+  }, [value]);
+
+  return (
+    <span className={`inline-flex ${className}`}>
+      {chars.map((char, i) => {
+        const changed = prevChars[i] !== char;
+        const isDigit = /\d/.test(char);
+        return isDigit ? (
+          <SlotDigit key={`pos-${i}`} char={char} delay={i * 50} animate={changed} />
+        ) : (
+          <span key={`pos-${i}`} className="inline-block">{char}</span>
+        );
+      })}
+    </span>
+  );
+}
+
+function SlotDigit({ char, delay, animate }: { char: string; delay: number; animate: boolean }) {
+  const [sliding, setSliding] = useState(animate);
+  const [show, setShow] = useState(!animate);
+
+  useEffect(() => {
+    if (!animate) return;
+    setSliding(true);
+    setShow(false);
+    const t = setTimeout(() => {
+      setShow(true);
+      setSliding(false);
+    }, delay + 10);
+    return () => clearTimeout(t);
+  }, [char, animate, delay]);
+
+  return (
+    <span className="inline-block overflow-hidden relative" style={{ width: "0.6em" }}>
+      <span
+        className="inline-block transition-all ease-out text-center w-full"
+        style={{
+          transitionDuration: "400ms",
+          transform: show ? "translateY(0)" : "translateY(100%)",
+          opacity: show ? 1 : 0,
+        }}
+      >
+        {char}
+      </span>
+    </span>
+  );
+}
+
 /* ── Step definitions ── */
 const STEPS = [
-  { id: "goal", label: "Goal", icon: FaBullseye },
+  { id: "goal", label: "Priorities", icon: FaBullseye, parent: "goal" },
+  { id: "scope", label: "Scope", icon: FaRuler, parent: "goal" },
   { id: "must-haves", label: "Must-Haves", icon: FaClipboardList },
   { id: "budget", label: "Budget", icon: FaCoins },
   { id: "moodboard", label: "Moodboard", icon: FaImages },
@@ -178,67 +243,71 @@ function BathroomWizardPageContent() {
           {STEPS.map((step, i) => {
             const done = i < currentStep;
             const active = i === currentStep;
+            const isSubStep = "parent" in step;
+            // Show parent heading before first sub-step
+            const showParentHeading = isSubStep && (i === 0 || !("parent" in STEPS[i - 1]));
             return (
-              <button
-                key={step.id}
-                onClick={() => done && setCurrentStep(i)}
-                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${
-                  active
-                    ? "bg-white/15 text-white"
-                    : done
-                      ? "cursor-pointer text-white/80 hover:bg-white/10"
-                      : "text-white/35"
-                }`}
-              >
-                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs transition ${
-                  active
-                    ? "bg-white text-[#2d5a3d]"
-                    : done
-                      ? "bg-white/25 text-white"
-                      : "bg-white/10 text-white/40"
-                }`}>
-                  {done ? <FaCheck className="text-[10px]" /> : <step.icon className="text-[11px]" />}
-                </span>
-                <span className="text-sm font-medium">{step.label}</span>
-                {done && (
-                  <FaCircleCheck className="ml-auto text-xs text-white/40" />
+              <div key={step.id}>
+                {showParentHeading && (
+                  <div className="flex items-center gap-3 px-3 py-2 text-xs font-semibold tracking-wide text-white/50">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                      <FaBullseye className="text-[10px]" />
+                    </span>
+                    Goal
+                  </div>
                 )}
-              </button>
+                <button
+                  onClick={() => done && setCurrentStep(i)}
+                  className={`group flex w-full items-center gap-3 rounded-lg ${isSubStep ? "pl-8" : "pl-3"} pr-3 py-2.5 text-left transition ${
+                    active
+                      ? "bg-white/15 text-white"
+                      : done
+                        ? "cursor-pointer text-white/80 hover:bg-white/10"
+                        : "text-white/35"
+                  }`}
+                >
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs transition ${
+                    active
+                      ? "bg-white text-[#2d5a3d]"
+                      : done
+                        ? "bg-white/25 text-white"
+                        : "bg-white/10 text-white/40"
+                  }`}>
+                    {done ? <FaCheck className="text-[10px]" /> : <step.icon className="text-[10px]" />}
+                  </span>
+                  <span className={`${isSubStep ? "text-xs" : "text-sm"} font-medium`}>{step.label}</span>
+                  {done && (
+                    <FaCircleCheck className="ml-auto text-xs text-white/40" />
+                  )}
+                </button>
+              </div>
             );
           })}
         </nav>
 
         {/* Budget Builder panel trigger */}
-        <div className="border-t border-white/10 px-3 py-3">
+        <div className="px-3 py-3">
           <button
             onClick={() => setBudgetBuilderOpen((v) => !v)}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-white/10"
+            className="group w-full rounded-xl bg-[#d4a24c] p-3 text-left transition hover:bg-[#c4922c] relative"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 text-white text-xs">
-              <FaCoins className="text-[11px]" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-white">Budget Builder</div>
-              <div className="mt-0.5 flex items-baseline gap-2 text-[10px]">
-                <span className="text-white/60">Yours:</span>
-                <span className="font-bold text-white">
-                  {store.budgetAmount != null
-                    ? `$${store.budgetAmount.toLocaleString()}`
-                    : "—"}
-                </span>
-              </div>
-              <div className="flex items-baseline gap-2 text-[10px]">
-                <span className="text-white/60">Market:</span>
-                <span className="font-bold text-[#a8d5ba]">
-                  {`$${budgetGraph.estimatedLow.toLocaleString()} – $${budgetGraph.estimatedHigh.toLocaleString()}`}
-                </span>
+            <FaArrowUpRightFromSquare className="absolute top-3 right-3 text-[10px] text-white/50 group-hover:text-white/80 transition" />
+            <div className="flex items-center gap-2 mb-2">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/25 text-white text-xs">
+                <FaSackDollar className="text-[10px]" />
+              </span>
+              <span className="text-sm font-semibold text-white">Total Estimate</span>
+            </div>
+            <div className="rounded-lg bg-[#b8862a] px-3 py-2.5 text-center">
+              <div className="mt-0.5 text-sm font-bold text-white">
+                <SlotNumber value={`$${budgetGraph.estimatedLow.toLocaleString()}\u00A0\u2013\u00A0$${budgetGraph.estimatedHigh.toLocaleString()}`} />
               </div>
             </div>
           </button>
         </div>
 
         {/* Back to explore link */}
-        <div className="border-t border-white/10 px-6 py-4">
+        <div className="px-6 py-4">
           <Link href="/explore" className="flex items-center gap-2 text-xs text-white/50 transition hover:text-white/80">
             <FaArrowLeft className="text-[10px]" /> Back to Explore
           </Link>
@@ -259,16 +328,17 @@ function BathroomWizardPageContent() {
 
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto">
-        <div className={`mx-auto px-8 py-10 ${currentStep === 1 || currentStep === 3 || currentStep === 4 ? "max-w-6xl" : "max-w-3xl"}`}>
-          {currentStep === 0 && <GoalAndScopeStep />}
-          {currentStep !== 0 && (
+        <div className={`mx-auto px-8 py-10 ${currentStep === 2 || currentStep === 4 || currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}>
+          {currentStep === 0 && <GoalStep />}
+          {currentStep === 1 && <ScopeStep />}
+          {currentStep > 1 && (
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
-            {currentStep === 1 && <MustHavesStep />}
-            {currentStep === 2 && <BudgetStep />}
-            {currentStep === 3 && <MoodboardStep pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 4 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
-            {currentStep === 5 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
-            {currentStep === 6 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} />}
+            {currentStep === 2 && <MustHavesStep />}
+            {currentStep === 3 && <BudgetStep />}
+            {currentStep === 4 && <MoodboardStep pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
+            {currentStep === 5 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
+            {currentStep === 6 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
+            {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} />}
           </div>
           )}
 
@@ -486,11 +556,9 @@ function BudgetBuilderPopout({
   );
 }
 
-/* ── Goal + Scope Step (full-screen sections with auto-scroll) ── */
-function GoalAndScopeStep() {
-  const { goals, toggleGoal, scope, setScope } = useWizardStore();
-  const scopeSectionRef = useRef<HTMLDivElement>(null);
-  const prevGoalsRef = useRef(goals);
+/* ── Goal Step ── */
+function GoalStep() {
+  const { goals, toggleGoal } = useWizardStore();
 
   // Sorted by popularity (most → least common bathroom reno goals)
   const GOALS = [
@@ -503,6 +571,43 @@ function GoalAndScopeStep() {
     { id: "family_friendly", label: "Family-Friendly", icon: FaChildReaching },
   ];
 
+  return (
+    <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
+      <div className="w-full max-w-2xl rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">
+          What&apos;s the main goal of your bathroom renovation?
+        </h2>
+        <p className="mt-2 text-sm text-[#6a6a7a]">
+          Select all that apply. This helps us tailor recommendations and budget estimates.
+        </p>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {GOALS.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => toggleGoal(g.id)}
+              className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
+                goals.includes(g.id)
+                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+              }`}
+            >
+              <span className="text-2xl text-[#2d5a3d]"><g.icon /></span>
+              <div className="flex-1 font-semibold text-[#1a1a2e]">{g.label}</div>
+              {goals.includes(g.id) && (
+                <FaCheck className="text-sm text-[#2d5a3d]" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Scope Step ── */
+function ScopeStep() {
+  const { scope, setScope } = useWizardStore();
+
   const SCOPES: { id: BathroomScope; label: string; desc: string; icon: typeof FaPaintbrush }[] = [
     { id: "cosmetic", label: "Cosmetic Refresh", desc: "Paint, fixtures, hardware, accessories. Minimal disruption.", icon: FaPaintbrush },
     { id: "partial", label: "Partial Remodel", desc: "New vanity, flooring, paint. Keep existing layout.", icon: FaScrewdriverWrench },
@@ -510,90 +615,34 @@ function GoalAndScopeStep() {
     { id: "addition", label: "Addition / Expansion", desc: "Expand bathroom footprint. Structural changes.", icon: FaRuler },
   ];
 
-  /* Auto-scroll to Scope section when first goal is selected */
-  useEffect(() => {
-    if (goals.length > 0 && prevGoalsRef.current.length === 0 && !scope) {
-      setTimeout(() => {
-        scopeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 300);
-    }
-    prevGoalsRef.current = goals;
-  }, [goals, scope]);
-
-  const handleGoalSelect = (id: string) => {
-    const wasEmpty = goals.length === 0;
-    toggleGoal(id);
-    if (wasEmpty && !scope) {
-      setTimeout(() => {
-        scopeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 300);
-    }
-  };
-
   return (
-    <div>
-      {/* ── Goal Section — full viewport height, centered ── */}
-      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
-        <div className="w-full max-w-2xl rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
-          <h2 className="text-2xl font-bold text-[#1a1a2e]">
-            What&apos;s the main goal of your bathroom renovation?
-          </h2>
-          <p className="mt-2 text-sm text-[#6a6a7a]">
-            Select all that apply. This helps us tailor recommendations and budget estimates.
-          </p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {GOALS.map((g) => (
-              <button
-                key={g.id}
-                onClick={() => handleGoalSelect(g.id)}
-                className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
-                  goals.includes(g.id)
-                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-                }`}
-              >
-                <span className="text-2xl text-[#2d5a3d]"><g.icon /></span>
-                <div className="flex-1 font-semibold text-[#1a1a2e]">{g.label}</div>
-                {goals.includes(g.id) && (
-                  <FaCheck className="text-sm text-[#2d5a3d]" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Scope Section — full viewport height, centered ── */}
-      <div
-        ref={scopeSectionRef}
-        className={`flex min-h-[calc(100vh-8rem)] items-center justify-center transition-all duration-500 ${
-          goals.length === 0 ? "opacity-0 pointer-events-none" : "opacity-100"
-        }`}
-      >
-        <div className="w-full max-w-2xl rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
-          <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s the scope of work?</h2>
-          <p className="mt-2 text-sm text-[#6a6a7a]">
-            This determines the complexity, timeline, and budget range.
-          </p>
-          <div className="mt-6 space-y-3">
-            {SCOPES.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setScope(s.id)}
-                className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
-                  scope === s.id
-                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-                }`}
-              >
-                <span className="text-2xl text-[#2d5a3d]"><s.icon /></span>
-                <div className="flex-1">
-                  <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
-                  <div className="mt-0.5 text-sm text-[#6a6a7a]">{s.desc}</div>
-                </div>
-              </button>
-            ))}
-          </div>
+    <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
+      <div className="w-full max-w-2xl rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s the scope of work?</h2>
+        <p className="mt-2 text-sm text-[#6a6a7a]">
+          This determines the complexity, timeline, and budget range.
+        </p>
+        <div className="mt-6 space-y-3">
+          {SCOPES.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setScope(s.id)}
+              className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
+                scope === s.id
+                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+              }`}
+            >
+              <span className="text-2xl text-[#2d5a3d]"><s.icon /></span>
+              <div className="flex-1">
+                <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
+                <div className="mt-0.5 text-sm text-[#6a6a7a]">{s.desc}</div>
+              </div>
+              {scope === s.id && (
+                <FaCheck className="text-sm text-[#2d5a3d]" />
+              )}
+            </button>
+          ))}
         </div>
       </div>
     </div>
