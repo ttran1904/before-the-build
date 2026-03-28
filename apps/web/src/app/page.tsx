@@ -153,20 +153,14 @@ export default function Home() {
             <p className="mt-5 text-lg leading-relaxed text-[#5a5a6a]">
               From inspiration to contractor-ready build books — scan your rooms, 
               explore styles, manage budgets &amp; timelines, and bring your dream 
-              renovation to life with AI.
+              renovation to life.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
               <Link
-                href="/dashboard"
+                href="/explore"
                 className="rounded-full bg-[#2d5a3d] px-8 py-3.5 text-center text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31]"
               >
-                Start Your Project
-              </Link>
-              <Link
-                href="/explore"
-                className="rounded-full border border-[#d5d3cd] px-8 py-3.5 text-center text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#f8f7f4]"
-              >
-                Browse Inspiration
+                Start Your Renovation
               </Link>
             </div>
             <div className="mt-6 flex items-center gap-4 text-sm text-[#7a7a8a] sm:justify-center lg:justify-start">
@@ -182,33 +176,6 @@ export default function Home() {
                 className="relative aspect-[4/3] overflow-hidden rounded-xl"
               >
                 <Image src="/images/kitchen-remodel.png" alt="Kitchen Remodel Preview" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" priority />
-                {/* Overlay content */}
-                <div className="relative flex h-full flex-col justify-between p-6">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-[#2d5a3d]/30" />
-                    <div className="h-3 w-3 rounded-full bg-[#d4956a]/30" />
-                    <div className="h-3 w-3 rounded-full bg-[#e8d5b7]/50" />
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-lg bg-white/80 p-2 shadow-sm backdrop-blur-sm">
-                        <FaCompass className="text-base text-[#2d5a3d]" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-[#1a1a2e]">Kitchen Remodel</div>
-                        <div className="text-xs text-[#6a6a7a]">3D Design Preview</div>
-                      </div>
-                    </div>
-                    {/* Mock furniture items */}
-                    <div className="flex gap-2">
-                      {["Island Counter", "Pendant Lights", "Cabinet Set"].map((item) => (
-                        <div key={item} className="rounded-lg bg-white/80 px-3 py-1.5 text-xs text-[#4a4a5a] shadow-sm backdrop-blur-sm">
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
             {/* Floating budget card */}
