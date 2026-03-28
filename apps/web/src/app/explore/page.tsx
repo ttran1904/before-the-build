@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -22,6 +22,14 @@ interface GalleryImage {
 }
 
 export default function ExplorePage() {
+  return (
+    <Suspense>
+      <ExplorePageContent />
+    </Suspense>
+  );
+}
+
+function ExplorePageContent() {
   const searchParams = useSearchParams();
   const fromMoodboard = searchParams.get("from") === "moodboard";
   const [selectedRoom, setSelectedRoom] = useState("bathroom");
