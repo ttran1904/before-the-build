@@ -43,8 +43,8 @@ export default function TimelinePage() {
 
   /* Dirty-check: only re-fetch when wizard inputs actually change */
   const inputHash = useMemo(
-    () => [store.scope, store.goal, store.budgetTier].join("|"),
-    [store.scope, store.goal, store.budgetTier],
+    () => [store.scope, store.goals.join(","), store.budgetTier].join("|"),
+    [store.scope, store.goals, store.budgetTier],
   );
   const fetchedHashRef = useRef("");
 
@@ -60,7 +60,7 @@ export default function TimelinePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scope: store.scope || "full",
-          goal: store.goal || "update_style",
+          goal: store.goals.join(", ") || "update_style",
           budgetTier: store.budgetTier || "mid",
         }),
       });
@@ -71,7 +71,7 @@ export default function TimelinePage() {
       setTasks([]);
     }
     setLoading(false);
-  }, [inputHash, store.scope, store.goal, store.budgetTier, tasks.length]);
+  }, [inputHash, store.scope, store.goals, store.budgetTier, tasks.length]);
 
   useEffect(() => {
     fetchTasks();

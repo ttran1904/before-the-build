@@ -57,7 +57,7 @@ export default function BuildBookPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          goal: wizard.goal,
+          goal: wizard.goals.join(", "),
           scope: wizard.scope,
           mustHaves: wizard.mustHaves,
           niceToHaves: wizard.niceToHaves,
@@ -83,7 +83,7 @@ export default function BuildBookPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scope: wizard.scope || "full",
-          goal: wizard.goal || "update_style",
+          goal: wizard.goals.join(", ") || "update_style",
           budgetTier: wizard.budgetTier || "mid",
         }),
       });
@@ -96,11 +96,11 @@ export default function BuildBookPage() {
   }, [wizard]);
 
   useEffect(() => {
-    if (wizard.goal) {
+    if (wizard.goals.length > 0) {
       generateSummary();
       fetchTasks();
     }
-  }, [wizard.goal, generateSummary, fetchTasks]);
+  }, [wizard.goals, generateSummary, fetchTasks]);
 
   /* Export PDF */
   const exportPDF = async () => {
@@ -189,7 +189,7 @@ export default function BuildBookPage() {
         {/* Project Overview */}
         <Section icon={<FaChartPie />} title="Project Overview">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <InfoCard label="Goal" value={wizard.goal ? wizard.goal.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Not set"} />
+            <InfoCard label="Goals" value={wizard.goals.length > 0 ? wizard.goals.map(g => g.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())).join(", ") : "Not set"} />
             <InfoCard label="Scope" value={SCOPE_LABELS[wizard.scope || ""] || "Not set"} />
             <InfoCard label="Budget" value={BUDGET_LABELS[wizard.budgetTier || ""] || "Not set"} />
             <InfoCard label="Budget Range" value={budgetRange} />

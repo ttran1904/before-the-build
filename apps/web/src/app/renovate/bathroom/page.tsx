@@ -37,8 +37,8 @@ const STEPS = [
 ];
 
 /* ── Dirty-check: build a hash string of inputs that drive AI calls ── */
-function wizardInputHash(s: { goal: string; scope: BathroomScope | null; mustHaves: string[]; niceToHaves: string[]; budgetTier: BudgetTier | null; bathroomSize: string; style: DesignStyle | null }) {
-  return [s.goal, s.scope, s.mustHaves.join(","), s.niceToHaves.join(","), s.budgetTier, s.bathroomSize, s.style].join("|");
+function wizardInputHash(s: { goals: string[]; scope: BathroomScope | null; mustHaves: string[]; niceToHaves: string[]; budgetTier: BudgetTier | null; bathroomSize: string; style: DesignStyle | null }) {
+  return [s.goals.join(","), s.scope, s.mustHaves.join(","), s.niceToHaves.join(","), s.budgetTier, s.bathroomSize, s.style].join("|");
 }
 
 /* ── Types for AI data ── */
@@ -106,7 +106,7 @@ function BathroomWizardPageContent() {
     customerBudget: store.budgetAmount,
   }), [store.bathroomSize, store.scope, store.mustHaves, store.niceToHaves, store.budgetAmount, includeNiceToHaves]);
 
-  const currentHash = useMemo(() => wizardInputHash(store), [store.goal, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
+  const currentHash = useMemo(() => wizardInputHash(store), [store.goals, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
 
   /* Fetch timeline — only if inputs changed */
   const fetchTimeline = useCallback(async () => {
@@ -117,7 +117,7 @@ function BathroomWizardPageContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          goal: store.goal, scope: store.scope, budgetTier: store.budgetTier,
+          goal: store.goals.join(", "), scope: store.scope, budgetTier: store.budgetTier,
           bathroomSize: store.bathroomSize, mustHaves: store.mustHaves, style: store.style,
         }),
       });
@@ -126,7 +126,7 @@ function BathroomWizardPageContent() {
       timelineHashRef.current = currentHash;
     } catch { /* keep existing data */ }
     setTimelineLoading(false);
-  }, [currentHash, store.goal, store.scope, store.budgetTier, store.bathroomSize, store.mustHaves, store.style, timelineTasks.length]);
+  }, [currentHash, store.goals, store.scope, store.budgetTier, store.bathroomSize, store.mustHaves, store.style, timelineTasks.length]);
 
   /* Fetch contractors — user-triggered with zip code */
   const fetchContractors = useCallback(async (zip: string) => {
@@ -486,21 +486,21 @@ function BudgetBuilderPopout({
   );
 }
 
-/* ── Goal + Scope Step (combined, TurboTax-style) ── */
+/* ── Goal + Scope Step (full-screen sections with auto-scroll) ── */
 function GoalAndScopeStep() {
-  const { goal, setGoal, scope, setScope } = useWizardStore();
-  const scopeRef = useRef<HTMLDivElement>(null);
-  const prevGoalRef = useRef(goal);
+  const { goals, toggleGoal, scope, setScope } = useWizardStore();
+  const scopeSectionRef = useRef<HTMLDivElement>(null);
+  const prevGoalsRef = useRef(goals);
 
+  // Sorted by popularity (most → least common bathroom reno goals)
   const GOALS = [
-    { id: "increase_value", label: "Increase Home Value", desc: "Focus on ROI upgrades — vanity, tile, fixtures", icon: FaChartLine },
-    { id: "more_space", label: "Create More Space", desc: "Reconfigure layout, remove tub for walk-in shower", icon: FaUpRightAndDownLeftFromCenter },
-    { id: "energy_efficient", label: "Energy Efficient", desc: "Low-flow fixtures, LED lighting, better ventilation", icon: FaLeaf },
-    { id: "update_style", label: "Update the Style", desc: "Change aesthetic — modern, farmhouse, spa-like", icon: FaPaintRoller },
-    { id: "family_friendly", label: "Family / Kid-Friendly", desc: "Non-slip floors, tub, storage, durability", icon: FaChildReaching },
-    { id: "accessibility", label: "Improve Accessibility", desc: "Walk-in shower, grab bars, ADA compliance", icon: FaWheelchair },
-    { id: "fix_problems", label: "Fix Existing Problems", desc: "Leaks, mold, outdated plumbing, broken tiles", icon: FaWrench },
-    { id: "more_storage", label: "Increase Storage", desc: "Vanity with drawers, medicine cabinet, shelving", icon: FaBox },
+    { id: "update_style", label: "Update Style", icon: FaPaintRoller },
+    { id: "fix_problems", label: "Fix Problems", icon: FaWrench },
+    { id: "increase_value", label: "Increase Home Value", icon: FaChartLine },
+    { id: "more_space", label: "More Space", icon: FaUpRightAndDownLeftFromCenter },
+    { id: "energy_efficient", label: "Energy Efficient", icon: FaLeaf },
+    { id: "accessibility", label: "Improve Accessibility", icon: FaWheelchair },
+    { id: "family_friendly", label: "Family-Friendly", icon: FaChildReaching },
   ];
 
   const SCOPES: { id: BathroomScope; label: string; desc: string; icon: typeof FaPaintbrush }[] = [
@@ -510,86 +510,90 @@ function GoalAndScopeStep() {
     { id: "addition", label: "Addition / Expansion", desc: "Expand bathroom footprint. Structural changes.", icon: FaRuler },
   ];
 
-  /* Auto-scroll to Scope when a goal is first selected and scope is still empty */
+  /* Auto-scroll to Scope section when first goal is selected */
   useEffect(() => {
-    if (goal && !prevGoalRef.current && !scope) {
+    if (goals.length > 0 && prevGoalsRef.current.length === 0 && !scope) {
       setTimeout(() => {
-        scopeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 150);
+        scopeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
     }
-    prevGoalRef.current = goal;
-  }, [goal, scope]);
+    prevGoalsRef.current = goals;
+  }, [goals, scope]);
 
   const handleGoalSelect = (id: string) => {
-    const wasEmpty = !goal;
-    setGoal(id);
+    const wasEmpty = goals.length === 0;
+    toggleGoal(id);
     if (wasEmpty && !scope) {
       setTimeout(() => {
-        scopeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 150);
+        scopeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
     }
   };
 
   return (
-    <div className="space-y-8">
-      {/* ── Goal Card ── */}
-      <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">
-          What&apos;s the main goal of your bathroom renovation?
-        </h2>
-        <p className="mt-2 text-sm text-[#6a6a7a]">
-          This helps us tailor recommendations, budget estimates, and product suggestions.
-        </p>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {GOALS.map((g) => (
-            <button
-              key={g.id}
-              onClick={() => handleGoalSelect(g.id)}
-              className={`flex items-start gap-3 rounded-xl border-2 p-4 text-left transition ${
-                goal === g.id
-                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-              }`}
-            >
-              <span className="mt-0.5 text-2xl text-[#2d5a3d]"><g.icon /></span>
-              <div>
-                <div className="font-semibold text-[#1a1a2e]">{g.label}</div>
-                <div className="mt-0.5 text-xs text-[#6a6a7a]">{g.desc}</div>
-              </div>
-            </button>
-          ))}
+    <div>
+      {/* ── Goal Section — full viewport height, centered ── */}
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+        <div className="w-full max-w-2xl rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
+          <h2 className="text-2xl font-bold text-[#1a1a2e]">
+            What&apos;s the main goal of your bathroom renovation?
+          </h2>
+          <p className="mt-2 text-sm text-[#6a6a7a]">
+            Select all that apply. This helps us tailor recommendations and budget estimates.
+          </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {GOALS.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => handleGoalSelect(g.id)}
+                className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
+                  goals.includes(g.id)
+                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+                }`}
+              >
+                <span className="text-2xl text-[#2d5a3d]"><g.icon /></span>
+                <div className="flex-1 font-semibold text-[#1a1a2e]">{g.label}</div>
+                {goals.includes(g.id) && (
+                  <FaCheck className="text-sm text-[#2d5a3d]" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* ── Scope Card ── */}
+      {/* ── Scope Section — full viewport height, centered ── */}
       <div
-        ref={scopeRef}
-        className={`rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5 transition-all duration-500 ${
-          !goal ? "opacity-40 pointer-events-none" : "opacity-100"
+        ref={scopeSectionRef}
+        className={`flex min-h-[calc(100vh-8rem)] items-center justify-center transition-all duration-500 ${
+          goals.length === 0 ? "opacity-0 pointer-events-none" : "opacity-100"
         }`}
       >
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s the scope of work?</h2>
-        <p className="mt-2 text-sm text-[#6a6a7a]">
-          This determines the complexity, timeline, and budget range.
-        </p>
-        <div className="mt-6 space-y-3">
-          {SCOPES.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setScope(s.id)}
-              className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
-                scope === s.id
-                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-              }`}
-            >
-              <span className="text-2xl text-[#2d5a3d]"><s.icon /></span>
-              <div className="flex-1">
-                <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
-                <div className="mt-0.5 text-sm text-[#6a6a7a]">{s.desc}</div>
-              </div>
-            </button>
-          ))}
+        <div className="w-full max-w-2xl rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
+          <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s the scope of work?</h2>
+          <p className="mt-2 text-sm text-[#6a6a7a]">
+            This determines the complexity, timeline, and budget range.
+          </p>
+          <div className="mt-6 space-y-3">
+            {SCOPES.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setScope(s.id)}
+                className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
+                  scope === s.id
+                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+                }`}
+              >
+                <span className="text-2xl text-[#2d5a3d]"><s.icon /></span>
+                <div className="flex-1">
+                  <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
+                  <div className="mt-0.5 text-sm text-[#6a6a7a]">{s.desc}</div>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -1897,14 +1901,12 @@ function SummaryStep({ tasks, contractorCount }: { tasks: TimelineTask[]; contra
 
   const GOAL_LABELS: Record<string, string> = {
     increase_value: "Increase Home Value",
-    more_space: "Create More Space",
+    more_space: "More Space",
     energy_efficient: "Energy Efficient",
-    update_style: "Update the Style",
-    family_friendly: "Family / Kid-Friendly",
+    update_style: "Update Style",
+    family_friendly: "Family-Friendly",
     accessibility: "Improve Accessibility",
-    fix_problems: "Fix Existing Problems",
-    more_storage: "Increase Storage",
-    luxury_spa: "Spa Experience",
+    fix_problems: "Fix Problems",
   };
 
   const SCOPE_LABELS: Record<string, string> = {
@@ -1926,7 +1928,7 @@ function SummaryStep({ tasks, contractorCount }: { tasks: TimelineTask[]; contra
       </p>
 
       <div className="mt-6 space-y-4">
-        <SummaryRow label="Goal" value={GOAL_LABELS[store.goal] || store.goal} />
+        <SummaryRow label="Goals" value={store.goals.map(g => GOAL_LABELS[g] || g).join(", ") || "None selected"} />
         <SummaryRow label="Scope" value={store.scope ? SCOPE_LABELS[store.scope] : "—"} />
         <SummaryRow label="Size" value={BATHROOM_SIZES.find(s => s.id === store.bathroomSize)?.label || store.bathroomSize} />
         <SummaryRow label="Budget Tier" value={store.budgetTier ? store.budgetTier.charAt(0).toUpperCase() + store.budgetTier.slice(1) : "—"} />

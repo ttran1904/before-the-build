@@ -8,8 +8,8 @@ export type BathroomScope = "cosmetic" | "partial" | "full" | "addition";
 export type BudgetTier = "basic" | "mid" | "high";
 
 export interface BathroomWizardState {
-  // Step 1: Goal
-  goal: string;
+  // Step 1: Goal (multi-select)
+  goals: string[];
   // Step 2: Scope
   scope: BathroomScope | null;
   // Step 3: Must-haves & Nice-to-haves
@@ -27,7 +27,7 @@ export interface BathroomWizardState {
 }
 
 interface WizardActions {
-  setGoal: (goal: string) => void;
+  toggleGoal: (goal: string) => void;
   setScope: (scope: BathroomScope) => void;
   setMustHaves: (items: string[]) => void;
   setNiceToHaves: (items: string[]) => void;
@@ -41,7 +41,7 @@ interface WizardActions {
 }
 
 const initialState: BathroomWizardState = {
-  goal: "",
+  goals: [],
   scope: null,
   mustHaves: [],
   niceToHaves: [],
@@ -55,7 +55,11 @@ const initialState: BathroomWizardState = {
 
 export const useWizardStore = create<BathroomWizardState & WizardActions>((set) => ({
   ...initialState,
-  setGoal: (goal) => set({ goal }),
+  toggleGoal: (goal) => set((state) => ({
+    goals: state.goals.includes(goal)
+      ? state.goals.filter((g) => g !== goal)
+      : [...state.goals, goal],
+  })),
   setScope: (scope) => set({ scope }),
   setMustHaves: (mustHaves) => set({ mustHaves }),
   setNiceToHaves: (niceToHaves) => set({ niceToHaves }),
