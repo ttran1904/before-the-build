@@ -348,7 +348,7 @@ function BathroomWizardPageContent() {
 
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto">
-        <div className={`mx-auto px-8 py-10 ${currentStep === 2 || currentStep === 4 || currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}>
+        <div className={`mx-auto px-8 py-10 ${currentStep === 6 ? "max-w-5xl" : currentStep === 2 || currentStep === 4 || currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}>
           {currentStep === 0 && <GoalStep />}
           {currentStep === 1 && <ScopeStep />}
           {currentStep > 1 && (
@@ -2192,42 +2192,35 @@ function ContractorStep({ thumbtack, google, loading, zip, onZipChange, onSearch
     </div>
   );
 
-  /* Google Reviews card — shows rating, location zip, years in business, View on right */
+  /* Google Reviews card — name, then rating · type, years, location, View on right */
   const renderGoogleCard = (c: Contractor, i: number) => (
     <div
       key={i}
       className="flex items-center gap-4 rounded-xl border border-[#e8e6e1] p-4 transition hover:border-[#d5d3cd] hover:shadow-md"
     >
-      {/* Thumbnail */}
-      {c.thumbnail && (
-        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
-          <Image src={c.thumbnail} alt={c.name} fill className="object-cover" sizes="48px" unoptimized />
-        </div>
-      )}
-
       {/* Info */}
       <div className="flex-1 min-w-0">
         <h3 className="text-sm font-semibold text-[#1a1a2e] truncate">{c.name}</h3>
-        <p className="mt-0.5 text-[11px] text-[#6a6a7a]">{c.specialty}</p>
 
-        <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-[#4a4a5a]">
-          {c.rating > 0 && (
-            <span className="flex items-center gap-1">
-              {renderStars(c.rating)}
-              <span className="ml-0.5 font-medium">{c.rating}</span>
-              <span className="text-[#9a9aaa]">({c.reviewCount} reviews)</span>
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <FaLocationDot className="text-[9px] text-[#9a9aaa]" /> {c.location}
-          </span>
-        </div>
+        {c.rating > 0 && (
+          <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-[#4a4a5a]">
+            {renderStars(c.rating)}
+            <span className="ml-0.5 font-medium">{c.rating}</span>
+            <span className="text-[#9a9aaa]">({c.reviewCount})</span>
+            <span className="mx-1 text-[#9a9aaa]">·</span>
+            <span className="text-[#6a6a7a]">{c.specialty}</span>
+          </div>
+        )}
 
         {c.yearsInBusiness && (
           <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#6a6a7a]">
-            <FaDiamond className="text-[7px] text-[#9a9aaa]" /> {c.yearsInBusiness}
+            {c.yearsInBusiness}
           </div>
         )}
+
+        <div className="mt-1 flex items-center gap-1 text-[11px] text-[#4a4a5a]">
+          <FaLocationDot className="text-[9px] text-[#9a9aaa]" /> {c.location}
+        </div>
       </div>
 
       {/* View button — right side */}
@@ -2245,7 +2238,7 @@ function ContractorStep({ thumbtack, google, loading, zip, onZipChange, onSearch
   );
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <h2 className="text-2xl font-bold text-[#1a1a2e]">Find Contractors</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
         Enter your zip code to compare contractor results side by side.

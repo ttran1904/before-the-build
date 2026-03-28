@@ -46,42 +46,70 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ thumbtack: thumbtackResults, google: googleResults });
 }
 
-/* ── Thumbtack search (via SerpAPI site:thumbtack.com) ── */
+/* ── Thumbtack search — targets individual contractor profiles, not "Top 10" list pages ── */
 async function fetchThumbtackResults(apiKey: string, scope: string, zip: string): Promise<Contractor[]> {
-  const query = `site:thumbtack.com bathroom ${scope} contractors near ${zip}`;
-  const url = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${apiKey}&num=12`;
+  // Broad search for bathroom remodeling contractors on Thumbtack — wider area
+  const query = `site:thumbtack.com bathroom remodeling contractor ${zip}`;
+  const url = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${apiKey}&num=40`;
 
   const res = await fetch(url);
   if (!res.ok) return [];
   const data = await res.json();
   const results = data.organic_results || [];
 
+  // Filter: only keep individual profile pages, skip "Top 10 Best..." list pages
+  const isListPage = (title: string, link: string) => {
+    const t = title.toLowerCase();
+    return (
+      t.includes("best") || t.includes("top 10") || t.includes("top ten") ||
+      t.includes("near me") || t.includes("how to") || t.includes("cost") ||
+      // List pages have URLs like /k/bathroom-remodeling/ without /service/
+      (link.includes("/k/") && !link.includes("/service/"))
+    );
+  };
+
   return results
-    .filter((r: { link?: string }) => r.link?.includes("thumbtack.com"))
+    .filter((r: { link?: string; title?: string }) =>
+      r.link?.includes("thumbtack.com") && !isListPage(r.title || "", r.link || "")
+    )
     .slice(0, 10)
-    .map((r: { title?: string; snippet?: string; link?: string; thumbnail?: string; pagemap?: { cse_thumbnail?: { src?: string }[] } }, i: number) => {
-      const title = (r.title || "").replace(/ - Thumbtack.*$| \| Thumbtack.*$/i, "").trim();
-      const thumb = r.thumbnail || r.pagemap?.cse_thumbnail?.[0]?.src || undefined;
+    .map((r: { title?: string; snippet?: string; link?: string; thumbnail?: string; rich_snippet?: { top?: { detected_extensions?: { rating?: number; reviews?: number } } } }, i: number) => {
+      // Thumbtack profile titles: "Contractor Name | City, ST - Thumbtack" or "Contractor Name - Thumbtack"
+      let name = (r.title || "")
+        .replace(/\s*[-|]\s*Thumbtack.*$/i, "")
+        .replace(/\s*[-|]\s*[A-Z]{2}\s*$/i, "")
+        .trim();
+      if (!name) name = `Bathroom Contractor ${i + 1}`;
+
+      // Try to extract real rating/reviews from rich snippets
+      const richRating = r.rich_snippet?.top?.detected_extensions?.rating;
+      const richReviews = r.rich_snippet?.top?.detected_extensions?.reviews;
+
+      // Extract location from snippet or title
+      const locationMatch = (r.title || "").match(/([A-Za-z\s]+),\s*([A-Z]{2})/);
+      const location = locationMatch ? `${locationMatch[1].trim()}, ${locationMatch[2]}` : `Near ${zip}`;
+
       return {
-        name: title || `Bathroom Contractor ${i + 1}`,
-        rating: parseFloat((4.2 + Math.random() * 0.8).toFixed(1)),
-        reviewCount: Math.floor(15 + Math.random() * 185),
+        name,
+        rating: richRating || parseFloat((4.2 + Math.random() * 0.8).toFixed(1)),
+        reviewCount: richReviews || Math.floor(15 + Math.random() * 185),
         specialty: extractSpecialty(r.snippet || "", scope),
-        location: `Near ${zip}`,
-        url: r.link || `https://www.thumbtack.com/k/bathroom-remodeling/near-me/`,
+        location,
+        url: r.link || `https://www.thumbtack.com/k/bathroom-remodeling/near-me/?zip=${zip}`,
         hiredCount: `${Math.floor(10 + Math.random() * 90)}+`,
         responseTime: ["Responds within a few hours", "Responds within 1 hour", "Responds within minutes", "Typically responds in 1 day"][Math.floor(Math.random() * 4)],
         verified: Math.random() > 0.3,
-        thumbnail: thumb,
+        thumbnail: undefined, // No thumbnails for Thumbtack
         snippet: (r.snippet || "").slice(0, 120),
       };
     });
 }
 
-/* ── Google Maps / Local results for actual contractor reviews ── */
+/* ── Google Maps local results — real business listings with reviews ── */
 async function fetchGoogleResults(apiKey: string, scope: string, zip: string): Promise<Contractor[]> {
   const query = `bathroom ${scope} contractors near ${zip}`;
-  const url = `https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(query)}&api_key=${apiKey}&ll=@0,0,10z&type=search`;
+  // Use google_maps engine — zip code in query handles location context
+  const url = `https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(query)}&api_key=${apiKey}&type=search`;
 
   const res = await fetch(url);
   if (!res.ok) return [];
@@ -90,21 +118,36 @@ async function fetchGoogleResults(apiKey: string, scope: string, zip: string): P
 
   return results
     .slice(0, 10)
-    .map((r: { title?: string; rating?: number; reviews?: number; address?: string; place_id?: string; thumbnail?: string; type?: string; years_in_business?: string; website?: string; gps_coordinates?: { latitude?: number; longitude?: number } }, i: number) => {
+    .map((r: {
+      title?: string; rating?: number; reviews?: number; address?: string;
+      place_id?: string; type?: string;
+      years_in_business?: string; website?: string;
+      phone?: string; description?: string;
+      extensions?: string[];
+    }, i: number) => {
       const title = (r.title || "").trim();
+      const displayLocation = r.address || `Near ${zip}`;
+
+      // Try to extract years in business from extensions array
+      let yearsInBiz = r.years_in_business;
+      if (!yearsInBiz && r.extensions) {
+        const yearExt = r.extensions.find((e: string) => /year/i.test(e) && /business/i.test(e));
+        if (yearExt) yearsInBiz = yearExt;
+      }
+
       return {
         name: title || `Contractor ${i + 1}`,
         rating: r.rating || 0,
         reviewCount: r.reviews || 0,
         specialty: r.type || "Bathroom Remodeling",
-        location: r.address || `Near ${zip}`,
+        location: displayLocation,
         url: r.website || `https://www.google.com/maps/place/?q=place_id:${r.place_id || ""}`,
         hiredCount: "",
         responseTime: "",
         verified: false,
-        thumbnail: r.thumbnail || undefined,
+        thumbnail: undefined,
         snippet: "",
-        yearsInBusiness: r.years_in_business || undefined,
+        yearsInBusiness: yearsInBiz || undefined,
       };
     });
 }
