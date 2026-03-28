@@ -1867,16 +1867,20 @@ const TIMELINE_PHASE_COLORS: Record<string, string> = {
 
 function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: boolean }) {
   const PHASE_COLORS = TIMELINE_PHASE_COLORS;
+  const [viewMode, setViewMode] = useState<"Day" | "Week" | "Month">("Week");
 
   const totalDays = tasks.length > 0
     ? Math.max(...tasks.map((t) => t.startDay + t.duration))
     : 0;
-  const totalWeeks = Math.ceil(totalDays / 7);
   const milestones = tasks.filter((t) => t.milestone);
   const phases = [...new Set(tasks.map((t) => t.phase))];
 
   const ganttContainerRef = useRef<HTMLDivElement>(null);
   const ganttInstanceRef = useRef<unknown>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  const BAR_HEIGHT = 20;
+  const PADDING = 12;
 
   useEffect(() => {
     if (!ganttContainerRef.current || tasks.length === 0) return;
@@ -1925,11 +1929,11 @@ function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: bool
       ganttContainerRef.current.innerHTML = "";
 
       ganttInstanceRef.current = new Gantt(ganttContainerRef.current, frappeTaskList, {
-        view_mode: "Day",
-        bar_height: 26,
+        view_mode: viewMode,
+        bar_height: BAR_HEIGHT,
         bar_corner_radius: 4,
         arrow_curve: 6,
-        padding: 16,
+        padding: PADDING,
         language: "en",
         on_click: () => {},
         on_date_change: () => {},
@@ -1937,7 +1941,7 @@ function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: bool
         on_view_change: () => {},
       });
 
-      // Directly color bars by phase after render
+      // Color bars by phase + sync sidebar header height
       requestAnimationFrame(() => {
         if (!ganttContainerRef.current) return;
         const barWrappers = ganttContainerRef.current.querySelectorAll(".bar-wrapper");
@@ -1953,9 +1957,31 @@ function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: bool
             if (progress) progress.setAttribute("fill", color);
           }
         });
+
+        // Match sidebar header height to gantt header
+        if (sidebarRef.current && ganttContainerRef.current) {
+          const gridHeader = ganttContainerRef.current.querySelector(".grid-header") as HTMLElement;
+          if (gridHeader) {
+            const headerHeight = gridHeader.getBoundingClientRect().height;
+            const spacer = sidebarRef.current.querySelector(".gantt-sidebar-header") as HTMLElement;
+            if (spacer) spacer.style.height = `${headerHeight}px`;
+          }
+        }
       });
     });
-  }, [tasks, PHASE_COLORS]);
+  }, [tasks, viewMode, PHASE_COLORS]);
+
+  // Sync vertical scroll between gantt and sidebar
+  useEffect(() => {
+    const ganttEl = ganttContainerRef.current;
+    const sidebarEl = sidebarRef.current;
+    if (!ganttEl || !sidebarEl) return;
+    const handleScroll = () => { sidebarEl.scrollTop = ganttEl.scrollTop; };
+    ganttEl.addEventListener("scroll", handleScroll);
+    return () => ganttEl.removeEventListener("scroll", handleScroll);
+  }, [tasks]);
+
+  const VIEW_MODES = ["Day", "Week", "Month"] as const;
 
   return (
     <div>
@@ -1989,26 +2015,70 @@ function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: bool
             </div>
           </div>
 
-          {/* Phase legend */}
-          <div className="mt-6 flex flex-wrap gap-3">
-            {phases.map((phase) => (
-              <span key={phase} className="flex items-center gap-1.5 text-xs font-medium text-[#4a4a5a]">
-                <span className="h-2.5 w-2.5 rounded-sm" style={{ background: PHASE_COLORS[phase] || "#94a3b8" }} />
-                {phase}
-              </span>
-            ))}
+          {/* Phase legend + View mode toggle */}
+          <div className="mt-6 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3">
+              {phases.map((phase) => (
+                <span key={phase} className="flex items-center gap-1.5 text-xs font-medium text-[#4a4a5a]">
+                  <span className="h-2.5 w-2.5 rounded-sm" style={{ background: PHASE_COLORS[phase] || "#94a3b8" }} />
+                  {phase}
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-1 rounded-lg bg-[#f8f7f4] p-1">
+              {VIEW_MODES.map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    viewMode === mode
+                      ? "bg-[#2d5a3d] text-white shadow-sm"
+                      : "text-[#6a6a7a] hover:text-[#4a4a5a]"
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Frappe-gantt chart */}
-          <div className="mt-4 overflow-x-auto rounded-xl border border-[#e8e6e1]">
-            <div ref={ganttContainerRef} className="gantt-container min-w-[700px]" />
+          {/* Gantt chart with left sidebar */}
+          <div className="mt-4 rounded-xl border border-[#e8e6e1] overflow-hidden">
+            <div className="flex">
+              {/* Left sidebar — task names */}
+              <div
+                ref={sidebarRef}
+                className="flex-shrink-0 border-r border-[#e8e6e1] bg-white overflow-hidden"
+                style={{ width: 200 }}
+              >
+                <div className="gantt-sidebar-header border-b border-[#e8e6e1] bg-[#f8f7f4]" />
+                {tasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-2 px-3 text-[11px] text-[#4a4a5a] border-b border-[#f0efeb]"
+                    style={{ height: BAR_HEIGHT + PADDING }}
+                  >
+                    <span
+                      className="h-2 w-2 rounded-sm flex-shrink-0"
+                      style={{ background: PHASE_COLORS[task.phase] || "#94a3b8" }}
+                    />
+                    <span className="truncate font-medium">{task.name}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Gantt chart */}
+              <div className="flex-1 min-w-0 overflow-x-auto">
+                <div ref={ganttContainerRef} className="gantt-container" />
+              </div>
+            </div>
           </div>
 
-          {/* Phase color overrides */}
+          {/* Styles */}
           <style jsx global>{`
             .gantt-container {
               --g-bar-color: #2d5a3d;
               --g-bar-border: #2d5a3d;
+              overflow-y: hidden !important;
             }
             .gantt-container .grid-header { background-color: #f8f7f4; }
             .gantt-container .gantt .grid-row { fill: #fff; }
@@ -2017,8 +2087,10 @@ function TimelineStep({ tasks, loading }: { tasks: TimelineTask[]; loading: bool
             .gantt-container .gantt .tick { stroke: #f0efeb; }
             .gantt-container .gantt .today-highlight { fill: rgba(45, 90, 61, 0.06); }
             .gantt-container .gantt .arrow { stroke: #6a6a7a; stroke-width: 1.8; }
-            .gantt-container .gantt .bar-label { font-size: 11px; font-weight: 600; fill: #fff; }
-            .gantt-container .gantt .bar-wrapper .bar-label.big { font-size: 11px; fill: #1a1a2e; }
+            /* Hide bar labels — task names shown in left sidebar */
+            .gantt-container .gantt .bar-label { display: none; }
+            /* Hide frappe-gantt built-in header controls */
+            .gantt-container .side-header { display: none !important; }
             .gantt-container .lower-text,
             .gantt-container .upper-text { font-size: 11px; color: #9a9aaa; font-weight: 500; }
             .gantt-container .gantt .lower-text,
