@@ -25,6 +25,7 @@ export default function MasonryGallery({ images, loading }: MasonryGalleryProps)
   const { items: savedItems } = useMoodboardStore();
   const [savingImage, setSavingImage] = useState<GalleryImage | null>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
 
   const breakpointCols = {
     default: 4,
@@ -48,7 +49,9 @@ export default function MasonryGallery({ images, loading }: MasonryGalleryProps)
     );
   }
 
-  if (images.length === 0) {
+  const visibleImages = images.filter((img) => !failedIds.has(img.id));
+
+  if (visibleImages.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-[#d5d3cd] p-20">
         <FaMagnifyingGlass className="text-5xl text-[#9a9aaa]" />
@@ -66,6 +69,10 @@ export default function MasonryGallery({ images, loading }: MasonryGalleryProps)
     setSavingImage(img);
   };
 
+  const handleImageError = (id: string) => {
+    setFailedIds((prev) => new Set(prev).add(id));
+  };
+
   return (
     <>
       <Masonry
@@ -73,7 +80,7 @@ export default function MasonryGallery({ images, loading }: MasonryGalleryProps)
         className="flex w-auto -ml-4"
         columnClassName="pl-4 bg-clip-padding"
       >
-        {images.map((img, idx) => {
+        {visibleImages.map((img, idx) => {
           const isSaved = savedItems.some((s) => s.id === img.id);
           const heights = [240, 280, 320, 360, 280, 300];
           const h = heights[idx % heights.length];
@@ -88,6 +95,7 @@ export default function MasonryGallery({ images, loading }: MasonryGalleryProps)
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                   sizes="(max-width: 768px) 50vw, 25vw"
                   unoptimized
+                  onError={() => handleImageError(img.id)}
                 />
 
                 {/* Heart / Save button */}
