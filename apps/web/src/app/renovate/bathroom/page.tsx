@@ -358,7 +358,7 @@ function BathroomWizardPageContent() {
             {currentStep === 4 && <MoodboardStep pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
             {currentStep === 5 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
             {currentStep === 6 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
-            {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} />}
+            {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} />}
           </div>
           )}
 
@@ -2303,30 +2303,44 @@ function ContractorStep({ thumbtack, google, loading, zip, onZipChange, onSearch
 }
 
 /* ── Summary Step ── */
-function SummaryStep({ tasks, contractorCount }: { tasks: TimelineTask[]; contractorCount: number }) {
+function SummaryStep({ tasks, contractorCount, budgetGraph }: { tasks: TimelineTask[]; contractorCount: number; budgetGraph: BudgetGraphResult }) {
   const store = useWizardStore();
   const moodboardCount = useMoodboardStore.getState().items.length;
 
-  const GOAL_LABELS: Record<string, string> = {
-    increase_value: "Increase Home Value",
-    more_space: "More Space",
-    energy_efficient: "Energy Efficient",
-    update_style: "Update Style",
-    family_friendly: "Family-Friendly",
-    accessibility: "Improve Accessibility",
-    fix_problems: "Fix Problems",
+  const GOAL_META: Record<string, { label: string; icon: typeof FaPaintRoller }> = {
+    increase_value: { label: "Increase Home Value", icon: FaChartLine },
+    more_space: { label: "More Space", icon: FaUpRightAndDownLeftFromCenter },
+    energy_efficient: { label: "Energy Efficient", icon: FaLeaf },
+    update_style: { label: "Update Style", icon: FaPaintRoller },
+    family_friendly: { label: "Family-Friendly", icon: FaChildReaching },
+    accessibility: { label: "Improve Accessibility", icon: FaWheelchair },
+    fix_problems: { label: "Fix Problems", icon: FaWrench },
   };
 
-  const SCOPE_LABELS: Record<string, string> = {
-    cosmetic: "Cosmetic Refresh",
-    partial: "Partial Remodel",
-    full: "Full Remodel",
-    addition: "Addition / Expansion",
+  const SCOPE_META: Record<string, { label: string; icon: typeof FaPaintbrush }> = {
+    cosmetic: { label: "Cosmetic Refresh", icon: FaPaintbrush },
+    partial: { label: "Partial Remodel", icon: FaScrewdriverWrench },
+    full: { label: "Full Remodel", icon: FaHammer },
+    addition: { label: "Addition / Expansion", icon: FaRuler },
+  };
+
+  const TIER_META: Record<string, { label: string; color: string; icon: typeof FaDollarSign }> = {
+    basic: { label: "Basic", color: "#87CEEB", icon: FaDollarSign },
+    mid: { label: "Mid-Range", color: "#2d5a3d", icon: FaSackDollar },
+    high: { label: "High-End", color: "#d4956a", icon: FaGem },
   };
 
   const totalDays = tasks.length > 0
     ? Math.max(...tasks.map((t) => t.startDay + t.duration))
     : 0;
+
+  const milestoneCount = tasks.filter(t => t.milestone).length;
+
+  const formatCurrency = (n: number) => `$${n.toLocaleString()}`;
+
+  const scopeMeta = store.scope ? SCOPE_META[store.scope] : null;
+  const tierMeta = store.budgetTier ? TIER_META[store.budgetTier] : null;
+  const sizeInfo = BATHROOM_SIZES.find(s => s.id === store.bathroomSize);
 
   return (
     <div>
@@ -2335,20 +2349,229 @@ function SummaryStep({ tasks, contractorCount }: { tasks: TimelineTask[]; contra
         Everything&apos;s set! Here&apos;s your bathroom renovation summary.
       </p>
 
-      <div className="mt-6 space-y-4">
-        <SummaryRow label="Goals" value={store.goals.map(g => GOAL_LABELS[g] || g).join(", ") || "None selected"} />
-        <SummaryRow label="Scope" value={store.scope ? SCOPE_LABELS[store.scope] : "—"} />
-        <SummaryRow label="Size" value={BATHROOM_SIZES.find(s => s.id === store.bathroomSize)?.label || store.bathroomSize} />
-        <SummaryRow label="Budget Tier" value={store.budgetTier ? store.budgetTier.charAt(0).toUpperCase() + store.budgetTier.slice(1) : "—"} />
-        <SummaryRow label="Style" value={store.style || "—"} />
-        <SummaryRow label="Moodboard" value={`${moodboardCount} saved images`} />
-        <SummaryRow label="Must-Haves" value={store.mustHaves.join(", ") || "None selected"} />
-        <SummaryRow label="Nice-to-Haves" value={store.niceToHaves.join(", ") || "None selected"} />
-        <SummaryRow label="Timeline" value={tasks.length > 0 ? `${tasks.length} tasks over ${totalDays} days` : "—"} />
-        <SummaryRow label="Contractors" value={contractorCount > 0 ? `${contractorCount} matched pros` : "—"} />
+      {/* ── Budget Hero Card ── */}
+      <div className="mt-6 rounded-xl bg-gradient-to-r from-[#2d5a3d] to-[#3d7a5d] p-6 text-white">
+        <div className="flex items-center gap-2 text-sm font-medium text-white/70">
+          <FaSackDollar className="text-xs" />
+          Estimated Budget Range
+        </div>
+        <div className="mt-2 text-3xl font-bold tracking-tight">
+          <SlotNumber value={`${formatCurrency(budgetGraph.estimatedLow)} – ${formatCurrency(budgetGraph.estimatedHigh)}`} />
+        </div>
+        {store.budgetAmount != null && store.budgetAmount > 0 && (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-sm text-white/60">Your budget:</span>
+            <span className="text-sm font-semibold">{formatCurrency(store.budgetAmount)}</span>
+            {store.budgetAmount >= budgetGraph.estimatedLow ? (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium">
+                <FaCircleCheck className="text-[10px]" /> On track
+              </span>
+            ) : (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-red-400/30 px-2 py-0.5 text-xs font-medium">
+                <FaCircleExclamation className="text-[10px]" /> Below estimate
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Mini breakdown bar */}
+        {budgetGraph.breakdown.length > 0 && (
+          <div className="mt-4">
+            <div className="flex h-2 overflow-hidden rounded-full">
+              {budgetGraph.breakdown.map((b, i) => {
+                const colors = ["bg-white/90", "bg-white/60", "bg-white/40", "bg-white/25", "bg-white/15"];
+                return <div key={i} className={`${colors[i % colors.length]}`} style={{ width: `${b.pct}%` }} />;
+              })}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              {budgetGraph.breakdown.map((b, i) => {
+                const dots = ["bg-white/90", "bg-white/60", "bg-white/40", "bg-white/25", "bg-white/15"];
+                return (
+                  <span key={i} className="flex items-center gap-1.5 text-[11px] text-white/70">
+                    <span className={`inline-block h-2 w-2 rounded-full ${dots[i % dots.length]}`} />
+                    {b.category} · {b.pct}%
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Ready banner */}
+      {/* ── Stats Row ── */}
+      <div className="mt-5 grid grid-cols-3 gap-3">
+        <div className="rounded-xl bg-[#f8f7f4] p-4 text-center">
+          <div className="text-2xl font-bold text-[#2d5a3d]">{totalDays || "—"}</div>
+          <div className="mt-1 text-xs text-[#6a6a7a]">Days</div>
+        </div>
+        <div className="rounded-xl bg-[#f8f7f4] p-4 text-center">
+          <div className="text-2xl font-bold text-[#2d5a3d]">{tasks.length || "—"}</div>
+          <div className="mt-1 text-xs text-[#6a6a7a]">Tasks</div>
+        </div>
+        <div className="rounded-xl bg-[#f8f7f4] p-4 text-center">
+          <div className="text-2xl font-bold text-[#2d5a3d]">{contractorCount || "—"}</div>
+          <div className="mt-1 text-xs text-[#6a6a7a]">Matched Pros</div>
+        </div>
+      </div>
+
+      {/* ── Detail Rows ── */}
+      <div className="mt-5 space-y-3">
+        {/* Goals */}
+        <SummaryRow icon={FaBullseye} label="Goals" iconColor="#2d5a3d">
+          {store.goals.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {store.goals.map(g => {
+                const meta = GOAL_META[g];
+                const Icon = meta?.icon || FaBullseye;
+                return (
+                  <span key={g} className="inline-flex items-center gap-1.5 rounded-full bg-[#2d5a3d]/8 px-2.5 py-1 text-xs font-medium text-[#2d5a3d]">
+                    <Icon className="text-[10px]" /> {meta?.label || g}
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <span className="text-sm text-[#9a9aaa]">None selected</span>
+          )}
+        </SummaryRow>
+
+        {/* Scope */}
+        <SummaryRow icon={FaRuler} label="Scope" iconColor="#2d5a3d">
+          {scopeMeta ? (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a1a2e]">
+              <scopeMeta.icon className="text-xs text-[#2d5a3d]" /> {scopeMeta.label}
+            </span>
+          ) : (
+            <span className="text-sm text-[#9a9aaa]">—</span>
+          )}
+        </SummaryRow>
+
+        {/* Size */}
+        <SummaryRow icon={FaExpand} label="Size" iconColor="#2d5a3d">
+          <span className="text-sm font-medium text-[#1a1a2e]">{sizeInfo?.label || store.bathroomSize}</span>
+        </SummaryRow>
+
+        {/* Budget Tier */}
+        <SummaryRow icon={FaCoins} label="Budget Tier" iconColor={tierMeta?.color || "#2d5a3d"}>
+          {tierMeta ? (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a1a2e]">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full text-white text-[10px]" style={{ backgroundColor: tierMeta.color }}>
+                <tierMeta.icon />
+              </span>
+              {tierMeta.label}
+            </span>
+          ) : (
+            <span className="text-sm text-[#9a9aaa]">—</span>
+          )}
+        </SummaryRow>
+
+        {/* Style */}
+        <SummaryRow icon={FaSwatchbook} label="Style" iconColor="#2d5a3d">
+          <span className="text-sm font-medium text-[#1a1a2e]">{store.style || "—"}</span>
+        </SummaryRow>
+
+        {/* Moodboard */}
+        <SummaryRow icon={FaImages} label="Moodboard" iconColor="#2d5a3d">
+          <span className="text-sm font-medium text-[#1a1a2e]">
+            {moodboardCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#2d5a3d] px-1.5 text-[10px] font-bold text-white">{moodboardCount}</span>
+                saved image{moodboardCount !== 1 ? "s" : ""}
+              </span>
+            ) : "No images saved"}
+          </span>
+        </SummaryRow>
+
+        {/* Must-Haves */}
+        <SummaryRow icon={FaClipboardList} label="Must-Haves" iconColor="#2d5a3d">
+          {store.mustHaves.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {store.mustHaves.map(item => (
+                <span key={item} className="inline-flex items-center gap-1 rounded-full border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 px-2.5 py-1 text-xs font-medium text-[#2d5a3d]">
+                  <FaCheck className="text-[8px]" /> {item}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-sm text-[#9a9aaa]">None selected</span>
+          )}
+        </SummaryRow>
+
+        {/* Nice-to-Haves */}
+        <SummaryRow icon={FaStar} label="Nice-to-Haves" iconColor="#d4956a">
+          {store.niceToHaves.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {store.niceToHaves.map(item => (
+                <span key={item} className="inline-flex items-center gap-1 rounded-full border border-[#d4956a]/20 bg-[#d4956a]/5 px-2.5 py-1 text-xs font-medium text-[#d4956a]">
+                  <FaStar className="text-[8px]" /> {item}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-sm text-[#9a9aaa]">None selected</span>
+          )}
+        </SummaryRow>
+
+        {/* Timeline */}
+        <SummaryRow icon={FaCalendarDays} label="Timeline" iconColor="#2d5a3d">
+          {tasks.length > 0 ? (
+            <span className="inline-flex items-center gap-3 text-sm font-medium text-[#1a1a2e]">
+              {totalDays} days
+              <span className="text-[#6a6a7a]">·</span>
+              {tasks.length} tasks
+              {milestoneCount > 0 && (
+                <>
+                  <span className="text-[#6a6a7a]">·</span>
+                  <span className="inline-flex items-center gap-1 text-[#d4a24c]">
+                    <FaDiamond className="text-[8px]" /> {milestoneCount} milestone{milestoneCount !== 1 ? "s" : ""}
+                  </span>
+                </>
+              )}
+            </span>
+          ) : (
+            <span className="text-sm text-[#9a9aaa]">—</span>
+          )}
+        </SummaryRow>
+
+        {/* Contractors */}
+        <SummaryRow icon={FaHelmetSafety} label="Contractors" iconColor="#2d5a3d">
+          {contractorCount > 0 ? (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a1a2e]">
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#2d5a3d] px-1.5 text-[10px] font-bold text-white">{contractorCount}</span>
+              matched pro{contractorCount !== 1 ? "s" : ""}
+            </span>
+          ) : (
+            <span className="text-sm text-[#9a9aaa]">—</span>
+          )}
+        </SummaryRow>
+      </div>
+
+      {/* ── Item Cost Breakdown ── */}
+      {budgetGraph.itemBreakdown.length > 0 && (
+        <div className="mt-5">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+            <FaListCheck className="text-xs text-[#2d5a3d]" /> Item Cost Breakdown
+          </h3>
+          <div className="space-y-2">
+            {budgetGraph.itemBreakdown.map((item, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg bg-[#f8f7f4] px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className={`inline-block h-2 w-2 rounded-full ${item.source === "must-have" ? "bg-[#2d5a3d]" : "bg-[#d4956a]"}`} />
+                  <span className="text-sm font-medium text-[#1a1a2e]">{item.label}</span>
+                  {item.overridden && (
+                    <span className="rounded bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#2d5a3d]">Moodboard price</span>
+                  )}
+                </div>
+                <span className="text-sm font-semibold text-[#1a1a2e]">
+                  {formatCurrency(item.totalLow)} – {formatCurrency(item.totalHigh)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Ready banner ── */}
       <div className="mt-6 rounded-xl border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 p-5">
         <div className="flex items-center gap-2">
           <FaCircleCheck className="text-[#2d5a3d]" />
@@ -2362,11 +2585,16 @@ function SummaryStep({ tasks, contractorCount }: { tasks: TimelineTask[]; contra
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function SummaryRow({ icon: Icon, label, iconColor, children }: { icon: typeof FaBullseye; label: string; iconColor: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-4 rounded-lg bg-[#f8f7f4] px-4 py-3">
-      <span className="w-28 shrink-0 text-sm font-medium text-[#6a6a7a]">{label}</span>
-      <span className="text-sm font-medium text-[#1a1a2e]">{value}</span>
+    <div className="flex items-start gap-3 rounded-xl border border-[#e8e6e1] bg-white px-4 py-3.5 transition hover:border-[#d5d3cd] hover:shadow-sm">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white text-xs" style={{ backgroundColor: iconColor }}>
+        <Icon />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9a9aaa]">{label}</div>
+        <div className="mt-1">{children}</div>
+      </div>
     </div>
   );
 }

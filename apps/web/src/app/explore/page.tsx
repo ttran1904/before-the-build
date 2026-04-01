@@ -7,9 +7,9 @@ import {
   FaHouse, FaBookmark, FaMagnifyingGlass, FaArrowLeft,
 } from "react-icons/fa6";
 import RoomCategoryBar from "@/components/RoomCategoryBar";
-import StyleFilterBar from "@/components/StyleFilterBar";
 import MasonryGallery from "@/components/MasonryGallery";
 import MoodboardPanel from "@/components/MoodboardPanel";
+import ExploreFilterPanel from "@/components/ExploreFilterPanel";
 import { useMoodboardStore } from "@/lib/store";
 
 interface GalleryImage {
@@ -34,6 +34,8 @@ function ExplorePageContent() {
   const fromMoodboard = searchParams.get("from") === "moodboard";
   const [selectedRoom, setSelectedRoom] = useState("bathroom");
   const [selectedStyle, setSelectedStyle] = useState("all");
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
   const [search, setSearch] = useState("");
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +47,8 @@ function ExplorePageContent() {
     try {
       const params = new URLSearchParams();
       if (selectedStyle !== "all") params.set("style", selectedStyle);
+      if (selectedColor) params.set("color", selectedColor);
+      if (selectedSize) params.set("size", selectedSize);
       if (search) params.set("query", search);
       const res = await fetch(`/api/inspiration?${params.toString()}`);
       const data = await res.json();
@@ -53,7 +57,7 @@ function ExplorePageContent() {
       setImages([]);
     }
     setLoading(false);
-  }, [selectedStyle, search]);
+  }, [selectedStyle, selectedColor, selectedSize, search]);
 
   useEffect(() => {
     fetchImages();
@@ -114,43 +118,44 @@ function ExplorePageContent() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        {/* Page Title */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#1a1a2e]">
-            Home Design Ideas
-          </h1>
-          <p className="mt-2 text-[#6a6a7a]">
-            Browse bathroom inspiration and save your favorites to build a moodboard
-          </p>
-        </div>
+      <div className="mx-auto flex gap-0 px-4 py-4" style={{ maxWidth: "1600px" }}>
+        {/* Left Filter Panel */}
+        <ExploreFilterPanel
+          selectedStyle={selectedStyle}
+          onStyleChange={setSelectedStyle}
+          selectedColor={selectedColor}
+          onColorChange={setSelectedColor}
+          selectedSize={selectedSize}
+          onSizeChange={setSelectedSize}
+        />
 
-        {/* Room Category Bar (Houzz-style) */}
-        <div className="mb-8">
-          <RoomCategoryBar selected={selectedRoom} onSelect={setSelectedRoom} />
-        </div>
-
-        {/* Search + Filters */}
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center">
-          <div className="relative flex-1">
-            <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9a9aaa]" />
-            <input
-              type="text"
-              placeholder="Search bathroom ideas..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-[#e8e6e1] bg-white py-3 pl-11 pr-4 text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-2 focus:ring-[#2d5a3d]/20"
-            />
+        {/* Main Content */}
+        <div className="min-w-0 flex-1">
+          {/* Page Title + Search */}
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <h1 className="text-2xl font-bold text-[#1a1a2e]">
+              Home Design Ideas
+            </h1>
+            <div className="relative w-full md:w-80">
+              <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9a9aaa]" />
+              <input
+                type="text"
+                placeholder="Search bathroom ideas..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-xl border border-[#e8e6e1] bg-white py-3 pl-11 pr-4 text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-2 focus:ring-[#2d5a3d]/20"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Style Filter Pills */}
-        <div className="mb-8">
-          <StyleFilterBar selected={selectedStyle} onSelect={setSelectedStyle} />
-        </div>
+          {/* Room Category Bar (Houzz-style) */}
+          <div className="mb-4">
+            <RoomCategoryBar selected={selectedRoom} onSelect={setSelectedRoom} />
+          </div>
 
-        {/* Masonry Gallery */}
-        <MasonryGallery images={images} loading={loading} />
+          {/* Masonry Gallery */}
+          <MasonryGallery images={images} loading={loading} />
+        </div>
       </div>
 
       {/* Moodboard Panel */}

@@ -50,7 +50,7 @@ export default function RoomCategoryBar({ selected, onSelect }: RoomCategoryBarP
       {/* Scrollable row */}
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto px-6 py-2 scrollbar-hide"
+        className="flex gap-4 overflow-x-auto px-6 py-1 scrollbar-hide"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {ROOM_CATEGORIES.map((room) => (
