@@ -332,15 +332,12 @@ function BathroomWizardPageContent() {
           <div className="mx-auto flex items-center px-8 py-2.5">
             <button
               onClick={() => setBudgetBuilderOpen((v) => !v)}
-              className="group flex items-center gap-4"
+              className="group flex items-center gap-3 rounded-lg border border-[#d5d3cd] bg-white px-4 py-2 shadow-sm transition hover:border-[#d4a24c] hover:shadow-md"
             >
-              <div className="flex items-center">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full">
-                  <FaSackDollar className="text-xs text-[#d4a24c]" />
-                </span>
-                <span className="text-lg font-semibold text-[#3d3d3d]">BUDGET ESTIMATOR</span>
-              </div>
-              <span className="text-lg font-bold text-[#2d5a3d] tracking-tight">
+              <FaSackDollar className="text-sm text-[#d4a24c]" />
+              <span className="text-sm font-semibold text-[#3d3d3d]">Budget Estimate</span>
+              <span className="mx-1 h-4 w-px bg-[#d5d3cd]" />
+              <span className="text-base font-extrabold text-[#2d5a3d] tracking-tight">
                 <SlotNumber value={`$${budgetGraph.estimatedLow.toLocaleString()}\u00A0\u2013\u00A0$${budgetGraph.estimatedHigh.toLocaleString()}`} />
               </span>
               <FaArrowUpRightFromSquare className="text-[9px] text-[#3d3d3d]/30 group-hover:text-[#d4a24c] transition" />
@@ -990,13 +987,7 @@ function PieChart({ segments, size = 180 }: { segments: { pct: number; color: st
 }
 
 function BudgetStep() {
-  const { budgetTier, setBudgetTier, bathroomSize, setBathroomSize, budgetAmounts, setBudgetAmounts } = useWizardStore();
-
-  const tiers: { id: BudgetTier; label: string; desc: string; color: string; icon: React.ReactNode }[] = [
-    { id: "basic", label: "Basic", desc: "Builder-grade materials, standard fixtures", color: "#87CEEB", icon: <FaDollarSign className="text-base" /> },
-    { id: "mid", label: "Mid-Range", desc: "Quality materials, ~1 statement piece", color: "#2d5a3d", icon: <FaSackDollar className="text-base" /> },
-    { id: "high", label: "High-End", desc: "Premium materials, more statement pieces", color: "#d4956a", icon: <FaGem className="text-base" /> },
-  ];
+  const { budgetAmount, setBudgetAmount, bathroomSize, setBathroomSize } = useWizardStore();
 
   return (
     <div className="space-y-10">
@@ -1046,54 +1037,24 @@ function BudgetStep() {
 
       {/* ── Question 2: Budget ── */}
       <div>
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">If you have 3 budget ranges, what are they?</h2>
-        <p className="mt-2 text-sm text-[#6a6a7a]">
-          Then pick the one you&apos;re aiming for.
-        </p>
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s your ideal budget for this renovation?</h2>
 
-        <div className="mt-5 space-y-3">
-          {tiers.map((t) => {
-            const amount = budgetAmounts[t.id];
-            return (
-              <button
-                key={t.id}
-                onClick={() => setBudgetTier(t.id)}
-                className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
-                  budgetTier === t.id
-                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-                }`}
-              >
-                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${
-                  budgetTier === t.id ? "border-[#2d5a3d]" : "border-[#d5d3cd]"
-                }`}>
-                  {budgetTier === t.id && <span className="h-2.5 w-2.5 rounded-full bg-[#2d5a3d]" />}
-                </span>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: t.color, color: '#fff' }}>
-                  {t.icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-[#1a1a2e]">{t.label}</div>
-                  <div className="text-xs text-[#6a6a7a]">{t.desc}</div>
-                </div>
-                <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-                  <FaDollarSign className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#6a6a7a]" />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="0"
-                    value={amount != null ? amount.toLocaleString("en-US") : ""}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/[^0-9]/g, "");
-                      const val = raw === "" ? null : Math.max(0, Number(raw));
-                      setBudgetAmounts(t.id, val);
-                    }}
-                    className="w-32 rounded-lg border border-[#d5d3cd] bg-white py-2 pl-7 pr-3 text-right text-sm font-semibold text-[#1a1a2e] outline-none focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]"
-                  />
-                </div>
-              </button>
-            );
-          })}
+        <div className="mt-5">
+          <div className="relative w-64">
+            <FaDollarSign className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-[#6a6a7a]" />
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={budgetAmount != null ? budgetAmount.toLocaleString("en-US") : ""}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                const val = raw === "" ? 0 : Math.max(0, Number(raw));
+                setBudgetAmount(val);
+              }}
+              className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white py-3 pl-10 pr-4 text-lg font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]"
+            />
+          </div>
         </div>
       </div>
 
