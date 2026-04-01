@@ -57,6 +57,21 @@ function ExplorePageContent() {
       setImages([]);
     }
     setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applyFilters = useCallback(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (selectedStyle !== "all") params.set("style", selectedStyle);
+    if (selectedColor) params.set("color", selectedColor);
+    if (selectedSize) params.set("size", selectedSize);
+    if (search) params.set("query", search);
+    fetch(`/api/inspiration?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => setImages(data.images || []))
+      .catch(() => setImages([]))
+      .finally(() => setLoading(false));
   }, [selectedStyle, selectedColor, selectedSize, search]);
 
   useEffect(() => {
@@ -127,6 +142,7 @@ function ExplorePageContent() {
           onColorChange={setSelectedColor}
           selectedSize={selectedSize}
           onSizeChange={setSelectedSize}
+          onApply={applyFilters}
         />
 
         {/* Main Content */}

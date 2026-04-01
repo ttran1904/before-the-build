@@ -84,6 +84,7 @@ interface ExploreFilterPanelProps {
   onColorChange: (id: string) => void;
   selectedSize: string;
   onSizeChange: (id: string) => void;
+  onApply: () => void;
 }
 
 export default function ExploreFilterPanel({
@@ -93,12 +94,21 @@ export default function ExploreFilterPanel({
   onColorChange,
   selectedSize,
   onSizeChange,
+  onApply,
 }: ExploreFilterPanelProps) {
   return (
     <aside className="w-48 shrink-0 pr-4">
-      <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[#9a9aaa]">
-        Filters
-      </h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-[#9a9aaa]">
+          Filters
+        </h2>
+        <button
+          onClick={onApply}
+          className="rounded-lg bg-[#2d5a3d] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#234a31]"
+        >
+          Apply
+        </button>
+      </div>
 
       {/* ── Style ── */}
       <FilterSection title="Style" defaultOpen>
@@ -107,14 +117,19 @@ export default function ExploreFilterPanel({
             <button
               key={s.id}
               onClick={() => onStyleChange(s.id)}
-              className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition ${
+              className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-sm transition ${
                 selectedStyle === s.id
                   ? "bg-[#2d5a3d]/10 font-semibold text-[#2d5a3d]"
                   : "text-[#4a4a5a] hover:bg-[#f8f7f4]"
               }`}
             >
-              <span className="text-sm">{s.icon}</span>
-              {s.label}
+              <span className="flex items-center gap-2">
+                <span className="text-sm">{s.icon}</span>
+                {s.label}
+              </span>
+              {selectedStyle === s.id && (
+                <FaCheck className="text-[10px] text-[#2d5a3d]" />
+              )}
             </button>
           ))}
         </div>
@@ -156,13 +171,16 @@ export default function ExploreFilterPanel({
             <button
               key={rs.id}
               onClick={() => onSizeChange(selectedSize === rs.id ? "" : rs.id)}
-              className={`rounded-lg px-2.5 py-1.5 text-left text-sm transition ${
+              className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-sm transition ${
                 selectedSize === rs.id
                   ? "bg-[#2d5a3d]/10 font-semibold text-[#2d5a3d]"
                   : "text-[#4a4a5a] hover:bg-[#f8f7f4]"
               }`}
             >
               {rs.label}
+              {selectedSize === rs.id && (
+                <FaCheck className="text-[10px] text-[#2d5a3d]" />
+              )}
             </button>
           ))}
         </div>

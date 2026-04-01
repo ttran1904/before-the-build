@@ -61,14 +61,21 @@ const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const style = searchParams.get("style") || "all";
+  const color = searchParams.get("color") || "";
+  const size = searchParams.get("size") || "";
   const query = searchParams.get("query") || "";
 
   // ── 1. Try SerpAPI Google Images (returns real bathroom photos) ──
   const serpApiKey = process.env.SERPAPI_KEY;
   if (serpApiKey) {
-    const searchQuery = query
-      ? `bathroom ${query} interior design`
-      : `bathroom ${style !== "all" ? style + " " : ""}interior design renovation`;
+    const parts = ["bathroom"];
+    if (query) parts.push(query);
+    if (style !== "all") parts.push(style);
+    if (color) parts.push(color);
+    if (size) parts.push(size === "compact" ? "small" : size);
+    parts.push("interior design");
+    if (!query) parts.push("renovation");
+    const searchQuery = parts.join(" ");
 
     const cacheKey = searchQuery.toLowerCase().trim();
     const cached = imageCache.get(cacheKey);
