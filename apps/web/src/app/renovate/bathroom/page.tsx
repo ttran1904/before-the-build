@@ -517,13 +517,13 @@ function BudgetBuilderPopout({
       {/* Backdrop */}
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
 
-      {/* Popout — thought bubble from the left panel */}
+      {/* Popout — drops down from the top-bar Budget Estimate button */}
       <div
         className="fixed z-50 flex flex-col"
-        style={{ left: "264px", bottom: "70px", width: "520px", maxHeight: "calc(100vh - 100px)" }}
+        style={{ left: "264px", top: "56px", width: "520px", maxHeight: "calc(100vh - 80px)" }}
       >
-        {/* Thought-bubble tail */}
-        <div className="absolute -left-2 bottom-8 h-4 w-4 rotate-45 rounded-sm bg-white shadow-md" />
+        {/* Triangle pointing up toward the trigger button */}
+        <div className="absolute -top-2 left-8 h-4 w-4 rotate-45 rounded-sm bg-white border-l border-t border-[#e8e6e1]" />
 
         {/* Main card */}
         <div className="relative overflow-y-auto rounded-2xl border border-[#e8e6e1] bg-white shadow-2xl">
@@ -662,6 +662,14 @@ function BudgetBuilderPopout({
             <p className="text-xs leading-relaxed text-[#6a6a7a] italic border-t border-[#e8e6e1] pt-3">
               {graph.rationale}
             </p>
+
+            {/* Disclaimer */}
+            <div className="flex items-start gap-2 rounded-lg border border-[#d4a24c]/30 bg-[#fef9ee] px-4 py-3">
+              <FaCircleExclamation className="mt-0.5 shrink-0 text-xs text-[#d4a24c]" />
+              <p className="text-[11px] leading-relaxed text-[#6a6a7a]">
+                <span className="font-semibold text-[#4a4a5a]">Disclaimer:</span> These figures are <span className="font-semibold">estimates only</span> based on typical market rates and may vary depending on your location, contractor, materials chosen, and project complexity. Always obtain multiple quotes before committing.
+              </p>
+            </div>
 
             {/* Item-level breakdown */}
             {graph.itemBreakdown.length > 0 && (
