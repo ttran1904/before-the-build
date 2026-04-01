@@ -247,19 +247,19 @@ function BathroomWizardPageContent() {
       {/* ── Green left sidebar ── */}
       <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-[#2d5a3d]">
         {/* Brand */}
-        <div className="px-6 pt-6 pb-2">
+        <div className="px-6 pt-6 pb-1">
           <h1 className="text-lg font-bold text-white">Before The Build</h1>
-          <p className="mt-1 text-xs text-white/60">Bathroom Renovation</p>
+          <p className="mt-0.5 text-xs text-white/60">Bathroom Renovation</p>
         </div>
 
         {/* Progress bar */}
-        <div className="mx-6 mt-4 h-1 rounded-full bg-white/15">
+        <div className="mx-6 mt-3 h-1 rounded-full bg-white/15">
           <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
-        <p className="mx-6 mt-2 text-[10px] text-white/50">Step {currentStep + 1} of {STEPS.length}</p>
+        <p className="mx-6 mt-1.5 text-[10px] text-white/50">Step {currentStep + 1} of {STEPS.length}</p>
 
         {/* Step list */}
-        <nav className="mt-4 flex-1 space-y-1 px-3 overflow-y-auto">
+        <nav className="mt-3 flex-1 space-y-1 px-3 overflow-y-auto">
           {STEPS.map((step, i) => {
             const done = i < currentStep;
             const active = i === currentStep;
@@ -305,27 +305,6 @@ function BathroomWizardPageContent() {
           })}
         </nav>
 
-        {/* Budget Builder panel trigger */}
-        <div className="px-3 py-3">
-          <button
-            onClick={() => setBudgetBuilderOpen((v) => !v)}
-            className="group w-full rounded-xl bg-[#d4a24c] p-3 text-left transition hover:bg-[#c4922c] relative"
-          >
-            <FaArrowUpRightFromSquare className="absolute top-3 right-3 text-[10px] text-white/50 group-hover:text-white/80 transition" />
-            <div className="flex items-center gap-2 mb-2">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/25 text-white text-xs">
-                <FaSackDollar className="text-[10px]" />
-              </span>
-              <span className="text-sm font-semibold text-white">Total Estimate</span>
-            </div>
-            <div className="rounded-lg bg-[#b8862a] px-3 py-2.5 text-center">
-              <div className="mt-0.5 text-sm font-bold text-white">
-                <SlotNumber value={`$${budgetGraph.estimatedLow.toLocaleString()}\u00A0\u2013\u00A0$${budgetGraph.estimatedHigh.toLocaleString()}`} />
-              </div>
-            </div>
-          </button>
-        </div>
-
         {/* Back to explore link */}
         <div className="px-6 py-4">
           <Link href="/explore" className="flex items-center gap-2 text-xs text-white/50 transition hover:text-white/80">
@@ -348,6 +327,26 @@ function BathroomWizardPageContent() {
 
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto">
+        {/* Budget Estimator – sticky top bar */}
+        <div className="sticky top-0 z-30 border-b border-[#e8e6e1] bg-white/95 backdrop-blur-sm">
+          <div className="mx-auto flex items-center px-8 py-2.5">
+            <button
+              onClick={() => setBudgetBuilderOpen((v) => !v)}
+              className="group flex items-center gap-4"
+            >
+              <div className="flex items-center">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full">
+                  <FaSackDollar className="text-xs text-[#d4a24c]" />
+                </span>
+                <span className="text-lg font-semibold text-[#3d3d3d]">BUDGET ESTIMATOR</span>
+              </div>
+              <span className="text-lg font-bold text-[#2d5a3d] tracking-tight">
+                <SlotNumber value={`$${budgetGraph.estimatedLow.toLocaleString()}\u00A0\u2013\u00A0$${budgetGraph.estimatedHigh.toLocaleString()}`} />
+              </span>
+              <FaArrowUpRightFromSquare className="text-[9px] text-[#3d3d3d]/30 group-hover:text-[#d4a24c] transition" />
+            </button>
+          </div>
+        </div>
         <div className={`mx-auto px-8 py-10 ${currentStep === 6 ? "max-w-5xl" : currentStep === 2 || currentStep === 4 || currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}>
           {currentStep === 0 && <GoalStep />}
           {currentStep === 1 && <ScopeStep />}
@@ -776,9 +775,6 @@ function ScopeStep() {
     <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
       <div className="w-full max-w-2xl rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
         <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s the scope of work?</h2>
-        <p className="mt-2 text-sm text-[#6a6a7a]">
-          This determines the complexity, timeline, and budget range.
-        </p>
         <div className="mt-6 space-y-3">
           {SCOPES.map((s) => (
             <button
