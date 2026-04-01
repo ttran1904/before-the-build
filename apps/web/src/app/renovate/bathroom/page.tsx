@@ -326,7 +326,7 @@ function BathroomWizardPageContent() {
       )}
 
       {/* ── Main content ── */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 flex flex-col overflow-y-auto">
         {/* Budget Estimator – sticky top bar */}
         <div className="sticky top-0 z-30 border-b border-[#e8e6e1] bg-white/95 backdrop-blur-sm">
           <div className="mx-auto flex items-center px-8 py-2.5">
@@ -344,7 +344,7 @@ function BathroomWizardPageContent() {
             </button>
           </div>
         </div>
-        <div className={`mx-auto px-8 py-10 ${currentStep === 6 ? "max-w-5xl" : currentStep === 2 || currentStep === 4 || currentStep === 5 ? "max-w-6xl" : "max-w-3xl"}`}>
+        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${currentStep === 6 ? "max-w-5xl" : currentStep === 2 || currentStep === 4 || currentStep === 5 ? "max-w-6xl" : "max-w-3xl"} w-full`}>
           {currentStep === 0 && <GoalStep />}
           {currentStep === 1 && <ScopeStep />}
           {currentStep > 1 && (
@@ -991,12 +991,33 @@ function BudgetStep() {
 
   return (
     <div className="space-y-10">
-      {/* ── Question 1: Bathroom Size ── */}
+
+      {/* ── Question 1: Budget ── */}
+      <div>
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s your ideal budget?</h2>
+
+        <div className="mt-5 flex justify-center">
+          <div className="relative w-64">
+            <FaDollarSign className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-[#6a6a7a]" />
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={budgetAmount != null ? budgetAmount.toLocaleString("en-US") : ""}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                const val = raw === "" ? 0 : Math.max(0, Number(raw));
+                setBudgetAmount(val);
+              }}
+              className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white py-3 pl-10 pr-4 text-lg font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Question 2: Bathroom Size ── */}
       <div>
         <h2 className="text-2xl font-bold text-[#1a1a2e]">What is the room size?</h2>
-        <p className="mt-2 text-sm text-[#6a6a7a]">
-          Choose the category that best matches your space.
-        </p>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           {BATHROOM_SIZES.map((s) => {
@@ -1032,29 +1053,6 @@ function BudgetStep() {
               </button>
             );
           })}
-        </div>
-      </div>
-
-      {/* ── Question 2: Budget ── */}
-      <div>
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s your ideal budget for this renovation?</h2>
-
-        <div className="mt-5">
-          <div className="relative w-64">
-            <FaDollarSign className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-[#6a6a7a]" />
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="0"
-              value={budgetAmount != null ? budgetAmount.toLocaleString("en-US") : ""}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/[^0-9]/g, "");
-                const val = raw === "" ? 0 : Math.max(0, Number(raw));
-                setBudgetAmount(val);
-              }}
-              className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white py-3 pl-10 pr-4 text-lg font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]"
-            />
-          </div>
         </div>
       </div>
 
