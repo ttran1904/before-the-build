@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  FaHouse, FaBookmark, FaMagnifyingGlass, FaArrowLeft,
+  FaHouse, FaMagnifyingGlass, FaArrowLeft, FaClipboardList,
 } from "react-icons/fa6";
 import RoomCategoryBar from "@/components/RoomCategoryBar";
 import MasonryGallery from "@/components/MasonryGallery";
@@ -41,6 +41,7 @@ function ExplorePageContent() {
   const [loading, setLoading] = useState(true);
   const [moodboardOpen, setMoodboardOpen] = useState(false);
   const moodboardCount = useMoodboardStore((s) => s.items.length);
+  const boardCount = useMoodboardStore((s) => s.boards.length);
 
   const fetchImages = useCallback(async () => {
     setLoading(true);
@@ -120,12 +121,12 @@ function ExplorePageContent() {
           </nav>
           <button
             onClick={() => setMoodboardOpen(true)}
-            className="relative flex items-center gap-2 rounded-full border border-[#e8e6e1] bg-white px-4 py-2 text-sm font-medium text-[#1a1a2e] transition hover:bg-[#f8f7f4]"
+            className="relative flex items-center gap-2 rounded-full border border-[#2d5a3d] bg-[#2d5a3d] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234a31]"
           >
-            <FaBookmark className="text-[#2d5a3d]" />
-            Moodboard
+            <FaClipboardList className="text-white" />
+            My Build Plan
             {moodboardCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2d5a3d] text-[10px] font-bold text-white">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#2d5a3d]">
                 {moodboardCount}
               </span>
             )}

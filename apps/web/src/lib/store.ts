@@ -90,7 +90,7 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>((set) 
   reset: () => set(initialState),
 }));
 
-/* ── Moodboard State ── */
+/* ── Moodboard State (Multi-Board) ── */
 
 export interface MoodboardItem {
   id: string;
@@ -100,25 +100,147 @@ export interface MoodboardItem {
   tags: string[];
   title?: string;
   saved: boolean;
+  boardIds: string[];
+}
+
+export interface MoodboardBoard {
+  id: string;
+  name: string;
+  createdAt: number;
 }
 
 interface MoodboardState {
   items: MoodboardItem[];
+  boards: MoodboardBoard[];
   addItem: (item: MoodboardItem) => void;
   removeItem: (id: string) => void;
   toggleItem: (item: MoodboardItem) => void;
+  createBoard: (name: string) => string;
+  removeBoard: (boardId: string) => void;
+  renameBoard: (boardId: string, name: string) => void;
+  saveItemToBoard: (item: Omit<MoodboardItem, "boardIds" | "saved">, boardId: string) => void;
+  removeItemFromBoard: (itemId: string, boardId: string) => void;
+  getItemBoards: (itemId: string) => string[];
+  getBoardItems: (boardId: string) => MoodboardItem[];
+  getSuggestedBoardNames: (tags: string[]) => string[];
 }
+
+let boardCounter = 0;
 
 export const useMoodboardStore = create<MoodboardState>((set, get) => ({
   items: [],
+  boards: [],
+
   addItem: (item) => set({ items: [...get().items, { ...item, saved: true }] }),
   removeItem: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
+
   toggleItem: (item) => {
     const exists = get().items.find((i) => i.id === item.id);
     if (exists) {
       set({ items: get().items.filter((i) => i.id !== item.id) });
     } else {
-      set({ items: [...get().items, { ...item, saved: true }] });
+      set({ items: [...get().items, { ...item, boardIds: item.boardIds || [], saved: true }] });
     }
+  },
+
+  createBoard: (name: string) => {
+    const id = `board_${Date.now()}_${++boardCounter}`;
+    const board: MoodboardBoard = { id, name, createdAt: Date.now() };
+    set({ boards: [...get().boards, board] });
+    return id;
+  },
+
+  removeBoard: (boardId: string) => {
+    set({
+      boards: get().boards.filter((b) => b.id !== boardId),
+      items: get().items
+        .map((item) => ({
+          ...item,
+          boardIds: item.boardIds.filter((bid) => bid !== boardId),
+        }))
+        .filter((item) => item.boardIds.length > 0),
+    });
+  },
+
+  renameBoard: (boardId: string, name: string) => {
+    set({
+      boards: get().boards.map((b) => (b.id === boardId ? { ...b, name } : b)),
+    });
+  },
+
+  saveItemToBoard: (item, boardId) => {
+    const existing = get().items.find((i) => i.id === item.id);
+    if (existing) {
+      if (!existing.boardIds.includes(boardId)) {
+        set({
+          items: get().items.map((i) =>
+            i.id === item.id ? { ...i, boardIds: [...i.boardIds, boardId] } : i
+          ),
+        });
+      }
+    } else {
+      set({
+        items: [...get().items, { ...item, boardIds: [boardId], saved: true }],
+      });
+    }
+  },
+
+  removeItemFromBoard: (itemId, boardId) => {
+    const item = get().items.find((i) => i.id === itemId);
+    if (!item) return;
+    const newBoardIds = item.boardIds.filter((bid) => bid !== boardId);
+    if (newBoardIds.length === 0) {
+      set({ items: get().items.filter((i) => i.id !== itemId) });
+    } else {
+      set({
+        items: get().items.map((i) =>
+          i.id === itemId ? { ...i, boardIds: newBoardIds } : i
+        ),
+      });
+    }
+  },
+
+  getItemBoards: (itemId) => {
+    return get().items.find((i) => i.id === itemId)?.boardIds || [];
+  },
+
+  getBoardItems: (boardId) => {
+    return get().items.filter((i) => i.boardIds.includes(boardId));
+  },
+
+  getSuggestedBoardNames: (tags: string[]) => {
+    const suggestions: string[] = [];
+    const styleTags = tags.filter((t) =>
+      ["modern", "farmhouse", "coastal", "spa", "minimalist", "industrial",
+       "scandinavian", "bohemian", "mid-century", "traditional", "japandi", "art deco"].some(
+        (s) => t.toLowerCase().includes(s)
+      )
+    );
+    const roomTags = tags.filter((t) =>
+      ["bathroom", "kitchen", "bedroom", "living"].some((r) => t.toLowerCase().includes(r))
+    );
+
+    if (styleTags.length > 0 && roomTags.length > 0) {
+      const style = styleTags[0].charAt(0).toUpperCase() + styleTags[0].slice(1);
+      const room = roomTags[0].charAt(0).toUpperCase() + roomTags[0].slice(1);
+      suggestions.push(`${style} ${room.toLowerCase()} decor`);
+    }
+
+    if (roomTags.length > 0) {
+      const room = roomTags[0].charAt(0).toUpperCase() + roomTags[0].slice(1);
+      suggestions.push(`${room} decor idea`);
+      suggestions.push(`${room} decor`);
+    }
+
+    if (styleTags.length > 0) {
+      const style = styleTags[0].charAt(0).toUpperCase() + styleTags[0].slice(1);
+      suggestions.push(`${style} decor ideas`);
+    }
+
+    if (suggestions.length === 0) {
+      suggestions.push("Design inspiration", "Decor ideas", "Room makeover");
+    }
+
+    return suggestions.slice(0, 3);
   },
 }));
