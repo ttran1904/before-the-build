@@ -1,15 +1,18 @@
-import type { CropBox } from "../types";
-
 /**
  * Bathroom-specific prompt for identifying items in inspiration photos.
  * Tuned for bathroom fixtures, surfaces, plumbing, decor, and hardware.
+ *
+ * Used with TWO images:
+ *   Image 1 = cropped region the user selected
+ *   Image 2 = full room photo for context
  */
-export function bathroomIdentifyPrompt(cropBox: CropBox): string {
-  return `This is a bathroom/interior design photo. The user has drawn a selection box over a specific area they want to identify and purchase.
+export function bathroomIdentifyPrompt(): string {
+  return `You are given TWO images.
 
-The selection covers approximately: left ${Math.round(cropBox.x * 100)}%, top ${Math.round(cropBox.y * 100)}%, width ${Math.round(cropBox.w * 100)}%, height ${Math.round(cropBox.h * 100)}% of the image.
+Image 1 (first image): A cropped close-up of the specific item the user wants to identify and purchase.
+Image 2 (second image): The full room photo for context — use this to understand the room style, color scheme, and setting.
 
-Examine the ENTIRE image for context, then identify the PRIMARY object or material the user is pointing at within that selection box. The edges of the selection may include other objects — focus on what is most central and intentional.
+Identify the PRIMARY object or material shown in Image 1. Use Image 2 to understand context (e.g. is it a bathroom vanity faucet vs. a kitchen faucet, the overall style, finish, etc.).
 
 This could be any of these categories:
 - Fixtures: faucet, showerhead, shower handle, drain, towel bar, toilet paper holder, doorknob, cabinet handle/pull

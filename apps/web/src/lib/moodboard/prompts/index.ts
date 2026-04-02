@@ -1,9 +1,8 @@
-import type { CropBox } from "../types";
 import { bathroomIdentifyPrompt } from "./bathroom";
 
 export type RoomType = "bathroom" | "kitchen" | "bedroom" | "living-room";
 
-const promptRegistry: Record<RoomType, (cropBox: CropBox) => string> = {
+const promptRegistry: Record<RoomType, () => string> = {
   bathroom: bathroomIdentifyPrompt,
   // Add new rooms here as they are built:
   // kitchen: kitchenIdentifyPrompt,
@@ -18,7 +17,7 @@ const promptRegistry: Record<RoomType, (cropBox: CropBox) => string> = {
  * Get the identification prompt for a given room type.
  * Falls back to bathroom prompt if room type is not yet specialized.
  */
-export function getIdentifyPrompt(roomType: RoomType, cropBox: CropBox): string {
+export function getIdentifyPrompt(roomType: RoomType): string {
   const promptFn = promptRegistry[roomType] || bathroomIdentifyPrompt;
-  return promptFn(cropBox);
+  return promptFn();
 }
