@@ -293,8 +293,26 @@ export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
   const activeNiceToHaves = input.includeNiceToHaves ? input.niceToHaves : [];
   const niceToHaveBreakdown = resolveItemBreakdown(activeNiceToHaves, "nice-to-have", overrides);
 
+  // Find additional overrides (selected products not matching any wizard item)
+  const wizardLabels = new Set([...input.mustHaves, ...activeNiceToHaves]);
+  const additionalOverrides = overrides.filter((o) => !wizardLabels.has(o.itemLabel));
+  const additionalBreakdown: ItemCostBreakdown[] = additionalOverrides.map((o) => {
+    const total = o.materialCost + o.laborCost;
+    return {
+      label: o.itemLabel,
+      materialLow: o.materialCost,
+      materialHigh: o.materialCost,
+      laborLow: o.laborCost,
+      laborHigh: o.laborCost,
+      totalLow: total,
+      totalHigh: total,
+      overridden: true,
+      source: "must-have" as const,
+    };
+  });
+
   // Combined item breakdown
-  const itemBreakdown = [...mustHaveBreakdown.breakdown, ...niceToHaveBreakdown.breakdown];
+  const itemBreakdown = [...mustHaveBreakdown.breakdown, ...niceToHaveBreakdown.breakdown, ...additionalBreakdown];
 
   // ─── Bottom-up category computation ───
   // Sum item-level material and labor
@@ -302,6 +320,10 @@ export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
   const itemMaterialHigh = itemBreakdown.reduce((s, i) => s + i.materialHigh, 0);
   const itemLaborLow = itemBreakdown.reduce((s, i) => s + i.laborLow, 0);
   const itemLaborHigh = itemBreakdown.reduce((s, i) => s + i.laborHigh, 0);
+
+  // Additional items totals (for node tracking)
+  const additionalLow = additionalBreakdown.reduce((s, i) => s + i.totalLow, 0);
+  const additionalHigh = additionalBreakdown.reduce((s, i) => s + i.totalHigh, 0);
 
   // Base/overhead (demolition, rough-in, general prep)
   // Split: ~30% materials (supplies, disposal), ~70% labor

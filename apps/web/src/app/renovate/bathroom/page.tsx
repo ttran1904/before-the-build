@@ -1225,8 +1225,9 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
   const removePointedItem = (imageId: string, pointedId: string) => {
     // If removing an item that had a price override, clean it up
     const pi = (pointedItems[imageId] || []).find((p) => p.id === pointedId);
-    if (pi?.matchedItemLabel && pi.selectedProductIdx !== null) {
-      removePriceOverride(pi.matchedItemLabel);
+    if (pi?.selectedProductIdx !== null) {
+      const overrideLabel = pi?.matchedItemLabel || pi?.label;
+      if (overrideLabel) removePriceOverride(overrideLabel);
     }
     setPointedItems(prev => ({ ...prev, [imageId]: (prev[imageId] || []).filter(item => item.id !== pointedId) }));
   };
@@ -1238,8 +1239,8 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
     const lower = identifiedLabel.toLowerCase();
     // Keywords from must-have labels to fuzzy-match
     const MATCH_KEYWORDS: Record<string, string[]> = {
-      "New tile (floor)": ["floor tile", "floor", "porcelain tile", "ceramic tile"],
-      "New tile (shower walls)": ["shower tile", "wall tile", "subway tile", "shower wall"],
+      "New tile (floor)": ["floor tile", "floor", "porcelain tile", "ceramic tile", "marble floor", "stone floor", "tile floor"],
+      "New tile (shower walls)": ["shower tile", "wall tile", "subway tile", "shower wall", "marble tile", "marble wall", "stone tile", "green marble", "backsplash tile"],
       "Single vanity": ["vanity", "bathroom vanity", "single vanity", "sink cabinet"],
       "Double vanity": ["double vanity", "dual vanity", "two sink"],
       "Comfort-height toilet": ["toilet", "commode"],
@@ -1247,7 +1248,7 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
       "Exhaust fan upgrade": ["exhaust fan", "vent fan", "bathroom fan"],
       "Recessed lighting": ["recessed light", "can light", "downlight"],
       "Walk-in shower": ["walk-in shower", "shower enclosure", "curbless shower"],
-      "Bathtub": ["bathtub", "tub", "soaking tub", "freestanding tub"],
+      "Bathtub": ["bathtub", "tub", "soaking tub", "freestanding tub", "freestanding bath", "soaking bath", "oval bath"],
       "Glass shower door": ["shower door", "glass door", "frameless"],
       "Rain showerhead": ["rain showerhead", "rain shower", "rainfall"],
       "Handheld showerhead": ["handheld shower", "hand shower", "detachable"],
@@ -1271,6 +1272,24 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
     return undefined;
   }, [allWizardItems]);
 
+  // Re-evaluate matchedItemLabel whenever wizard items change (handles persisted items + late edits)
+  useEffect(() => {
+    let changed = false;
+    const updated: Record<string, PointedItem[]> = {};
+    for (const [imageId, items] of Object.entries(pointedItems)) {
+      updated[imageId] = items.map((pi) => {
+        if (pi.loading) return pi;
+        const newMatch = autoMatchLabel(pi.label);
+        if (newMatch !== pi.matchedItemLabel) {
+          changed = true;
+          return { ...pi, matchedItemLabel: newMatch };
+        }
+        return pi;
+      });
+    }
+    if (changed) setPointedItems(updated);
+  }, [allWizardItems]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Parse dollar price string → number (e.g., "$1,299.00" → 1299)
   const parsePrice = (priceStr: string): number | null => {
     const match = priceStr.replace(/[^0-9.]/g, "");
@@ -1282,7 +1301,7 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
   const estimateLabor = (materialCost: number): number => Math.round(materialCost * 0.55);
 
   const toggleProductSelection = (imageId: string, pointedId: string, productIdx: number) => {
-    // First: update local pointed items state
+    // First: update pointed items state
     setPointedItems(prev => ({
       ...prev,
       [imageId]: (prev[imageId] || []).map(item =>
@@ -1292,20 +1311,24 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
       ),
     }));
 
-    // Second: update budget price override (deferred to avoid setState-during-render)
+    // Second: update budget price override
     const pi = (pointedItems[imageId] || []).find((p) => p.id === pointedId);
-    if (!pi?.matchedItemLabel) return;
+    if (!pi) return;
+
+    // Use matchedItemLabel if available, otherwise use the identified label
+    const overrideLabel = pi.matchedItemLabel || pi.label;
+    if (!overrideLabel || overrideLabel === "Identifying..." || overrideLabel === "Could not identify") return;
 
     const isDeselecting = pi.selectedProductIdx === productIdx;
     if (isDeselecting) {
-      removePriceOverride(pi.matchedItemLabel);
+      removePriceOverride(overrideLabel);
     } else {
       const product = pi.products[productIdx];
       if (product) {
         const materialCost = parsePrice(product.price);
         if (materialCost !== null) {
           setPriceOverride({
-            itemLabel: pi.matchedItemLabel,
+            itemLabel: overrideLabel,
             materialCost,
             laborCost: estimateLabor(materialCost),
           });
