@@ -15,14 +15,10 @@ export async function identifyAndSearch(
   serpApiKey: string,
 ): Promise<IdentifyAndSearchResult> {
   // Step 1: Identify the item
-  console.log("[identify-and-search] Step 1: Identifying item...");
   const identification = await identifyItem(imageUrl, cropBox, roomType, anthropicKey);
-  console.log("[identify-and-search] Identification result:", identification);
 
   // Step 2: Search for matching products
-  console.log("[identify-and-search] Step 2: Searching products for:", identification.searchTerms);
   const products = await searchProducts(identification.searchTerms, serpApiKey);
-  console.log("[identify-and-search] Found products:", products.length);
 
   return {
     label: identification.label,

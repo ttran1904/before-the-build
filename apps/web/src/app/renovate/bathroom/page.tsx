@@ -14,7 +14,7 @@ import {
   FaCircleCheck, FaThumbsUp, FaClock, FaDiamond,
   FaArrowUpRightFromSquare, FaLocationDot, FaShieldHalved, FaMagnifyingGlass,
   FaExpand, FaSwatchbook, FaCartShopping, FaSpinner, FaCrosshairs,
-  FaLink, FaCircleExclamation,
+  FaLink, FaCircleExclamation, FaXmark, FaChevronLeft, FaChevronRight, FaCircleInfo,
   FaDollarSign, FaSackDollar, FaGem,
   FaToilet, FaShower, FaBath, FaCrown,
 } from "react-icons/fa6";
@@ -154,10 +154,13 @@ function BathroomWizardPageContent() {
   const contractorHashRef = useRef("");
   const [contractorZip, setContractorZip] = useState("");
 
-  /* Moodboard state — lifted here so it persists across step navigation */
-  const [moodboardPointedItems, setMoodboardPointedItems] = useState<Record<string, PointedItem[]>>({});
-  const [moodboardManualProducts, setMoodboardManualProducts] = useState<Product[]>([]);
-  const [moodboardDragPositions, setMoodboardDragPositions] = useState<Record<number, { x: number; y: number }>>({});
+  /* Moodboard state — persisted in Zustand store */
+  const moodboardPointedItems = store.moodboardPointedItems;
+  const setMoodboardPointedItems = store.setMoodboardPointedItems;
+  const moodboardManualProducts = store.moodboardManualProducts;
+  const setMoodboardManualProducts = store.setMoodboardManualProducts;
+  const moodboardDragPositions = store.moodboardDragPositions;
+  const setMoodboardDragPositions = store.setMoodboardDragPositions;
 
   /* Budget Builder — deterministic graph engine */
   const [budgetBuilderOpen, setBudgetBuilderOpen] = useState(false);
@@ -1099,6 +1102,10 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
   const [manualLinkLoading, setManualLinkLoading] = useState(false);
   const [manualLinkError, setManualLinkError] = useState<string | null>(null);
 
+  // Product detail modal state
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
+  const [detailImageIdx, setDetailImageIdx] = useState(0);
+
   // Draggable moodboard canvas state
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -1397,6 +1404,122 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
         </div>
       )}
 
+      {/* Product detail modal */}
+      {detailProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setDetailProduct(null)}>
+          <div className="relative mx-4 flex w-full max-w-3xl max-h-[90vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <button
+              onClick={() => setDetailProduct(null)}
+              className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#4a4a5a] shadow-md transition hover:bg-[#f8f7f4] hover:text-[#1a1a2e]"
+            >
+              <FaXmark className="text-sm" />
+            </button>
+
+            <div className="flex flex-col overflow-y-auto md:flex-row">
+              {/* Left: Image gallery */}
+              <div className="relative flex w-full flex-col bg-[#f8f7f4] md:w-1/2">
+                {/* Main image with zoom */}
+                <div className="relative aspect-square w-full overflow-hidden">
+                  {((detailProduct.images ?? []).length > 0 ? detailProduct.images : [detailProduct.thumbnail]).filter(Boolean).map((img, i) => (
+                    <Image
+                      key={i}
+                      src={img}
+                      alt={`${detailProduct.title} - view ${i + 1}`}
+                      fill
+                      className={`object-contain transition-opacity duration-200 ${i === detailImageIdx ? "opacity-100" : "opacity-0"}`}
+                      sizes="400px"
+                      unoptimized
+                    />
+                  ))}
+
+                  {/* Navigation arrows */}
+                  {((detailProduct.images ?? []).length > 1) && (
+                    <>
+                      <button
+                        onClick={() => setDetailImageIdx((prev) => (prev - 1 + (detailProduct.images ?? []).length) % (detailProduct.images ?? []).length)}
+                        className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#4a4a5a] shadow transition hover:bg-white"
+                      >
+                        <FaChevronLeft className="text-xs" />
+                      </button>
+                      <button
+                        onClick={() => setDetailImageIdx((prev) => (prev + 1) % (detailProduct.images ?? []).length)}
+                        className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#4a4a5a] shadow transition hover:bg-white"
+                      >
+                        <FaChevronRight className="text-xs" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Thumbnail strip */}
+                {(detailProduct.images ?? []).length > 1 && (
+                  <div className="flex gap-1.5 overflow-x-auto p-3">
+                    {(detailProduct.images ?? []).map((img, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setDetailImageIdx(i)}
+                        className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                          i === detailImageIdx ? "border-[#2d5a3d]" : "border-transparent hover:border-[#d5d3cd]"
+                        }`}
+                      >
+                        <Image src={img} alt={`View ${i + 1}`} fill className="object-cover" sizes="56px" unoptimized />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Product info + specs */}
+              <div className="flex w-full flex-col p-6 md:w-1/2">
+                <h3 className="text-lg font-bold text-[#1a1a2e] leading-snug">{detailProduct.title}</h3>
+                <div className="mt-2 flex items-center gap-3">
+                  {detailProduct.price && (
+                    <span className="text-xl font-bold text-[#2d5a3d]">{detailProduct.price}</span>
+                  )}
+                  <span className="rounded-full bg-[#f8f7f4] px-2.5 py-0.5 text-xs text-[#6a6a7a]">{detailProduct.source}</span>
+                </div>
+
+                {/* Specifications */}
+                {Object.keys(detailProduct.specs ?? {}).length > 0 && (
+                  <div className="mt-5">
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#9a9aaa]">Specifications</h4>
+                    <div className="divide-y divide-[#f0eeea]">
+                      {Object.entries(detailProduct.specs ?? {}).slice(0, 12).map(([key, value]) => (
+                        <div key={key} className="flex justify-between gap-4 py-2">
+                          <span className="text-xs text-[#6a6a7a]">{key}</span>
+                          <span className="text-right text-xs font-medium text-[#1a1a2e]">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* No specs available */}
+                {Object.keys(detailProduct.specs ?? {}).length === 0 && (
+                  <div className="mt-5 rounded-xl bg-[#f8f7f4] p-4 text-center">
+                    <p className="text-xs text-[#9a9aaa]">Detailed specifications not available. Visit the product page for more info.</p>
+                  </div>
+                )}
+
+                {/* Visit product page CTA */}
+                <div className="mt-auto pt-5">
+                  <a
+                    href={detailProduct.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#2d5a3d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#234a31]"
+                  >
+                    <FaArrowUpRightFromSquare className="text-xs" />
+                    View on {detailProduct.source || "Store"}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── SECTION: Discover Items You Want ── */}
       {activeSection === "discover" && (
         <div className="mt-6">
@@ -1532,7 +1655,7 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
                             </p>
                           </div>
                         ) : (
-                          <div className="max-h-[400px] space-y-3 overflow-y-auto pr-1">
+                          <div className="max-h-[600px] space-y-4 overflow-y-auto pr-1">
                             {pointed.map((pi, idx) => (
                               <div key={pi.id} className="rounded-xl border border-[#e8e6e1] p-3">
                                 <div className="flex items-start justify-between">
@@ -1564,48 +1687,74 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
                                 </div>
 
                                 {!pi.loading && pi.products.length > 0 && (
-                                  <div className="mt-2 space-y-1.5">
+                                  <div className="mt-3 grid grid-cols-2 gap-2">
                                     {pi.products.slice(0, 4).map((p, i) => {
                                       const isSelected = pi.selectedProductIdx === i;
                                       return (
                                         <div
                                           key={i}
-                                          onClick={() => toggleProductSelection(item.id, pi.id, i)}
-                                          className={`flex cursor-pointer gap-2 rounded-lg border p-2 transition ${
+                                          className={`relative rounded-xl border overflow-hidden transition ${
                                             isSelected
-                                              ? "border-[#2d5a3d] bg-[#2d5a3d]/5 ring-1 ring-[#2d5a3d]/20"
-                                              : "border-[#e8e6e1] hover:bg-[#f8f7f4]"
+                                              ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/20"
+                                              : "border-[#e8e6e1] hover:border-[#c5c3bd]"
                                           }`}
                                         >
-                                          {/* Radio circle */}
-                                          <div className={`mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition ${
-                                            isSelected
-                                              ? "border-[#2d5a3d] bg-[#2d5a3d]"
-                                              : "border-[#d5d3cd]"
-                                          }`}>
-                                            {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                                          </div>
+                                          {/* Product image - large */}
                                           {p.thumbnail && (
-                                            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-[#f8f7f4]">
-                                              <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="40px" unoptimized />
+                                            <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
+                                              <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="200px" unoptimized />
+                                              {/* Selection indicator overlay */}
+                                              {isSelected && (
+                                                <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2d5a3d] shadow">
+                                                  <FaCheck className="text-[8px] text-white" />
+                                                </div>
+                                              )}
                                             </div>
                                           )}
-                                          <div className="min-w-0 flex-1">
-                                            <p className="truncate text-[11px] font-medium text-[#1a1a2e]">{p.title}</p>
-                                            <div className="flex items-center gap-2">
+
+                                          {/* Product info */}
+                                          <div className="p-2">
+                                            <p className="line-clamp-2 text-[11px] leading-tight font-medium text-[#1a1a2e]">{p.title}</p>
+                                            <div className="mt-1 flex items-center gap-1.5">
                                               <span className="text-[10px] text-[#6a6a7a]">{p.source}</span>
-                                              {p.price && <span className="text-[11px] font-semibold text-[#2d5a3d]">{p.price}</span>}
+                                              {p.price && <span className="text-xs font-bold text-[#2d5a3d]">{p.price}</span>}
+                                            </div>
+
+                                            {/* Action buttons row */}
+                                            <div className="mt-2 flex items-center gap-1">
+                                              {/* Select / deselect button */}
+                                              <button
+                                                onClick={() => toggleProductSelection(item.id, pi.id, i)}
+                                                className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-semibold transition ${
+                                                  isSelected
+                                                    ? "bg-[#2d5a3d] text-white"
+                                                    : "border border-[#2d5a3d] text-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+                                                }`}
+                                              >
+                                                {isSelected ? <><FaCheck className="text-[8px]" /> Selected</> : "Select"}
+                                              </button>
+
+                                              {/* Detail / expand button */}
+                                              <button
+                                                onClick={() => { setDetailProduct(p); setDetailImageIdx(0); }}
+                                                className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#d5d3cd] text-[#6a6a7a] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
+                                                title="View details"
+                                              >
+                                                <FaCircleInfo className="text-xs" />
+                                              </button>
+
+                                              {/* External link button */}
+                                              <a
+                                                href={p.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#d5d3cd] text-[#6a6a7a] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
+                                                title="Open product page"
+                                              >
+                                                <FaArrowUpRightFromSquare className="text-[10px]" />
+                                              </a>
                                             </div>
                                           </div>
-                                          <a
-                                            href={p.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="mt-1 shrink-0 text-[9px] text-[#9a9aaa] transition hover:text-[#2d5a3d]"
-                                          >
-                                            <FaArrowUpRightFromSquare />
-                                          </a>
                                         </div>
                                       );
                                     })}

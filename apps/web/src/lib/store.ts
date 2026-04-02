@@ -1,7 +1,9 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { DesignStyle, ProjectGoal } from "@before-the-build/shared";
 import type { BathroomSize } from "@/lib/room-sizes/bathroom";
 import type { PriceOverride } from "@/lib/budget-engine/budget-graph";
+import type { PointedItem, Product } from "@/lib/moodboard/types";
 
 /* ── Bathroom Wizard State ── */
 
@@ -27,6 +29,10 @@ export interface BathroomWizardState {
   currentStep: number;
   // Price overrides from moodboard selections
   priceOverrides: PriceOverride[];
+  // Moodboard discovery state (persisted across navigation / hot reloads)
+  moodboardPointedItems: Record<string, PointedItem[]>;
+  moodboardManualProducts: Product[];
+  moodboardDragPositions: Record<number, { x: number; y: number }>;
 }
 
 interface WizardActions {
@@ -42,6 +48,9 @@ interface WizardActions {
   setCurrentStep: (step: number) => void;
   setPriceOverride: (override: PriceOverride) => void;
   removePriceOverride: (itemLabel: string) => void;
+  setMoodboardPointedItems: (updater: Record<string, PointedItem[]> | ((prev: Record<string, PointedItem[]>) => Record<string, PointedItem[]>)) => void;
+  setMoodboardManualProducts: (updater: Product[] | ((prev: Product[]) => Product[])) => void;
+  setMoodboardDragPositions: (updater: Record<number, { x: number; y: number }> | ((prev: Record<number, { x: number; y: number }>) => Record<number, { x: number; y: number }>)) => void;
   reset: () => void;
 }
 
@@ -57,38 +66,58 @@ const initialState: BathroomWizardState = {
   bathroomSize: "full-bath",
   currentStep: 0,
   priceOverrides: [],
+  moodboardPointedItems: {},
+  moodboardManualProducts: [],
+  moodboardDragPositions: {},
 };
 
-export const useWizardStore = create<BathroomWizardState & WizardActions>((set) => ({
-  ...initialState,
-  toggleGoal: (goal) => set((state) => ({
-    goals: state.goals.includes(goal)
-      ? state.goals.filter((g) => g !== goal)
-      : [...state.goals, goal],
-  })),
-  setScope: (scope) => set({ scope }),
-  setMustHaves: (mustHaves) => set({ mustHaves }),
-  setNiceToHaves: (niceToHaves) => set({ niceToHaves }),
-  setBudgetTier: (budgetTier) => set((state) => ({ budgetTier, budgetAmount: state.budgetAmounts[budgetTier] })),
-  setBudgetAmount: (budgetAmount) => set({ budgetAmount }),
-  setBudgetAmounts: (tier, amount) => set((state) => ({
-    budgetAmounts: { ...state.budgetAmounts, [tier]: amount },
-    ...(state.budgetTier === tier ? { budgetAmount: amount } : {}),
-  })),
-  setStyle: (style) => set({ style }),
-  setBathroomSize: (bathroomSize) => set({ bathroomSize }),
-  setCurrentStep: (currentStep) => set({ currentStep }),
-  setPriceOverride: (override) => set((state) => ({
-    priceOverrides: [
-      ...state.priceOverrides.filter((o) => o.itemLabel !== override.itemLabel),
-      override,
-    ],
-  })),
-  removePriceOverride: (itemLabel) => set((state) => ({
-    priceOverrides: state.priceOverrides.filter((o) => o.itemLabel !== itemLabel),
-  })),
-  reset: () => set(initialState),
-}));
+export const useWizardStore = create<BathroomWizardState & WizardActions>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
+      toggleGoal: (goal) => set((state) => ({
+        goals: state.goals.includes(goal)
+          ? state.goals.filter((g) => g !== goal)
+          : [...state.goals, goal],
+      })),
+      setScope: (scope) => set({ scope }),
+      setMustHaves: (mustHaves) => set({ mustHaves }),
+      setNiceToHaves: (niceToHaves) => set({ niceToHaves }),
+      setBudgetTier: (budgetTier) => set((state) => ({ budgetTier, budgetAmount: state.budgetAmounts[budgetTier] })),
+      setBudgetAmount: (budgetAmount) => set({ budgetAmount }),
+      setBudgetAmounts: (tier, amount) => set((state) => ({
+        budgetAmounts: { ...state.budgetAmounts, [tier]: amount },
+        ...(state.budgetTier === tier ? { budgetAmount: amount } : {}),
+      })),
+      setStyle: (style) => set({ style }),
+      setBathroomSize: (bathroomSize) => set({ bathroomSize }),
+      setCurrentStep: (currentStep) => set({ currentStep }),
+      setPriceOverride: (override) => set((state) => ({
+        priceOverrides: [
+          ...state.priceOverrides.filter((o) => o.itemLabel !== override.itemLabel),
+          override,
+        ],
+      })),
+      removePriceOverride: (itemLabel) => set((state) => ({
+        priceOverrides: state.priceOverrides.filter((o) => o.itemLabel !== itemLabel),
+      })),
+      setMoodboardPointedItems: (updater) => set((state) => ({
+        moodboardPointedItems: typeof updater === "function" ? updater(state.moodboardPointedItems) : updater,
+      })),
+      setMoodboardManualProducts: (updater) => set((state) => ({
+        moodboardManualProducts: typeof updater === "function" ? updater(state.moodboardManualProducts) : updater,
+      })),
+      setMoodboardDragPositions: (updater) => set((state) => ({
+        moodboardDragPositions: typeof updater === "function" ? updater(state.moodboardDragPositions) : updater,
+      })),
+      reset: () => set(initialState),
+    }),
+    {
+      name: "btb-wizard-store",
+      storage: createJSONStorage(() => sessionStorage),
+    },
+  ),
+);
 
 /* ── Moodboard State (Multi-Board) ── */
 
@@ -127,9 +156,11 @@ interface MoodboardState {
 
 let boardCounter = 0;
 
-export const useMoodboardStore = create<MoodboardState>((set, get) => ({
-  items: [],
-  boards: [],
+export const useMoodboardStore = create<MoodboardState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      boards: [],
 
   addItem: (item) => set({ items: [...get().items, { ...item, saved: true }] }),
   removeItem: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
@@ -243,4 +274,10 @@ export const useMoodboardStore = create<MoodboardState>((set, get) => ({
 
     return suggestions.slice(0, 3);
   },
-}));
+    }),
+    {
+      name: "btb-moodboard-store",
+      storage: createJSONStorage(() => sessionStorage),
+    },
+  ),
+);

@@ -11,6 +11,8 @@ export interface Product {
   source: string;
   url: string;
   thumbnail: string;
+  images: string[];
+  specs: Record<string, string>;
 }
 
 export interface PointedItem {
