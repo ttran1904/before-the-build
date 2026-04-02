@@ -344,7 +344,7 @@ function BathroomWizardPageContent() {
             </button>
           </div>
         </div>
-        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${currentStep === 6 ? "max-w-5xl" : currentStep === 2 || currentStep === 4 || currentStep === 5 ? "max-w-6xl" : "max-w-3xl"} w-full`}>
+        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${currentStep === 6 ? "max-w-5xl" : currentStep === 4 ? "max-w-[1400px]" : currentStep === 2 || currentStep === 5 ? "max-w-6xl" : "max-w-3xl"} w-full ${currentStep === 4 && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[200px]" : ""}`}>
           {currentStep === 0 && <GoalStep />}
           {currentStep === 1 && <ScopeStep />}
           {currentStep > 1 && (
@@ -388,96 +388,103 @@ function BathroomWizardPageContent() {
 
       {/* ── Right sidebar: Items Checklist (Moodboard step only) ── */}
       {currentStep === 4 && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) && (
-        <aside className="sticky top-0 flex h-screen w-48 shrink-0 flex-col border-l border-[#e8e6e1] bg-[#f5f4f0]/80 overflow-y-auto">
-          <div className="px-4 pt-5 pb-3">
-            <h3 className="flex items-center gap-1.5 text-xs font-bold text-[#1a1a2e]">
-              <FaClipboardList className="text-[10px] text-[#2d5a3d]" />
-              Your Items
-            </h3>
-            <p className="mt-0.5 text-[9px] text-[#9a9aaa]">Find products for each item</p>
-          </div>
+        <div
+          className="fixed z-20 flex items-center"
+          style={{ top: "52px", right: "-16px", width: "200px", height: "calc(100vh - 52px)" }}
+        >
+          <div className="max-h-full overflow-y-auto pl-3">
+            <aside className="rounded-l-2xl rounded-tr-none rounded-br-none border border-r-0 border-[#e8e6e1] bg-white shadow-lg shadow-black/5">
+              <div className="px-5 pt-5 pb-3">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-[#1a1a2e]">
+                  <FaClipboardList className="text-xs text-[#2d5a3d]" />
+                  Your Items
+                </h3>
+                <p className="mt-0.5 text-xs text-[#9a9aaa]">Find products for each item</p>
+              </div>
 
-          <div className="flex-1 px-4 pb-4 space-y-4">
-            {/* Must-Haves */}
-            {store.mustHaves.length > 0 && (
-              <div>
-                <h4 className="flex items-center gap-1 text-[10px] font-semibold text-[#2d5a3d] uppercase tracking-wide">
-                  <FaStar className="text-[8px]" /> Must-Haves
-                </h4>
-                <div className="mt-1.5 space-y-1">
-                  {store.mustHaves.map((label) => {
-                    const found = matchedLabels.has(label);
-                    return (
-                      <div key={label} className={`relative flex items-center gap-1.5 rounded px-2 py-1 text-[11px] transition-all duration-500 ${found ? "bg-[#2d5a3d]/8" : ""}`}>
-                        {found ? (
-                          <FaCheck className="shrink-0 text-[8px] text-[#2d5a3d]" />
-                        ) : (
-                          <span className="shrink-0 text-[8px] text-red-300">✕</span>
-                        )}
-                        <span className={`flex-1 transition-all duration-500 ${found ? "text-[#2d5a3d]/60 line-through decoration-[#2d5a3d]/40" : "text-[#4a4a5a]"}`}>{label}</span>
+            <div className="px-5 pb-5 space-y-5">
+              {/* Must-Haves */}
+              {store.mustHaves.length > 0 && (
+                <div>
+                  <h4 className="flex items-center gap-1.5 text-xs font-semibold text-[#2d5a3d] uppercase tracking-wide">
+                    <FaStar className="text-[10px]" /> Must-Haves
+                  </h4>
+                  <div className="mt-2 space-y-1.5">
+                    {store.mustHaves.map((label) => {
+                      const found = matchedLabels.has(label);
+                      return (
+                        <div key={label} className={`relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-all duration-500 ${found ? "bg-[#2d5a3d]/5" : ""}`}>
+                          {found ? (
+                            <FaCheck className="shrink-0 text-[10px] text-[#2d5a3d]" />
+                          ) : (
+                            <span className="shrink-0 text-[10px] text-red-300">✕</span>
+                          )}
+                          <span className={`flex-1 transition-all duration-500 ${found ? "text-[#2d5a3d]/50 line-through decoration-[#2d5a3d]/60 decoration-2" : "text-[#4a4a5a]"}`}>{label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Nice-to-Haves */}
+              {store.niceToHaves.length > 0 && (
+                <div>
+                  <h4 className="flex items-center gap-1.5 text-xs font-semibold text-[#d4a24c] uppercase tracking-wide">
+                    <FaStarHalfStroke className="text-[10px]" /> Nice-to-Haves
+                  </h4>
+                  <div className="mt-2 space-y-1.5">
+                    {store.niceToHaves.map((label) => {
+                      const found = matchedLabels.has(label);
+                      return (
+                        <div key={label} className={`relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-all duration-500 ${found ? "bg-[#d4a24c]/5" : ""}`}>
+                          {found ? (
+                            <FaCheck className="shrink-0 text-[10px] text-[#d4a24c]" />
+                          ) : (
+                            <span className="shrink-0 text-[10px] text-[#c5c3bd]">○</span>
+                          )}
+                          <span className={`flex-1 transition-all duration-500 ${found ? "text-[#d4a24c]/50 line-through decoration-[#d4a24c]/60 decoration-2" : "text-[#9a9aaa]"}`}>{label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* New Items (unmatched from moodboard) */}
+              {unmatchedItems.length > 0 && (
+                <div>
+                  <h4 className="flex items-center gap-1.5 text-xs font-semibold text-[#6a6a7a] uppercase tracking-wide">
+                    <FaPlus className="text-[10px]" /> New Items
+                  </h4>
+                  <div className="mt-2 space-y-1.5">
+                    {unmatchedItems.map((pi) => (
+                      <div key={pi.id} className="flex items-center gap-2 rounded-lg bg-[#2d5a3d]/5 px-3 py-1.5 text-sm">
+                        <FaCheck className="shrink-0 text-[10px] text-[#5b8c6e]" />
+                        <span className="flex-1 text-[#4a4a5a] truncate">{pi.label}</span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Nice-to-Haves */}
-            {store.niceToHaves.length > 0 && (
-              <div>
-                <h4 className="flex items-center gap-1 text-[10px] font-semibold text-[#d4a24c] uppercase tracking-wide">
-                  <FaStarHalfStroke className="text-[8px]" /> Nice-to-Haves
-                </h4>
-                <div className="mt-1.5 space-y-1">
-                  {store.niceToHaves.map((label) => {
-                    const found = matchedLabels.has(label);
-                    return (
-                      <div key={label} className={`relative flex items-center gap-1.5 rounded px-2 py-1 text-[11px] transition-all duration-500 ${found ? "bg-[#d4a24c]/8" : ""}`}>
-                        {found ? (
-                          <FaCheck className="shrink-0 text-[8px] text-[#d4a24c]" />
-                        ) : (
-                          <span className="shrink-0 text-[8px] text-[#c5c3bd]">○</span>
-                        )}
-                        <span className={`flex-1 transition-all duration-500 ${found ? "text-[#d4a24c]/60 line-through decoration-[#d4a24c]/40" : "text-[#9a9aaa]"}`}>{label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* New Items (unmatched from moodboard) */}
-            {unmatchedItems.length > 0 && (
-              <div>
-                <h4 className="flex items-center gap-1 text-[10px] font-semibold text-[#6a6a7a] uppercase tracking-wide">
-                  <FaPlus className="text-[8px]" /> New Items
-                </h4>
-                <div className="mt-1.5 space-y-1">
-                  {unmatchedItems.map((pi) => (
-                    <div key={pi.id} className="flex items-center gap-1.5 rounded bg-[#2d5a3d]/5 px-2 py-1 text-[11px]">
-                      <FaCheck className="shrink-0 text-[8px] text-[#5b8c6e]" />
-                      <span className="flex-1 text-[#4a4a5a] truncate">{pi.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Progress bar */}
-          <div className="border-t border-[#e8e6e1]/60 px-4 py-3">
-            <div className="flex items-center justify-between text-[9px] text-[#6a6a7a]">
-              <span>{matchedLabels.size}/{store.mustHaves.length + store.niceToHaves.length}</span>
-              <span className="font-semibold text-[#2d5a3d]">{Math.round((matchedLabels.size / (store.mustHaves.length + store.niceToHaves.length)) * 100)}%</span>
+              )}
             </div>
-            <div className="mt-1 h-1 rounded-full bg-[#e8e6e1]">
-              <div
-                className="h-full rounded-full bg-[#2d5a3d] transition-all duration-500"
-                style={{ width: `${(matchedLabels.size / (store.mustHaves.length + store.niceToHaves.length)) * 100}%` }}
-              />
+
+            {/* Progress bar */}
+            <div className="border-t border-[#e8e6e1] px-5 py-3">
+              <div className="flex items-center justify-between text-xs text-[#6a6a7a]">
+                <span>{matchedLabels.size}/{store.mustHaves.length + store.niceToHaves.length}</span>
+                <span className="font-semibold text-[#2d5a3d]">{Math.round((matchedLabels.size / (store.mustHaves.length + store.niceToHaves.length)) * 100)}%</span>
+              </div>
+              <div className="mt-1.5 h-1.5 rounded-full bg-[#e8e6e1]">
+                <div
+                  className="h-full rounded-full bg-[#2d5a3d] transition-all duration-500"
+                  style={{ width: `${(matchedLabels.size / (store.mustHaves.length + store.niceToHaves.length)) * 100}%` }}
+                />
+              </div>
             </div>
+          </aside>
           </div>
-        </aside>
+        </div>
       )}
     </div>
   );
