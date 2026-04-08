@@ -84,7 +84,6 @@ interface ExploreFilterPanelProps {
   onColorChange: (id: string) => void;
   selectedSize: string;
   onSizeChange: (id: string) => void;
-  onApply: () => void;
 }
 
 export default function ExploreFilterPanel({
@@ -94,20 +93,13 @@ export default function ExploreFilterPanel({
   onColorChange,
   selectedSize,
   onSizeChange,
-  onApply,
 }: ExploreFilterPanelProps) {
   return (
     <aside className="w-48 shrink-0 pr-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3">
         <h2 className="text-xs font-bold uppercase tracking-wider text-[#9a9aaa]">
           Filters
         </h2>
-        <button
-          onClick={onApply}
-          className="rounded-lg bg-[#2d5a3d] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#234a31]"
-        >
-          Apply
-        </button>
       </div>
 
       {/* ── Style ── */}

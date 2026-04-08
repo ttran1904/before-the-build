@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   FaHouse, FaMagnifyingGlass, FaArrowLeft, FaClipboardList,
+  FaXmark,
 } from "react-icons/fa6";
 import RoomCategoryBar from "@/components/RoomCategoryBar";
 import MasonryGallery from "@/components/MasonryGallery";
@@ -36,48 +37,59 @@ function ExplorePageContent() {
   const [selectedStyle, setSelectedStyle] = useState("all");
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [moodboardOpen, setMoodboardOpen] = useState(false);
   const moodboardCount = useMoodboardStore((s) => s.items.length);
   const boardCount = useMoodboardStore((s) => s.boards.length);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const fetchImages = useCallback(async () => {
+  const runSearch = useCallback(async (style: string, color: string, size: string, query: string) => {
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (selectedStyle !== "all") params.set("style", selectedStyle);
-      if (selectedColor) params.set("color", selectedColor);
-      if (selectedSize) params.set("size", selectedSize);
-      if (search) params.set("query", search);
-      const res = await fetch(`/api/inspiration?${params.toString()}`);
+      if (style !== "all") params.set("style", style);
+      if (color) params.set("color", color);
+      if (size) params.set("size", size);
+      if (query) params.set("query", query);
+      const res = await fetch(`/api/inspiration?${params.toString()}`, {
+        signal: controller.signal,
+      });
       const data = await res.json();
       setImages(data.images || []);
-    } catch {
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setImages([]);
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
     }
-    setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const applyFilters = useCallback(() => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (selectedStyle !== "all") params.set("style", selectedStyle);
-    if (selectedColor) params.set("color", selectedColor);
-    if (selectedSize) params.set("size", selectedSize);
-    if (search) params.set("query", search);
-    fetch(`/api/inspiration?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => setImages(data.images || []))
-      .catch(() => setImages([]))
-      .finally(() => setLoading(false));
-  }, [selectedStyle, selectedColor, selectedSize, search]);
-
+  // Auto-trigger search whenever filters change
   useEffect(() => {
-    fetchImages();
-  }, [fetchImages]);
+    runSearch(selectedStyle, selectedColor, selectedSize, activeSearch);
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, [selectedStyle, selectedColor, selectedSize, activeSearch, runSearch]);
+
+  const handleSearchSubmit = () => {
+    setActiveSearch(searchInput);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+    setActiveSearch("");
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -143,7 +155,6 @@ function ExplorePageContent() {
           onColorChange={setSelectedColor}
           selectedSize={selectedSize}
           onSizeChange={setSelectedSize}
-          onApply={applyFilters}
         />
 
         {/* Main Content */}
@@ -153,16 +164,39 @@ function ExplorePageContent() {
             <h1 className="text-2xl font-bold text-[#1a1a2e]">
               Home Design Ideas
             </h1>
+            <div className="flex items-center gap-3">
+            {activeSearch && (
+              <div className="flex items-center gap-1.5 rounded-full bg-[#2d5a3d]/10 px-3 py-1.5 text-sm font-medium text-[#2d5a3d]">
+                <span className="max-w-[160px] truncate">{activeSearch}</span>
+                <button
+                  onClick={clearSearch}
+                  className="ml-0.5 rounded-full p-0.5 transition hover:bg-[#2d5a3d]/20"
+                  aria-label="Clear search"
+                >
+                  <FaXmark className="text-[10px]" />
+                </button>
+              </div>
+            )}
             <div className="relative w-full md:w-80">
               <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9a9aaa]" />
               <input
                 type="text"
                 placeholder="Search bathroom ideas..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearchSubmit();
+                }}
                 className="w-full rounded-xl border border-[#e8e6e1] bg-white py-3 pl-11 pr-4 text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-2 focus:ring-[#2d5a3d]/20"
               />
             </div>
+            <button
+              onClick={handleSearchSubmit}
+              className="shrink-0 rounded-xl bg-[#2d5a3d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#234a31]"
+            >
+              Search
+            </button>
+          </div>
           </div>
 
           {/* Room Category Bar (Houzz-style) */}
