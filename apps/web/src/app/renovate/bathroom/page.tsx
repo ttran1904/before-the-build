@@ -102,7 +102,7 @@ const STEPS = [
   { id: "mockup", label: "Real Mockup", icon: FaCamera, section: "visualize" },
   { id: "timeline", label: "Timeline", icon: FaCalendarDays },
   { id: "contractor", label: "Contractor", icon: FaHelmetSafety },
-  { id: "summary", label: "Summary", icon: FaListCheck },
+  { id: "summary", label: "Build Book", icon: FaListCheck },
 ];
 
 const SECTION_HEADERS: Record<string, { label: string; icon: typeof FaBullseye }> = {
