@@ -13,7 +13,7 @@ import {
   FaCalendarDays, FaHelmetSafety, FaStar, FaStarHalfStroke,
   FaCircleCheck, FaThumbsUp, FaClock, FaDiamond,
   FaArrowUpRightFromSquare, FaLocationDot, FaShieldHalved, FaMagnifyingGlass,
-  FaExpand, FaSwatchbook, FaCartShopping, FaSpinner, FaCrosshairs,
+  FaExpand, FaSwatchbook, FaCartShopping, FaSpinner, FaCrosshairs, FaHandPointer,
   FaLink, FaCircleExclamation, FaXmark, FaChevronLeft, FaChevronRight, FaCircleInfo,
   FaDollarSign, FaSackDollar, FaGem,
   FaToilet, FaShower, FaBath, FaCrown,
@@ -90,12 +90,21 @@ function SlotDigit({ char, delay, animate }: { char: string; delay: number; anim
 }
 
 /* ── Step definitions ── */
+const STEP_PARENTS: Record<string, { label: string; icon: typeof FaBullseye }> = {
+  goal: { label: "Goal", icon: FaBullseye },
+  "items-materials": { label: "Items & Materials", icon: FaCartShopping },
+  visualize: { label: "Visualize", icon: FaPaintbrush },
+};
+
 const STEPS = [
   { id: "goal", label: "Priorities", icon: FaBullseye, parent: "goal" },
   { id: "scope", label: "Scope", icon: FaRuler, parent: "goal" },
   { id: "must-haves", label: "Must-Haves", icon: FaClipboardList },
   { id: "budget", label: "Budget", icon: FaCoins },
-  { id: "moodboard", label: "Moodboard", icon: FaImages },
+  { id: "items-pictures", label: "Items from Pictures", icon: FaCrosshairs, parent: "items-materials" },
+  { id: "catalogue", label: "Designer's Catalogue", icon: FaSwatchbook, parent: "items-materials" },
+  { id: "moodboard", label: "Moodboard", icon: FaImages, parent: "visualize" },
+  { id: "mockup", label: "Real Mockup", icon: FaPaintbrush, parent: "visualize" },
   { id: "timeline", label: "Timeline", icon: FaCalendarDays },
   { id: "contractor", label: "Contractor", icon: FaHelmetSafety },
   { id: "summary", label: "Summary", icon: FaListCheck },
@@ -286,14 +295,18 @@ function BathroomWizardPageContent() {
             const showParentHeading = isSubStep && (i === 0 || !("parent" in STEPS[i - 1]));
             return (
               <div key={step.id}>
-                {showParentHeading && (
-                  <div className="flex items-center gap-3 px-3 py-2 text-xs font-semibold tracking-wide text-white/50">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                      <FaBullseye className="text-[10px]" />
-                    </span>
-                    Goal
-                  </div>
-                )}
+                {showParentHeading && (() => {
+                  const parentConfig = STEP_PARENTS[(step as { parent: string }).parent];
+                  const ParentIcon = parentConfig?.icon || FaBullseye;
+                  return (
+                    <div className="flex items-center gap-3 px-3 py-2 text-xs font-semibold tracking-wide text-white/50">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                        <ParentIcon className="text-[10px]" />
+                      </span>
+                      {parentConfig?.label || "Section"}
+                    </div>
+                  );
+                })()}
                 <button
                   onClick={() => { if (done) { setCurrentStep(i); if (i === 3) setBudgetSubStep(0); } }}
                   className={`group flex w-full items-center gap-3 rounded-lg ${isSubStep ? "pl-8" : "pl-3"} pr-3 py-2.5 text-left transition ${
@@ -362,17 +375,20 @@ function BathroomWizardPageContent() {
             </button>
           </div>
         </div>
-        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${currentStep === 6 ? "max-w-5xl" : currentStep === 4 ? "max-w-[1400px]" : currentStep === 2 || currentStep === 5 ? "max-w-6xl" : "max-w-3xl"} w-full ${currentStep === 4 && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[200px]" : ""}`}>
+        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${currentStep === 9 ? "max-w-5xl" : [4, 5, 6, 7].includes(currentStep) ? "max-w-[1400px]" : currentStep === 2 || currentStep === 8 ? "max-w-6xl" : "max-w-3xl"} w-full ${[4, 5, 6, 7].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[200px]" : ""}`}>
           {currentStep === 0 && <GoalStep />}
           {currentStep === 1 && <ScopeStep />}
           {currentStep > 1 && (
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
             {currentStep === 2 && <MustHavesStep />}
             {currentStep === 3 && <BudgetStep subStep={budgetSubStep} />}
-            {currentStep === 4 && <MoodboardStep pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 5 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
-            {currentStep === 6 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
-            {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} />}
+            {currentStep === 4 && <MoodboardStep view="items-pictures" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
+            {currentStep === 5 && <MoodboardStep view="catalogue" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
+            {currentStep === 6 && <MoodboardStep view="moodboard" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
+            {currentStep === 7 && <MoodboardStep view="mockup" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
+            {currentStep === 8 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
+            {currentStep === 9 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
+            {currentStep === 10 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} />}
           </div>
           )}
 
@@ -405,7 +421,7 @@ function BathroomWizardPageContent() {
       </main>
 
       {/* ── Right sidebar: Items Checklist (Moodboard step only) ── */}
-      {currentStep === 4 && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) && (
+      {[4, 5, 6, 7].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) && (
         <div
           className="fixed z-20 flex items-center"
           style={{ top: "52px", right: "-16px", width: "200px", height: "calc(100vh - 52px)" }}
@@ -1093,7 +1109,8 @@ function BudgetStep({ subStep }: { subStep: number }) {
 
 /* ── Moodboard Step (discover items + moodboard view) ── */
 
-function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManualProducts, dragPositions, setDragPositions }: {
+function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, setManualProducts, dragPositions, setDragPositions }: {
+  view: "items-pictures" | "catalogue" | "moodboard" | "mockup";
   pointedItems: Record<string, PointedItem[]>;
   setPointedItems: React.Dispatch<React.SetStateAction<Record<string, PointedItem[]>>>;
   manualProducts: Product[];
@@ -1103,7 +1120,6 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
 }) {
   const { items, removeItem } = useMoodboardStore();
   const { mustHaves, niceToHaves, setPriceOverride, removePriceOverride } = useWizardStore();
-  const [activeSection, setActiveSection] = useState<"discover" | "moodboard">("discover");
   const [selectingImageId, setSelectingImageId] = useState<string | null>(null);
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
   const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
@@ -1386,31 +1402,6 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
 
   return (
     <div>
-      {/* Section switcher */}
-      <div className="flex gap-1 rounded-xl bg-[#f8f7f4] p-1">
-        <button
-          onClick={() => setActiveSection("discover")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-            activeSection === "discover" ? "bg-white text-[#2d5a3d] shadow-sm" : "text-[#6a6a7a] hover:text-[#4a4a5a]"
-          }`}
-        >
-          <FaCrosshairs className="text-xs" />
-          Discover Items You Want
-        </button>
-        <button
-          onClick={() => setActiveSection("moodboard")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-            activeSection === "moodboard" ? "bg-white text-[#2d5a3d] shadow-sm" : "text-[#6a6a7a] hover:text-[#4a4a5a]"
-          }`}
-        >
-          <FaImages className="text-xs" />
-          Moodboard
-          {totalFoundItems > 0 && (
-            <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">{totalFoundItems}</span>
-          )}
-        </button>
-      </div>
-
       {/* Delete confirmation modal */}
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -1556,7 +1547,7 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
       )}
 
       {/* ── SECTION: Discover Items You Want ── */}
-      {activeSection === "discover" && (
+      {view === "items-pictures" && (
         <div className="mt-6">
           <div className="flex items-start justify-between">
             <div>
@@ -1604,9 +1595,9 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
                       </button>
                     </div>
 
-                    <div className="flex">
+                    <div className="flex min-h-[500px]">
                       {/* LEFT: Image + Point-out button */}
-                      <div className="w-1/2 border-r border-[#e8e6e1] p-4">
+                      <div className="flex w-1/2 flex-col items-center border-r border-[#e8e6e1] p-4">
                         <div
                           className={`relative select-none overflow-hidden rounded-xl ${isSelecting ? "cursor-crosshair ring-2 ring-[#2d5a3d] ring-offset-2" : ""}`}
                           onMouseDown={(e) => handleMouseDown(e, item.id)}
@@ -1668,13 +1659,13 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
                               : "border-2 border-[#2d5a3d] text-[#2d5a3d] hover:bg-[#2d5a3d]/5"
                           }`}
                         >
-                          <FaMagnifyingGlass className="text-xs" />
+                          <FaHandPointer className="text-xs" />
                           {isSelecting ? "Drawing mode \u2014 cancel" : "Point out the Item"}
                         </button>
                       </div>
 
                       {/* RIGHT: Found items & products */}
-                      <div className="w-1/2 p-4">
+                      <div className="flex w-1/2 flex-col p-4">
                         <h4 className="mb-3 text-sm font-semibold text-[#1a1a2e]">
                           Items to Buy
                           {pointed.length > 0 && (
@@ -1683,14 +1674,14 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
                         </h4>
 
                         {pointed.length === 0 ? (
-                          <div className="flex h-48 flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#e8e6e1] text-center">
+                          <div className="flex flex-1 flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#e8e6e1] text-center">
                             <FaCartShopping className="mb-2 text-2xl text-[#d5d3cd]" />
                             <p className="text-xs text-[#9a9aaa]">
                               Point out items in the image<br />to find them online
                             </p>
                           </div>
                         ) : (
-                          <div className="max-h-[600px] space-y-4 overflow-y-auto pr-1">
+                          <div className="flex-1 space-y-4 overflow-y-auto pr-1">
                             {pointed.map((pi, idx) => (
                               <div key={pi.id} className="rounded-xl border border-[#e8e6e1] p-3">
                                 <div className="flex items-start justify-between">
@@ -1879,38 +1870,19 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
                 )}
               </div>
 
-              {/* Submit to moodboard */}
-              <div className="flex justify-center pt-2">
-                <button
-                  onClick={() => setActiveSection("moodboard")}
-                  className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl"
-                >
-                  <FaImages className="text-sm" />
-                  View Moodboard
-                  {totalFoundItems > 0 && (
-                    <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs">{totalFoundItems} items</span>
-                  )}
-                </button>
-              </div>
             </div>
           )}
         </div>
       )}
 
       {/* ── SECTION: Moodboard ── */}
-      {activeSection === "moodboard" && (
+      {view === "moodboard" && (
         <div className="mt-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Moodboard</h2>
               <p className="mt-1 text-sm text-[#6a6a7a]">Your selected items arranged on a style board.</p>
             </div>
-            <button
-              onClick={() => setActiveSection("discover")}
-              className="flex items-center gap-1.5 rounded-lg border border-[#d5d3cd] px-3 py-1.5 text-xs font-medium text-[#4a4a5a] transition hover:bg-[#f8f7f4]"
-            >
-              <FaArrowLeft className="text-[9px]" /> Back to Discover
-            </button>
           </div>
 
           {/* White canvas moodboard */}
@@ -1920,14 +1892,8 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
                 <FaImages className="mb-3 text-4xl text-[#e8e6e1]" />
                 <p className="text-sm font-medium text-[#9a9aaa]">No items selected yet</p>
                 <p className="mt-1 text-xs text-[#c5c3bd]">
-                  Go to Discover, point out items, and select a product for each.
+                  Go to Items from Pictures, point out items, and select a product for each.
                 </p>
-                <button
-                  onClick={() => setActiveSection("discover")}
-                  className="mt-4 flex items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#234a31]"
-                >
-                  <FaCrosshairs className="text-[10px]" /> Start Discovering
-                </button>
               </div>
             ) : (
               <div
@@ -2005,6 +1971,45 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
           )}
 
           {/* Browse more */}
+        </div>
+      )}
+
+      {/* ── SECTION: Designer's Catalogue ── */}
+      {view === "catalogue" && (
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold text-[#1a1a2e]">Designer&apos;s Catalogue</h2>
+          <p className="mt-2 text-sm text-[#6a6a7a]">Browse curated materials, fixtures, and finishes from top brands.</p>
+          <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-16 text-center">
+            <FaSwatchbook className="text-4xl text-[#d5d3cd]" />
+            <p className="text-lg font-medium text-[#9a9aaa]">Coming Soon</p>
+            <p className="max-w-md text-sm text-[#c5c3bd]">
+              We&apos;re curating a catalogue of designer-recommended materials, fixtures, and finishes for your bathroom renovation.
+              Browse by category, style, and price range.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTION: Real Mockup ── */}
+      {view === "mockup" && (
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold text-[#1a1a2e]">Real Mockup</h2>
+          <p className="mt-2 text-sm text-[#6a6a7a]">See your selected items in a realistic bathroom rendering.</p>
+          <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-16 text-center">
+            <FaPaintbrush className="text-4xl text-[#d5d3cd]" />
+            <p className="text-lg font-medium text-[#9a9aaa]">Coming Soon</p>
+            <p className="max-w-md text-sm text-[#c5c3bd]">
+              Upload a photo of your current bathroom, and AI will generate a realistic mockup
+              with all your selected items placed in the scene &mdash; giving you a preview before you build.
+            </p>
+            {selectedProducts.length > 0 && (
+              <div className="mt-4 rounded-xl bg-[#2d5a3d]/5 px-4 py-3">
+                <p className="text-xs font-medium text-[#2d5a3d]">
+                  {selectedProducts.length} item{selectedProducts.length !== 1 ? "s" : ""} selected &mdash; ready for mockup generation
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
