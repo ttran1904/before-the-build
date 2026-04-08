@@ -4,15 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
  * POST /api/ai/generate-mockup
  *
  * Accepts bathroom photos (as base64 data URLs) and selected product
- * thumbnails, then calls OpenAI's image edit API (gpt-image-1) to
- * produce a realistic mockup of the remodeled bathroom.
+ * thumbnails, then calls OpenAI's Image Edit API (gpt-image-1) with
+ * image[] array syntax to produce a realistic mockup per bathroom angle.
  *
  * Body: {
  *   bathroomPhotos: string[]   – base64 data URLs of the user's bathroom
  *   products: { title: string; thumbnail: string; price?: string; source?: string }[]
  * }
  *
- * Returns: { images: string[] }  – base64 data URLs of generated mockups
+ * Returns: { images: string[] }  – base64 data URLs of generated mockups (one per angle)
  */
 
 interface ProductInput {
@@ -24,7 +24,7 @@ interface ProductInput {
 
 /* ── helpers ── */
 
-/** Convert a base64 data-URL to a Blob (works in Node 18+). */
+/** Convert a base64 data-URL to a Blob. */
 function dataUrlToBlob(dataUrl: string): Blob {
   const [header, base64] = dataUrl.split(",");
   const mime = header.match(/:(.*?);/)?.[1] || "image/png";
@@ -32,13 +32,16 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
-/** Fetch an external image URL and return it as a Blob. */
-async function fetchImageAsBlob(url: string): Promise<Blob | null> {
-  if (url.startsWith("data:")) return dataUrlToBlob(url);
+/** Fetch an external image URL and return it as a base64 data-URL. */
+async function fetchImageAsDataUrl(url: string): Promise<string | null> {
+  if (url.startsWith("data:")) return url;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) return null;
-    return res.blob();
+    const buffer = await res.arrayBuffer();
+    const contentType = res.headers.get("content-type") || "image/png";
+    const base64 = Buffer.from(buffer).toString("base64");
+    return `data:${contentType};base64,${base64}`;
   } catch {
     return null;
   }
@@ -75,81 +78,102 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Build the product description list for the prompt
+    // Pre-fetch product thumbnails as data URLs
+    const productDataUrls: string[] = [];
+    for (const p of products.slice(0, 4)) {
+      if (p.thumbnail) {
+        const dataUrl = await fetchImageAsDataUrl(p.thumbnail);
+        if (dataUrl) productDataUrls.push(dataUrl);
+      }
+    }
+
     const productDescriptions = products
       .map((p, i) => `${i + 1}. ${p.title}${p.price ? ` (${p.price})` : ""}`)
       .join("\n");
 
-    const prompt = `You are an expert interior designer. I'm giving you photos of my current bathroom and images of specific products I've selected for my renovation.
+    // Generate one mockup per bathroom angle (limit 3 angles)
+    const limitedPhotos = bathroomPhotos.slice(0, 3);
+    const totalAngles = limitedPhotos.length;
+    let firstError: string | null = null;
 
-Please generate a photorealistic mockup of the renovated bathroom that:
-1. Keeps the same room layout, dimensions, angles, and window/door positions from my bathroom photos
-2. Replaces the existing fixtures with the specific products shown in the reference images
-3. Makes the new items look naturally placed with correct perspective, lighting, and shadows
-4. Maintains photorealistic quality — this should look like a real photo, not a render
+    const generateForAngle = async (photo: string, angleIdx: number): Promise<string | null> => {
+      const prompt = `You are an expert interior designer. I'm providing images:
+- The FIRST image is a photo of my current bathroom (Angle ${angleIdx + 1} of ${totalAngles})
+- The REMAINING ${productDataUrls.length} images are specific products I've selected for my renovation
 
-Products to incorporate:
+Please generate a photorealistic mockup of this bathroom angle after renovation:
+1. Keep the EXACT same room layout, dimensions, camera angle, and window/door positions from the bathroom photo
+2. Replace existing fixtures with the specific products shown in the product reference images
+3. Only include products that would naturally be visible from this particular camera angle
+4. Make all items look naturally placed with correct perspective, lighting, and shadows
+5. Maintain photorealistic quality — this should look like a real photo, not a render
+
+Products to incorporate (where visible from this angle):
 ${productDescriptions}
 
-Generate ONE high-quality, photorealistic image of the remodeled bathroom.`;
+Generate ONE high-quality, photorealistic image of this remodeled bathroom angle.`;
 
-    // ── Build multipart form data with all images ──
-    const formData = new FormData();
-    formData.append("model", "gpt-image-1");
-    formData.append("prompt", prompt);
-    formData.append("n", "1");
-    formData.append("size", "1536x1024");
-    formData.append("quality", "high");
+      // Build multipart form data: bathroom photo + product thumbnails
+      const formData = new FormData();
+      formData.append("model", "gpt-image-1");
+      formData.append("prompt", prompt);
+      formData.append("n", "1");
+      formData.append("size", "1536x1024");
+      formData.append("quality", "high");
 
-    // Append bathroom photos (limit 3)
-    for (let i = 0; i < Math.min(bathroomPhotos.length, 3); i++) {
-      const blob = dataUrlToBlob(bathroomPhotos[i]);
-      formData.append("image[]", blob, `bathroom_${i}.png`);
-    }
+      // First image: the bathroom photo for this angle
+      const bathroomBlob = dataUrlToBlob(photo);
+      formData.append("image[]", bathroomBlob, `bathroom_angle_${angleIdx}.png`);
 
-    // Fetch product thumbnails and append them (limit 4)
-    for (let i = 0; i < Math.min(products.length, 4); i++) {
-      const thumb = products[i].thumbnail;
-      if (!thumb) continue;
-      const blob = await fetchImageAsBlob(thumb);
-      if (blob) {
+      // Remaining images: product thumbnails
+      for (let i = 0; i < productDataUrls.length; i++) {
+        const blob = dataUrlToBlob(productDataUrls[i]);
         formData.append("image[]", blob, `product_${i}.png`);
       }
-    }
 
-    // ── Call OpenAI Images Edit endpoint (supports input images) ──
-    const response = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openaiKey}`,
-      },
-      body: formData,
-    });
+      const response = await fetch("https://api.openai.com/v1/images/edits", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiKey}`,
+        },
+        body: formData,
+      });
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      console.error("OpenAI image edit error:", errData);
-      return NextResponse.json(
-        { error: "Failed to generate mockup. Please try again." },
-        { status: 500 },
-      );
-    }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        const msg = errData?.error?.message || "Unknown error";
+        console.error(`OpenAI mockup error (angle ${angleIdx + 1}):`, msg);
+        if (!firstError) firstError = msg;
+        return null;
+      }
 
-    const data = await response.json();
+      const data = await response.json();
 
-    // gpt-image-1 returns base64 data in data[].b64_json or URLs in data[].url
+      for (const item of data.data || []) {
+        if (item.b64_json) {
+          return `data:image/png;base64,${item.b64_json}`;
+        } else if (item.url) {
+          return item.url;
+        }
+      }
+      return null;
+    };
+
+    // Run all angles in parallel for speed
+    const results = await Promise.allSettled(
+      limitedPhotos.map((photo, i) => generateForAngle(photo, i)),
+    );
+
     const images: string[] = [];
-    for (const item of data.data || []) {
-      if (item.b64_json) {
-        images.push(`data:image/png;base64,${item.b64_json}`);
-      } else if (item.url) {
-        images.push(item.url);
+    for (const result of results) {
+      if (result.status === "fulfilled" && result.value) {
+        images.push(result.value);
       }
     }
 
     if (images.length === 0) {
       return NextResponse.json(
-        { error: "No mockup was generated. Please try again." },
+        { error: firstError || "No mockups were generated. Please try again." },
         { status: 500 },
       );
     }
