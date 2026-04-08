@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { FaHeart, FaRegHeart, FaStar, FaArrowUpRightFromSquare } from "react-icons/fa6";
+import { FaHeart, FaRegHeart, FaStar, FaArrowUpRightFromSquare, FaTruck } from "react-icons/fa6";
 import type { HDCollection } from "@/lib/catalogue/home-depot-collections";
 import { useMoodboardStore } from "@/lib/store";
 import SaveToBoardModal from "@/components/SaveToBoardModal";
@@ -15,8 +15,12 @@ interface Product {
   link: string;
   image: string;
   store: string;
+  brand: string;
   rating: number | null;
   reviews: number | null;
+  badge: string | null;
+  freeDelivery: boolean;
+  modelNumber: string;
 }
 
 interface CollectionDetailProps {
@@ -80,13 +84,23 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
         </div>
         <div>
           <h2 className="text-xl font-bold text-[#1a1a2e]">{collection.name}</h2>
-          <div className="mt-1 flex items-center gap-2 text-sm text-[#7a7a8a]">
-            <span className="rounded-full bg-[#f3f2ef] px-2.5 py-0.5 font-medium text-[#4a4a5a]">
-              {collection.style}
-            </span>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#7a7a8a]">
+            {collection.styles.map((s) => (
+              <span key={s} className="rounded-full bg-[#f3f2ef] px-2.5 py-0.5 font-medium text-[#4a4a5a]">
+                {s}
+              </span>
+            ))}
             <span>Bathroom</span>
           </div>
           <p className="mt-2 text-sm text-[#4a4a5a]">{collection.description}</p>
+          <a
+            href={collection.hdUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-[#f96302] transition hover:underline"
+          >
+            View on Home Depot <FaArrowUpRightFromSquare className="text-[8px]" />
+          </a>
         </div>
       </div>
 
@@ -105,7 +119,7 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {products.map((p) => {
             const isSaved = savedItems.some((s) => s.id === p.id);
             return (
@@ -113,6 +127,13 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
                 key={p.id}
                 className="group relative overflow-hidden rounded-xl border border-[#e8e6e1] bg-white shadow-sm transition hover:shadow-md"
               >
+                {/* Badge */}
+                {p.badge && (
+                  <div className="absolute left-2 top-2 z-10 rounded bg-[#f96302] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                    {p.badge}
+                  </div>
+                )}
+
                 {/* Image */}
                 <div className="relative h-44 w-full bg-[#f9f8f6]">
                   {p.image && (
@@ -144,27 +165,37 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
                     {p.title}
                   </h4>
 
-                  {p.rating && (
+                  {p.brand && (
+                    <p className="mt-0.5 text-[10px] text-[#9a9aaa]">by {p.brand}</p>
+                  )}
+
+                  {p.rating != null && p.rating > 0 && (
                     <div className="mt-1 flex items-center gap-1 text-xs text-[#f59e0b]">
                       <FaStar />
                       <span className="text-[#4a4a5a]">
-                        {p.rating} {p.reviews ? `(${p.reviews})` : ""}
+                        {p.rating} {p.reviews ? `(${p.reviews.toLocaleString()})` : ""}
                       </span>
                     </div>
                   )}
 
                   <div className="mt-1.5 flex items-center justify-between">
                     <span className="text-sm font-bold text-[#1a1a2e]">{p.price}</span>
-                    <span className="text-[10px] text-[#9a9aaa]">{p.store}</span>
                   </div>
+
+                  {p.freeDelivery && (
+                    <div className="mt-1 flex items-center gap-1 text-[10px] text-[#2d5a3d]">
+                      <FaTruck className="text-[8px]" />
+                      Free Delivery
+                    </div>
+                  )}
 
                   <a
                     href={p.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 flex items-center gap-1 text-xs font-medium text-[#2d5a3d] transition hover:underline"
+                    className="mt-2 flex items-center gap-1 text-xs font-medium text-[#f96302] transition hover:underline"
                   >
-                    View Product <FaArrowUpRightFromSquare className="text-[8px]" />
+                    View on Home Depot <FaArrowUpRightFromSquare className="text-[8px]" />
                   </a>
                 </div>
               </div>
@@ -182,7 +213,7 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
             id: savingProduct.id,
             url: savingProduct.image,
             title: savingProduct.title,
-            tags: [collection.style.toLowerCase(), "bathroom", "product"],
+            tags: [...collection.styles.map(s => s.toLowerCase()), "bathroom", "product"],
           }}
           anchorRect={anchorRect}
         />

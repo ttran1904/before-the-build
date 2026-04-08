@@ -2,22 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Fetches products for a specific Home Depot design collection via SerpAPI.
+ * Uses the `home_depot` engine which searches HD's actual product catalogue.
  * Only called when a user clicks into a collection – NOT on initial page load.
  *
  * Query params:
- *   q  – The SerpAPI search query (from HDCollection.serpQuery)
+ *   q  – Search query (from HDCollection.serpQuery)
  */
 
-interface ShoppingResult {
+interface HDProduct {
   position: number;
+  product_id: string;
   title: string;
+  thumbnails: string[][][];
   link: string;
-  source: string;
-  price: string;
-  extracted_price?: number;
-  thumbnail: string;
+  model_number?: string;
+  brand?: string;
   rating?: number;
   reviews?: number;
+  price?: number;
+  unit?: string;
+  badge?: { text: string };
+  delivery?: { free?: boolean };
 }
 
 // Cache to avoid repeat SerpAPI calls for the same collection
@@ -49,55 +54,56 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Search Google Shopping for bathroom products matching the collection style
+    // Use SerpAPI's Home Depot engine to search HD's actual catalogue
     const params = new URLSearchParams({
-      engine: "google_shopping",
-      q: `${query} bathroom home depot`,
+      engine: "home_depot",
+      q: query,
       api_key: serpApiKey,
-      num: "12",
-      tbs: "mr:1,merchagg:m7815328441", // Home Depot merchant filter
+      ps: "24", // page size
     });
 
     const res = await fetch(`https://serpapi.com/search.json?${params.toString()}`);
 
-    let results: ShoppingResult[] = [];
-
-    if (res.ok) {
-      const data = await res.json();
-      results = data.shopping_results || [];
-    }
-
-    // If Home Depot merchant filter returned nothing, broaden the search
-    if (results.length === 0) {
-      const broadParams = new URLSearchParams({
-        engine: "google_shopping",
-        q: `${query} bathroom`,
-        api_key: serpApiKey,
-        num: "12",
+    if (!res.ok) {
+      return NextResponse.json({
+        products: [],
+        source: "error",
+        error: `SerpAPI returned ${res.status}`,
       });
-
-      const broadRes = await fetch(`https://serpapi.com/search.json?${broadParams.toString()}`);
-      if (broadRes.ok) {
-        const data = await broadRes.json();
-        results = data.shopping_results || [];
-      }
     }
 
-    const products = results.slice(0, 12).map((r) => ({
-      id: `col-${r.position}-${Date.now()}`,
-      title: r.title,
-      price: r.price,
-      extractedPrice: r.extracted_price || parseFloat(r.price?.replace(/[^0-9.]/g, "") || "0"),
-      link: r.link,
-      image: r.thumbnail,
-      store: r.source,
-      rating: r.rating || null,
-      reviews: r.reviews || null,
-    }));
+    const data = await res.json();
+    const results: HDProduct[] = data.products || [];
+
+    const products = results.slice(0, 18).map((r) => {
+      // HD thumbnails come in nested arrays with different resolutions.
+      // Pick the 400px or 600px version for good quality.
+      const thumbArr = r.thumbnails?.[0] || [];
+      // thumbArr is array of URLs at different sizes: 65, 100, 145, 300, 400, 600, 1000
+      const image = thumbArr[4] || thumbArr[3] || thumbArr[2] || thumbArr[0] || "";
+
+      return {
+        id: r.product_id || `hd-${r.position}-${Date.now()}`,
+        title: r.title,
+        price: r.price != null ? `$${r.price.toFixed(2)}` : "",
+        extractedPrice: r.price || 0,
+        link: r.link
+          ? r.link.replace("apionline.homedepot.com", "www.homedepot.com")
+          : `https://www.homedepot.com/p/${r.product_id}`,
+        image,
+        store: "The Home Depot",
+        brand: r.brand || "",
+        rating: r.rating || null,
+        reviews: r.reviews || null,
+        badge: r.badge?.text || null,
+        freeDelivery: r.delivery?.free || false,
+        modelNumber: r.model_number || "",
+      };
+    });
 
     cache.set(cacheKey, { products, ts: Date.now() });
 
-    return NextResponse.json({ products, source: "serpapi" });
+    return NextResponse.json({ products, source: "home_depot" });
   } catch (err) {
     console.error("Collection products fetch error:", err);
     return NextResponse.json({ products: [], error: "Failed to fetch products" }, { status: 500 });

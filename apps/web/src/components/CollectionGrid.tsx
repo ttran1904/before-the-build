@@ -33,10 +33,13 @@ export default function CollectionGrid({ onSelect }: CollectionGridProps) {
             <h3 className="text-sm font-bold text-[#1a1a2e] leading-tight">
               {col.name}
             </h3>
-            <div className="mt-1.5 flex items-center gap-2 text-xs text-[#7a7a8a]">
-              <span className="rounded-full bg-[#f3f2ef] px-2.5 py-0.5 font-medium text-[#4a4a5a]">
-                {col.style}
-              </span>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-[#7a7a8a]">
+              {col.styles.map((s) => (
+                <span key={s} className="rounded-full bg-[#f3f2ef] px-2.5 py-0.5 font-medium text-[#4a4a5a]">
+                  {s}
+                </span>
+              ))}
+              <span className="text-[#9a9aaa]">|</span>
               <span>Bathroom</span>
             </div>
           </div>
