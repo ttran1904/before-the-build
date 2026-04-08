@@ -162,6 +162,9 @@ function BathroomWizardPageContent() {
   const moodboardDragPositions = store.moodboardDragPositions;
   const setMoodboardDragPositions = store.setMoodboardDragPositions;
 
+  /* Budget sub-step: 0 = ideal budget, 1 = room size */
+  const [budgetSubStep, setBudgetSubStep] = useState(0);
+
   /* Budget Builder — deterministic graph engine */
   const [budgetBuilderOpen, setBudgetBuilderOpen] = useState(false);
   const [includeNiceToHaves, setIncludeNiceToHaves] = useState(true);
@@ -236,12 +239,24 @@ function BathroomWizardPageContent() {
   const needsTimelineRefresh = currentHash !== timelineHashRef.current || timelineTasks.length === 0;
 
   const next = () => {
+    // Budget step has 2 sub-steps: budget amount (0) then room size (1)
+    if (currentStep === 3 && budgetSubStep === 0) {
+      setBudgetSubStep(1);
+      return;
+    }
     const nextIdx = Math.min(currentStep + 1, STEPS.length - 1);
     if (STEPS[nextIdx]?.id === "timeline" && needsTimelineRefresh) fetchTimeline();
     if (STEPS[nextIdx]?.id === "contractor") { /* contractor step */ }
+    if (currentStep === 3) setBudgetSubStep(0);
     setCurrentStep(nextIdx);
   };
-  const back = () => setCurrentStep((s) => Math.max(s - 1, 0));
+  const back = () => {
+    if (currentStep === 3 && budgetSubStep === 1) {
+      setBudgetSubStep(0);
+      return;
+    }
+    setCurrentStep((s) => Math.max(s - 1, 0));
+  };
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
 
@@ -280,7 +295,7 @@ function BathroomWizardPageContent() {
                   </div>
                 )}
                 <button
-                  onClick={() => done && setCurrentStep(i)}
+                  onClick={() => { if (done) { setCurrentStep(i); if (i === 3) setBudgetSubStep(0); } }}
                   className={`group flex w-full items-center gap-3 rounded-lg ${isSubStep ? "pl-8" : "pl-3"} pr-3 py-2.5 text-left transition ${
                     active
                       ? "bg-white/15 text-white"
@@ -353,7 +368,7 @@ function BathroomWizardPageContent() {
           {currentStep > 1 && (
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
             {currentStep === 2 && <MustHavesStep />}
-            {currentStep === 3 && <BudgetStep />}
+            {currentStep === 3 && <BudgetStep subStep={budgetSubStep} />}
             {currentStep === 4 && <MoodboardStep pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
             {currentStep === 5 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
             {currentStep === 6 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
@@ -749,7 +764,7 @@ function GoalStep() {
           What&apos;s the main goal of your bathroom renovation?
         </h2>
         <p className="mt-2 text-sm text-[#6a6a7a]">
-          Select all that apply. This helps us tailor recommendations and budget estimates.
+          Select all that apply
         </p>
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           {GOALS.map((g) => (
@@ -1004,17 +1019,15 @@ function PieChart({ segments, size = 180 }: { segments: { pct: number; color: st
   );
 }
 
-function BudgetStep() {
+function BudgetStep({ subStep }: { subStep: number }) {
   const { budgetAmount, setBudgetAmount, bathroomSize, setBathroomSize } = useWizardStore();
 
-  return (
-    <div className="space-y-10">
-
-      {/* ── Question 1: Budget ── */}
+  if (subStep === 0) {
+    return (
       <div>
         <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s your ideal budget?</h2>
 
-        <div className="mt-5 flex justify-center">
+        <div className="mt-5">
           <div className="relative w-64">
             <FaDollarSign className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-[#6a6a7a]" />
             <input
@@ -1032,49 +1045,48 @@ function BudgetStep() {
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* ── Question 2: Bathroom Size ── */}
-      <div>
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">What is the room size?</h2>
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-[#1a1a2e]">What is the room size?</h2>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          {BATHROOM_SIZES.map((s) => {
-            const sizeIcon = {
-              "half-bath": <FaToilet className="text-lg" />,
-              "three-quarter": <FaShower className="text-lg" />,
-              "full-bath": <FaBath className="text-lg" />,
-              primary: <FaCrown className="text-lg" />,
-            }[s.id];
-            return (
-              <button
-                key={s.id}
-                onClick={() => setBathroomSize(s.id)}
-                className={`rounded-xl border-2 p-4 text-left transition ${
-                  bathroomSize === s.id
-                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[#2d5a3d]">{sizeIcon}</span>
-                    <div>
-                      <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
-                      <div className="text-xs text-[#6a6a7a]">{s.desc}</div>
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right font-medium text-[#2d5a3d]">
-                    <div className="text-sm">{s.sqft.replace(/ sqft$/, '')}</div>
-                    <div className="text-[10px] uppercase tracking-wide">sqft</div>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        {BATHROOM_SIZES.map((s) => {
+          const sizeIcon = {
+            "half-bath": <FaToilet className="text-lg" />,
+            "three-quarter": <FaShower className="text-lg" />,
+            "full-bath": <FaBath className="text-lg" />,
+            primary: <FaCrown className="text-lg" />,
+          }[s.id];
+          return (
+            <button
+              key={s.id}
+              onClick={() => setBathroomSize(s.id)}
+              className={`rounded-xl border-2 p-4 text-left transition ${
+                bathroomSize === s.id
+                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-[#2d5a3d]">{sizeIcon}</span>
+                  <div>
+                    <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
+                    <div className="text-xs text-[#6a6a7a]">{s.desc}</div>
                   </div>
                 </div>
-              </button>
-            );
-          })}
-        </div>
+                <div className="shrink-0 text-right font-medium text-[#2d5a3d]">
+                  <div className="text-sm">{s.sqft.replace(/ sqft$/, '')}</div>
+                  <div className="text-[10px] uppercase tracking-wide">sqft</div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
-
-      {/* Budget breakdown now lives in the Budget Builder popout (left panel) */}
     </div>
   );
 }
@@ -1550,7 +1562,7 @@ function MoodboardStep({ pointedItems, setPointedItems, manualProducts, setManua
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a2e]">Discover the Items You Want</h2>
               <p className="mt-2 text-sm text-[#6a6a7a]">
-                Draw a box around any item in your inspiration photos. We&apos;ll identify it and find where to buy it online.
+                Draw a box around any item. We&apos;ll find where to buy it online.
               </p>
             </div>
             {items.length > 0 && (
