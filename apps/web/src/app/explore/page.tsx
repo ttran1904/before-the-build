@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   FaHouse, FaMagnifyingGlass, FaArrowLeft, FaClipboardList,
-  FaXmark,
+  FaXmark, FaImages, FaSwatchbook,
 } from "react-icons/fa6";
 import RoomCategoryBar from "@/components/RoomCategoryBar";
 import MasonryGallery from "@/components/MasonryGallery";
 import MoodboardPanel from "@/components/MoodboardPanel";
 import ExploreFilterPanel from "@/components/ExploreFilterPanel";
+import CatalogueView from "@/components/CatalogueView";
 import { useMoodboardStore } from "@/lib/store";
 
 interface GalleryImage {
@@ -42,6 +43,7 @@ function ExplorePageContent() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [moodboardOpen, setMoodboardOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"inspiration" | "catalogue">("inspiration");
   const moodboardCount = useMoodboardStore((s) => s.items.length);
   const boardCount = useMoodboardStore((s) => s.boards.length);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -146,68 +148,104 @@ function ExplorePageContent() {
         </div>
       </header>
 
-      <div className="mx-auto flex gap-0 px-4 py-4" style={{ maxWidth: "1600px" }}>
-        {/* Left Filter Panel */}
-        <ExploreFilterPanel
-          selectedStyle={selectedStyle}
-          onStyleChange={setSelectedStyle}
-          selectedColor={selectedColor}
-          onColorChange={setSelectedColor}
-          selectedSize={selectedSize}
-          onSizeChange={setSelectedSize}
-        />
-
-        {/* Main Content */}
-        <div className="min-w-0 flex-1">
-          {/* Page Title + Search */}
-          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h1 className="text-2xl font-bold text-[#1a1a2e]">
-              Home Design Ideas
-            </h1>
-            <div className="flex items-center gap-3">
-            {activeSearch && (
-              <div className="flex items-center gap-1.5 rounded-full bg-[#2d5a3d]/10 px-3 py-1.5 text-sm font-medium text-[#2d5a3d]">
-                <span className="max-w-[160px] truncate">{activeSearch}</span>
-                <button
-                  onClick={clearSearch}
-                  className="ml-0.5 rounded-full p-0.5 transition hover:bg-[#2d5a3d]/20"
-                  aria-label="Clear search"
-                >
-                  <FaXmark className="text-[10px]" />
-                </button>
-              </div>
-            )}
-            <div className="relative w-full md:w-80">
-              <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9a9aaa]" />
-              <input
-                type="text"
-                placeholder="Search bathroom ideas..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearchSubmit();
-                }}
-                className="w-full rounded-xl border border-[#e8e6e1] bg-white py-3 pl-11 pr-4 text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-2 focus:ring-[#2d5a3d]/20"
-              />
-            </div>
-            <button
-              onClick={handleSearchSubmit}
-              className="shrink-0 rounded-xl bg-[#2d5a3d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#234a31]"
-            >
-              Search
-            </button>
-          </div>
-          </div>
-
-          {/* Room Category Bar (Houzz-style) */}
-          <div className="mb-4">
-            <RoomCategoryBar selected={selectedRoom} onSelect={setSelectedRoom} />
-          </div>
-
-          {/* Masonry Gallery */}
-          <MasonryGallery images={images} loading={loading} />
+      {/* Tab Switcher: Inspiration / From Catalogue */}
+      <div className="mx-auto px-4 pt-4" style={{ maxWidth: "1600px" }}>
+        <div className="mb-4 flex items-center gap-1 border-b border-[#e8e6e1]">
+          <button
+            onClick={() => setActiveTab("inspiration")}
+            className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
+              activeTab === "inspiration"
+                ? "border-[#2d5a3d] text-[#2d5a3d]"
+                : "border-transparent text-[#7a7a8a] hover:text-[#4a4a5a]"
+            }`}
+          >
+            <FaImages className="text-xs" />
+            Inspiration
+          </button>
+          <button
+            onClick={() => setActiveTab("catalogue")}
+            className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
+              activeTab === "catalogue"
+                ? "border-[#2d5a3d] text-[#2d5a3d]"
+                : "border-transparent text-[#7a7a8a] hover:text-[#4a4a5a]"
+            }`}
+          >
+            <FaSwatchbook className="text-xs" />
+            From Catalogue
+          </button>
         </div>
       </div>
+
+      {activeTab === "catalogue" ? (
+        /* ── Catalogue Tab ── */
+        <div className="mx-auto px-4 pb-8" style={{ maxWidth: "1600px" }}>
+          <CatalogueView />
+        </div>
+      ) : (
+        /* ── Inspiration Tab (existing behaviour) ── */
+        <div className="mx-auto flex gap-0 px-4 py-4" style={{ maxWidth: "1600px" }}>
+          {/* Left Filter Panel */}
+          <ExploreFilterPanel
+            selectedStyle={selectedStyle}
+            onStyleChange={setSelectedStyle}
+            selectedColor={selectedColor}
+            onColorChange={setSelectedColor}
+            selectedSize={selectedSize}
+            onSizeChange={setSelectedSize}
+          />
+
+          {/* Main Content */}
+          <div className="min-w-0 flex-1">
+            {/* Page Title + Search */}
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <h1 className="text-2xl font-bold text-[#1a1a2e]">
+                Home Design Ideas
+              </h1>
+              <div className="flex items-center gap-3">
+              {activeSearch && (
+                <div className="flex items-center gap-1.5 rounded-full bg-[#2d5a3d]/10 px-3 py-1.5 text-sm font-medium text-[#2d5a3d]">
+                  <span className="max-w-[160px] truncate">{activeSearch}</span>
+                  <button
+                    onClick={clearSearch}
+                    className="ml-0.5 rounded-full p-0.5 transition hover:bg-[#2d5a3d]/20"
+                    aria-label="Clear search"
+                  >
+                    <FaXmark className="text-[10px]" />
+                  </button>
+                </div>
+              )}
+              <div className="relative w-full md:w-80">
+                <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9a9aaa]" />
+                <input
+                  type="text"
+                  placeholder="Search bathroom ideas..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSearchSubmit();
+                  }}
+                  className="w-full rounded-xl border border-[#e8e6e1] bg-white py-3 pl-11 pr-4 text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-2 focus:ring-[#2d5a3d]/20"
+                />
+              </div>
+              <button
+                onClick={handleSearchSubmit}
+                className="shrink-0 rounded-xl bg-[#2d5a3d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#234a31]"
+              >
+                Search
+              </button>
+            </div>
+            </div>
+
+            {/* Room Category Bar (Houzz-style) */}
+            <div className="mb-4">
+              <RoomCategoryBar selected={selectedRoom} onSelect={setSelectedRoom} />
+            </div>
+
+            {/* Masonry Gallery */}
+            <MasonryGallery images={images} loading={loading} />
+          </div>
+        </div>
+      )}
 
       {/* Moodboard Panel */}
       <MoodboardPanel open={moodboardOpen} onClose={() => setMoodboardOpen(false)} />

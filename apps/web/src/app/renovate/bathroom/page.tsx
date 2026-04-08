@@ -25,6 +25,7 @@ import { computeBudgetGraph, type BudgetGraphResult } from "@/lib/budget-engine/
 import type { PointedItem, Product } from "@/lib/moodboard/types";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
+import CatalogueView from "@/components/CatalogueView";
 
 /* ── Slot-machine animated number ──
  * Rules:
@@ -1967,16 +1968,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
       {/* ── SECTION: Designer's Catalogue ── */}
       {view === "catalogue" && (
         <div className="mt-6">
-          <h2 className="text-2xl font-bold text-[#1a1a2e]">Designer&apos;s Catalogue</h2>
-          <p className="mt-2 text-sm text-[#6a6a7a]">Browse curated materials, fixtures, and finishes from top brands.</p>
-          <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-16 text-center">
-            <FaSwatchbook className="text-4xl text-[#d5d3cd]" />
-            <p className="text-lg font-medium text-[#9a9aaa]">Coming Soon</p>
-            <p className="max-w-md text-sm text-[#c5c3bd]">
-              We&apos;re curating a catalogue of designer-recommended materials, fixtures, and finishes for your bathroom renovation.
-              Browse by category, style, and price range.
-            </p>
-          </div>
+          <CatalogueView />
         </div>
       )}
 
