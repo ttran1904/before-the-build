@@ -6,10 +6,16 @@ import CollectionGrid from "@/components/CollectionGrid";
 import CollectionDetail from "@/components/CollectionDetail";
 import AirtableMaterialsGrid from "@/components/AirtableMaterialsGrid";
 import type { HDCollection } from "@/lib/catalogue/home-depot-collections";
+import type { Product } from "@/lib/moodboard/types";
 
 type CatalogueSource = "home_depot" | "designer";
 
-export default function CatalogueView() {
+interface CatalogueViewProps {
+  selectedProducts?: Product[];
+  onToggleProduct?: (product: Product) => void;
+}
+
+export default function CatalogueView({ selectedProducts = [], onToggleProduct }: CatalogueViewProps) {
   const [source, setSource] = useState<CatalogueSource>("home_depot");
   const [activeCollection, setActiveCollection] = useState<HDCollection | null>(null);
 
@@ -24,7 +30,7 @@ export default function CatalogueView() {
           <FaArrowLeft className="text-xs" />
           Back to Collections
         </button>
-        <CollectionDetail collection={activeCollection} />
+        <CollectionDetail collection={activeCollection} selectedProducts={selectedProducts} onToggleProduct={onToggleProduct} />
       </div>
     );
   }

@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { FaHeart, FaRegHeart, FaStar, FaArrowUpRightFromSquare, FaTruck } from "react-icons/fa6";
+import { FaCheck, FaStar, FaArrowUpRightFromSquare } from "react-icons/fa6";
 import type { HDCollection } from "@/lib/catalogue/home-depot-collections";
-import { useMoodboardStore } from "@/lib/store";
-import SaveToBoardModal from "@/components/SaveToBoardModal";
+import type { Product as MoodboardProduct } from "@/lib/moodboard/types";
 
 interface Product {
   id: string;
@@ -25,15 +24,14 @@ interface Product {
 
 interface CollectionDetailProps {
   collection: HDCollection;
+  selectedProducts?: MoodboardProduct[];
+  onToggleProduct?: (product: MoodboardProduct) => void;
 }
 
-export default function CollectionDetail({ collection }: CollectionDetailProps) {
+export default function CollectionDetail({ collection, selectedProducts = [], onToggleProduct }: CollectionDetailProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { items: savedItems } = useMoodboardStore();
-  const [savingProduct, setSavingProduct] = useState<Product | null>(null);
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,10 +61,21 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
     return () => { cancelled = true; };
   }, [collection.id]);
 
-  const handleHeartClick = (product: Product, e: React.MouseEvent<HTMLButtonElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setAnchorRect(rect);
-    setSavingProduct(product);
+  const toMoodboardProduct = (p: Product): MoodboardProduct => ({
+    title: p.title,
+    price: p.price,
+    source: p.store || "Home Depot",
+    url: p.link,
+    thumbnail: p.image,
+    images: p.image ? [p.image] : [],
+    specs: {},
+  });
+
+  const isProductSelected = (p: Product) =>
+    selectedProducts.some((sp) => sp.url === p.link || sp.title === p.title);
+
+  const handleToggle = (p: Product) => {
+    if (onToggleProduct) onToggleProduct(toMoodboardProduct(p));
   };
 
   return (
@@ -121,11 +130,14 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
       ) : (
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {products.map((p) => {
-            const isSaved = savedItems.some((s) => s.id === p.id);
+            const isSelected = isProductSelected(p);
             return (
               <div
                 key={p.id}
-                className="group relative overflow-hidden rounded-xl border border-[#e8e6e1] bg-white shadow-sm transition hover:shadow-md"
+                onClick={() => handleToggle(p)}
+                className={`group relative cursor-pointer overflow-hidden rounded-xl border bg-white shadow-sm transition hover:shadow-md ${
+                  isSelected ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/20" : "border-[#e8e6e1]"
+                }`}
               >
                 {/* Badge */}
                 {p.badge && (
@@ -146,17 +158,12 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
                     />
                   )}
 
-                  {/* Heart */}
-                  <button
-                    onClick={(e) => handleHeartClick(p, e)}
-                    className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full transition ${
-                      isSaved
-                        ? "bg-red-500 text-white shadow"
-                        : "bg-white/80 text-[#4a4a5a] opacity-0 shadow-md group-hover:opacity-100 hover:bg-white"
-                    }`}
-                  >
-                    {isSaved ? <FaHeart className="text-xs" /> : <FaRegHeart className="text-xs" />}
-                  </button>
+                  {/* Selection tick */}
+                  {isSelected && (
+                    <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2d5a3d] shadow">
+                      <FaCheck className="text-[10px] text-white" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Info */}
@@ -180,23 +187,17 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
 
                   <div className="mt-1.5 flex items-center justify-between">
                     <span className="text-sm font-bold text-[#1a1a2e]">{p.price}</span>
+                    <a
+                      href={p.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[#9a9aaa] transition hover:text-[#4a4a5a]"
+                      title="View on store"
+                    >
+                      <FaArrowUpRightFromSquare className="text-[10px]" />
+                    </a>
                   </div>
-
-                  {p.freeDelivery && (
-                    <div className="mt-1 flex items-center gap-1 text-[10px] text-[#2d5a3d]">
-                      <FaTruck className="text-[8px]" />
-                      Free Delivery
-                    </div>
-                  )}
-
-                  <a
-                    href={p.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 flex items-center gap-1 text-xs font-medium text-[#f96302] transition hover:underline"
-                  >
-                    View on Home Depot <FaArrowUpRightFromSquare className="text-[8px]" />
-                  </a>
                 </div>
               </div>
             );
@@ -204,20 +205,6 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
         </div>
       )}
 
-      {/* Save-to-board modal */}
-      {savingProduct && (
-        <SaveToBoardModal
-          open={!!savingProduct}
-          onClose={() => setSavingProduct(null)}
-          image={{
-            id: savingProduct.id,
-            url: savingProduct.image,
-            title: savingProduct.title,
-            tags: [...collection.styles.map(s => s.toLowerCase()), "bathroom", "product"],
-          }}
-          anchorRect={anchorRect}
-        />
-      )}
     </div>
   );
 }

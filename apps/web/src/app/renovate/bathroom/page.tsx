@@ -1968,7 +1968,17 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
       {/* ── SECTION: Designer's Catalogue ── */}
       {view === "catalogue" && (
         <div className="mt-6">
-          <CatalogueView />
+          <CatalogueView
+            selectedProducts={manualProducts}
+            onToggleProduct={(product) => {
+              const exists = manualProducts.some((mp) => mp.url === product.url || mp.title === product.title);
+              if (exists) {
+                setManualProducts((prev) => prev.filter((mp) => mp.url !== product.url && mp.title !== product.title));
+              } else {
+                setManualProducts((prev) => [...prev, product]);
+              }
+            }}
+          />
         </div>
       )}
 
