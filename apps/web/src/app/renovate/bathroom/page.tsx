@@ -2035,6 +2035,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
 
     store.setMockupLoading(true);
     setError(null);
+    store.setMockupGeneratedImages([]);
 
     try {
       const res = await fetch("/api/ai/generate-mockup", {
@@ -2051,13 +2052,18 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
         }),
       });
       const data = await res.json();
-      if (!res.ok || data.error) {
+      // Store images if any were returned, even on partial failure
+      if (data.images && data.images.length > 0) {
+        store.setMockupGeneratedImages(data.images);
+      }
+      // Only show error if NO images came back
+      if ((!data.images || data.images.length === 0) && (!res.ok || data.error)) {
         setError(data.error || "Failed to generate mockup. Please try again.");
-      } else {
-        store.setMockupGeneratedImages(data.images || []);
       }
     } catch {
-      setError("Failed to generate mockup. Please try again.");
+      if (store.mockupGeneratedImages.length === 0) {
+        setError("Failed to generate mockup. Please try again.");
+      }
     } finally {
       store.setMockupLoading(false);
     }
@@ -2070,146 +2076,158 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
         Upload photos of your current bathroom, then generate a realistic AI mockup with your selected items.
       </p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        {/* ── Left: Upload bathroom photos ── */}
-        <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
-            <FaCamera className="text-xs text-[#2d5a3d]" />
-            Your Bathroom Photos
-          </h3>
-          <p className="mt-1 text-xs text-[#9a9aaa]">
-            Upload at least 1 angle. Multiple angles give better results.
-          </p>
+      {/* ── Input section: photos + items side by side ── */}
+      <div className="mt-6 rounded-2xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
+        <div className="grid gap-6 lg:grid-cols-[1fr_1px_1fr]">
+          {/* ── Left: Upload bathroom photos ── */}
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+              <FaCamera className="text-xs text-[#2d5a3d]" />
+              Your Bathroom Photos
+            </h3>
+            <p className="mt-1 text-xs text-[#9a9aaa]">
+              Upload at least 1 angle. Multiple angles give better results.
+            </p>
 
-          {/* Upload area */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={handleFileUpload}
-          />
+            {/* Upload area */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileUpload}
+            />
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {store.mockupBathroomPhotos.map((photo, i) => (
-              <div key={i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1]">
-                <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
-                <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
-                <button
-                  onClick={() => store.removeMockupPhoto(i)}
-                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
-                >
-                  <FaXmark className="text-xs" />
-                </button>
-                <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
-                  Angle {i + 1}
+            <div className="mt-3 flex flex-wrap gap-2.5">
+              {store.mockupBathroomPhotos.map((photo, i) => (
+                <div key={i} className="group relative h-28 w-36 overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
+                  <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="150px" unoptimized />
+                  <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
+                  <button
+                    onClick={() => store.removeMockupPhoto(i)}
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                  >
+                    <FaXmark className="text-[10px]" />
+                  </button>
+                  <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                    Angle {i + 1}
+                  </span>
+                </div>
+              ))}
+
+              {/* Add photo button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex h-28 w-36 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+              >
+                <FaUpload className="text-lg text-[#9a9aaa]" />
+                <span className="text-[10px] font-medium text-[#6a6a7a]">
+                  {store.mockupBathroomPhotos.length === 0 ? "Upload Photo" : "Add Another"}
                 </span>
-              </div>
-            ))}
+              </button>
+            </div>
+          </div>
 
-            {/* Add photo button */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
-            >
-              <FaUpload className="text-xl text-[#9a9aaa]" />
-              <span className="text-xs font-medium text-[#6a6a7a]">
-                {store.mockupBathroomPhotos.length === 0 ? "Upload Photo" : "Add Another"}
+          {/* Vertical divider */}
+          <div className="hidden bg-[#e8e6e1] lg:block" />
+
+          {/* ── Right: Selected items summary ── */}
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+              <FaCartShopping className="text-xs text-[#2d5a3d]" />
+              Items to Include
+              <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">
+                {selectedProducts.length}
               </span>
-            </button>
+            </h3>
+            <p className="mt-1 text-xs text-[#9a9aaa]">
+              These items from your selections will be placed into the mockup.
+            </p>
+
+            {selectedProducts.length === 0 ? (
+              <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] p-6 text-center">
+                <FaCartShopping className="text-xl text-[#d5d3cd]" />
+                <p className="text-xs text-[#9a9aaa]">No items selected yet.</p>
+                <p className="text-[10px] text-[#c5c3bd]">Go to Items &amp; Materials to select products.</p>
+              </div>
+            ) : (
+              <div className="mt-3 max-h-[200px] space-y-1.5 overflow-y-auto pr-1">
+                {selectedProducts.map((p, i) => (
+                  <div key={i} className="flex items-center gap-2.5 rounded-lg border border-[#e8e6e1] bg-white p-2">
+                    {p.thumbnail && (
+                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-[#f8f7f4]">
+                        <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="36px" unoptimized />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium text-[#1a1a2e]">{p.title}</p>
+                      <p className="text-[10px] text-[#6a6a7a]">{p.source} {p.price && `· ${p.price}`}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ── Right: Selected items summary ── */}
-        <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
-            <FaCartShopping className="text-xs text-[#2d5a3d]" />
-            Items to Include
-            <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">
-              {selectedProducts.length}
-            </span>
-          </h3>
-          <p className="mt-1 text-xs text-[#9a9aaa]">
-            These items from your selections will be placed into the mockup.
-          </p>
+        {/* Error message */}
+        {error && (
+          <div className="mt-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+            <FaCircleExclamation className="shrink-0 text-xs" />
+            {error}
+          </div>
+        )}
 
-          {selectedProducts.length === 0 ? (
-            <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] p-8 text-center">
-              <FaCartShopping className="text-2xl text-[#d5d3cd]" />
-              <p className="text-xs text-[#9a9aaa]">No items selected yet.</p>
-              <p className="text-xs text-[#c5c3bd]">Go to Items &amp; Materials to select products.</p>
-            </div>
-          ) : (
-            <div className="mt-4 max-h-[300px] space-y-2 overflow-y-auto pr-1">
-              {selectedProducts.map((p, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-xl border border-[#e8e6e1] p-2.5">
-                  {p.thumbnail && (
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
-                      <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="40px" unoptimized />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-[#1a1a2e]">{p.title}</p>
-                    <p className="text-[10px] text-[#6a6a7a]">{p.source} {p.price && `· ${p.price}`}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Generate button */}
+        <div className="mt-5 flex justify-center">
+          <button
+            onClick={handleGenerateMockup}
+            disabled={store.mockupLoading || store.mockupBathroomPhotos.length === 0 || selectedProducts.length === 0}
+            className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {store.mockupLoading ? (
+              <>
+                <FaSpinner className="animate-spin text-sm" />
+                Generating Mockup...
+              </>
+            ) : (
+              <>
+                <FaWandMagicSparkles className="text-sm" />
+                Generate Mockup
+                <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                  {store.mockupBathroomPhotos.length} photo{store.mockupBathroomPhotos.length !== 1 ? "s" : ""} + {selectedProducts.length} item{selectedProducts.length !== 1 ? "s" : ""}
+                </span>
+              </>
+            )}
+          </button>
         </div>
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
-          <FaCircleExclamation className="shrink-0 text-xs" />
-          {error}
-        </div>
-      )}
-
-      {/* Generate button */}
-      <div className="mt-8 flex justify-center">
-        <button
-          onClick={handleGenerateMockup}
-          disabled={store.mockupLoading || store.mockupBathroomPhotos.length === 0 || selectedProducts.length === 0}
-          className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {store.mockupLoading ? (
-            <>
-              <FaSpinner className="animate-spin text-sm" />
-              Generating Mockup...
-            </>
-          ) : (
-            <>
-              <FaWandMagicSparkles className="text-sm" />
-              Generate Mockup
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                {store.mockupBathroomPhotos.length} photo{store.mockupBathroomPhotos.length !== 1 ? "s" : ""} + {selectedProducts.length} item{selectedProducts.length !== 1 ? "s" : ""}
-              </span>
-            </>
-          )}
-        </button>
       </div>
 
       {/* Generated results */}
       {store.mockupGeneratedImages.length > 0 && (
-        <div className="mt-10">
+        <div className="mt-8">
           <h3 className="flex items-center gap-2 text-lg font-semibold text-[#1a1a2e]">
             <FaPhotoFilm className="text-[#2d5a3d]" />
             Your Mockup{store.mockupGeneratedImages.length > 1 ? "s" : ""}
           </h3>
+          <p className="mt-1 text-xs text-[#9a9aaa]">
+            AI-generated renovation preview based on your photos and selected items.
+          </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {store.mockupGeneratedImages.map((imgUrl, i) => (
-              <div key={i} className="overflow-hidden rounded-2xl border border-[#e8e6e1] shadow-sm">
-                <div className="relative aspect-[4/3] w-full">
-                  <Image src={imgUrl} alt={`Mockup ${i + 1}`} fill className="object-cover" sizes="600px" unoptimized />
+              <div key={i} className="overflow-hidden rounded-2xl border border-[#e8e6e1] bg-white shadow-sm">
+                <div className="relative aspect-[3/2] w-full">
+                  <Image src={imgUrl} alt={`Mockup angle ${i + 1}`} fill className="object-cover" sizes="600px" unoptimized />
                 </div>
-                <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-xs font-medium text-[#6a6a7a]">Angle {i + 1}</span>
+                <div className="flex items-center justify-between px-4 py-2.5">
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-[#2d5a3d]">
+                    <FaCircleCheck className="text-[10px]" />
+                    Angle {i + 1}
+                  </span>
                   <a
                     href={imgUrl}
-                    download={`bathroom-mockup-${i + 1}.png`}
+                    download={`bathroom-mockup-angle-${i + 1}.png`}
                     className="flex items-center gap-1.5 rounded-lg border border-[#d5d3cd] px-3 py-1 text-xs font-medium text-[#4a4a5a] transition hover:bg-[#f8f7f4]"
                   >
                     <FaArrowUpRightFromSquare className="text-[9px]" /> Download
