@@ -1171,12 +1171,48 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
   }, [draggingIdx]);
 
   const totalFoundItems = Object.values(pointedItems).flat().filter(p => !p.loading).length;
-  const selectedProducts = [
-    ...Object.values(pointedItems).flat()
-      .filter(p => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
-      .map(p => p.products[p.selectedProductIdx!]),
-    ...manualProducts,
+
+  // Build selectedProducts with source info for toggling from moodboard/mockup
+  type SelectedProductEntry = {
+    product: Product;
+    source: "pointed";
+    imageId: string;
+    pointedId: string;
+    productIdx: number;
+  } | {
+    product: Product;
+    source: "manual";
+    manualIdx: number;
+  };
+
+  const selectedEntries: SelectedProductEntry[] = [
+    ...Object.entries(pointedItems).flatMap(([imageId, items]) =>
+      items
+        .filter(p => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
+        .map(p => ({
+          product: p.products[p.selectedProductIdx!],
+          source: "pointed" as const,
+          imageId,
+          pointedId: p.id,
+          productIdx: p.selectedProductIdx!,
+        })),
+    ),
+    ...manualProducts.map((product, i) => ({
+      product,
+      source: "manual" as const,
+      manualIdx: i,
+    })),
   ];
+
+  const selectedProducts = selectedEntries.map(e => e.product);
+
+  const deselectEntry = (entry: SelectedProductEntry) => {
+    if (entry.source === "pointed") {
+      toggleProductSelection(entry.imageId, entry.pointedId, entry.productIdx);
+    } else {
+      removeManualProduct(entry.manualIdx);
+    }
+  };
 
   /* ── Drawing handlers for bounding-box selection ── */
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, imageId: string) => {
@@ -1872,7 +1908,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Moodboard</h2>
-              <p className="mt-1 text-sm text-[#6a6a7a]">Your selected items arranged on a style board.</p>
+              <p className="mt-1 text-sm text-[#6a6a7a]">Your selected items arranged on a style board. Click the &times; to remove an item.</p>
             </div>
           </div>
 
@@ -1901,7 +1937,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                   return (
                     <div
                       key={i}
-                      className={`absolute transition-shadow duration-150 ${draggingIdx === i ? "shadow-lg" : "hover:shadow-md"}`}
+                      className={`group absolute transition-shadow duration-150 ${draggingIdx === i ? "shadow-lg" : "hover:shadow-md"}`}
                       style={{ left: pos.x, top: pos.y, cursor: draggingIdx === i ? "grabbing" : "grab", zIndex: draggingIdx === i ? 9999 : (zOrders[i] || 0) }}
                       onMouseDown={(e) => handleCanvasMouseDown(e, i)}
                     >
@@ -1922,6 +1958,14 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                           <FaCartShopping className="text-2xl text-[#d5d3cd]" />
                         </div>
                       )}
+                      {/* Remove button on hover */}
+                      <button
+                        onMouseDown={(e) => { e.stopPropagation(); deselectEntry(selectedEntries[i]); }}
+                        className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#9a9aaa] opacity-0 shadow-md ring-1 ring-[#e8e6e1] transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                        title="Remove from moodboard"
+                      >
+                        <FaXmark className="text-[10px]" />
+                      </button>
                     </div>
                   );
                 })}
@@ -1929,34 +1973,53 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
             )}
           </div>
 
-          {/* Shopping List */}
+          {/* Shopping List — grid with big images */}
           {selectedProducts.length > 0 && (
             <div className="mt-8">
               <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#1a1a2e]">
                 <FaCartShopping className="text-[#2d5a3d]" /> Your Shopping List
                 <span className="rounded-full bg-[#2d5a3d]/10 px-2 py-0.5 text-xs font-medium text-[#2d5a3d]">{selectedProducts.length}</span>
               </h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {selectedProducts.map((p, i) => (
-                  <a
-                    key={i}
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex gap-3 rounded-xl border border-[#e8e6e1] p-3 transition hover:border-[#2d5a3d]/30 hover:shadow-sm"
-                  >
-                    {p.thumbnail && (
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
-                        <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="56px" unoptimized />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {selectedEntries.map((entry, i) => {
+                  const p = entry.product;
+                  return (
+                    <div key={i} className="group overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#2d5a3d]/30 hover:shadow-sm">
+                      {p.thumbnail && (
+                        <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
+                          <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="200px" unoptimized />
+                          <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2d5a3d] shadow">
+                            <FaCheck className="text-[8px] text-white" />
+                          </div>
+                        </div>
+                      )}
+                      <div className="p-2.5">
+                        <p className="line-clamp-2 text-[11px] leading-tight font-medium text-[#1a1a2e]">{p.title}</p>
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <span className="text-[10px] text-[#6a6a7a]">{p.source}</span>
+                          {p.price && <span className="text-xs font-bold text-[#2d5a3d]">{p.price}</span>}
+                        </div>
+                        <div className="mt-2 flex items-center gap-1">
+                          <button
+                            onClick={() => deselectEntry(entry)}
+                            className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#2d5a3d] px-2 py-1.5 text-[10px] font-semibold text-white transition hover:bg-[#234a31]"
+                          >
+                            <FaCheck className="text-[8px]" /> Selected
+                          </button>
+                          <a
+                            href={p.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#d5d3cd] text-[#6a6a7a] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
+                            title="Open product page"
+                          >
+                            <FaArrowUpRightFromSquare className="text-[10px]" />
+                          </a>
+                        </div>
                       </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-xs font-medium text-[#1a1a2e]">{p.title}</p>
-                      <p className="mt-0.5 text-[10px] text-[#6a6a7a]">{p.source}</p>
-                      {p.price && <p className="mt-0.5 text-sm font-semibold text-[#2d5a3d]">{p.price}</p>}
                     </div>
-                  </a>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1995,6 +2058,24 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
   const store = useWizardStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [excludedIndices, setExcludedIndices] = useState<Set<number>>(new Set());
+
+  // Reset stale loading state on mount (e.g. if page was refreshed mid-generation)
+  useEffect(() => {
+    if (store.mockupLoading) store.setMockupLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleItem = (idx: number) => {
+    setExcludedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const includedProducts = selectedProducts.filter((_, i) => !excludedIndices.has(i));
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -2028,8 +2109,8 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
       setError("Please upload at least one photo of your bathroom.");
       return;
     }
-    if (selectedProducts.length === 0) {
-      setError("Please select items in the Items & Materials section first.");
+    if (includedProducts.length === 0) {
+      setError("Please include at least one item for the mockup.");
       return;
     }
 
@@ -2043,7 +2124,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bathroomPhotos: store.mockupBathroomPhotos,
-          products: selectedProducts.map((p) => ({
+          products: includedProducts.map((p) => ({
             title: p.title,
             thumbnail: p.thumbnail,
             price: p.price,
@@ -2079,7 +2160,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
       {/* ── Input section: photos + items side by side ── */}
       <div className="mt-6 rounded-2xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
         <div className="grid gap-6 lg:grid-cols-[1fr_1px_1fr]">
-          {/* ── Left: Upload bathroom photos ── */}
+          {/* ── Left: Upload bathroom photos (larger) ── */}
           <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
               <FaCamera className="text-xs text-[#2d5a3d]" />
@@ -2099,10 +2180,10 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
               onChange={handleFileUpload}
             />
 
-            <div className="mt-3 flex flex-wrap gap-2.5">
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
               {store.mockupBathroomPhotos.map((photo, i) => (
-                <div key={i} className="group relative h-28 w-36 overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
-                  <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="150px" unoptimized />
+                <div key={i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
+                  <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
                   <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
                   <button
                     onClick={() => store.removeMockupPhoto(i)}
@@ -2119,7 +2200,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
               {/* Add photo button */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex h-28 w-36 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+                className="flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
               >
                 <FaUpload className="text-lg text-[#9a9aaa]" />
                 <span className="text-[10px] font-medium text-[#6a6a7a]">
@@ -2132,17 +2213,17 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
           {/* Vertical divider */}
           <div className="hidden bg-[#e8e6e1] lg:block" />
 
-          {/* ── Right: Selected items summary ── */}
+          {/* ── Right: Items with toggle checkboxes ── */}
           <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
               <FaCartShopping className="text-xs text-[#2d5a3d]" />
               Items to Include
               <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">
-                {selectedProducts.length}
+                {includedProducts.length}/{selectedProducts.length}
               </span>
             </h3>
             <p className="mt-1 text-xs text-[#9a9aaa]">
-              These items from your selections will be placed into the mockup.
+              Toggle items on or off for this mockup.
             </p>
 
             {selectedProducts.length === 0 ? (
@@ -2152,20 +2233,38 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
                 <p className="text-[10px] text-[#c5c3bd]">Go to Items &amp; Materials to select products.</p>
               </div>
             ) : (
-              <div className="mt-3 max-h-[200px] space-y-1.5 overflow-y-auto pr-1">
-                {selectedProducts.map((p, i) => (
-                  <div key={i} className="flex items-center gap-2.5 rounded-lg border border-[#e8e6e1] bg-white p-2">
-                    {p.thumbnail && (
-                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-[#f8f7f4]">
-                        <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="36px" unoptimized />
+              <div className="mt-3 grid grid-cols-2 gap-2.5 max-h-[400px] overflow-y-auto pr-1">
+                {selectedProducts.map((p, i) => {
+                  const included = !excludedIndices.has(i);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => toggleItem(i)}
+                      className={`group relative flex flex-col overflow-hidden rounded-xl border transition ${
+                        included
+                          ? "border-[#2d5a3d] bg-white shadow-sm"
+                          : "border-[#e8e6e1] bg-[#f5f4f1] opacity-60"
+                      }`}
+                    >
+                      {/* Checkbox indicator */}
+                      <div className={`absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full text-[9px] shadow ${
+                        included ? "bg-[#2d5a3d] text-white" : "border border-[#c5c3bd] bg-white text-transparent"
+                      }`}>
+                        <FaCheck />
                       </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-[#1a1a2e]">{p.title}</p>
-                      <p className="text-[10px] text-[#6a6a7a]">{p.source} {p.price && `· ${p.price}`}</p>
-                    </div>
-                  </div>
-                ))}
+                      {p.thumbnail && (
+                        <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
+                          <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="200px" unoptimized />
+                        </div>
+                      )}
+                      <div className="p-2 text-left">
+                        <p className="line-clamp-2 text-[11px] font-medium leading-tight text-[#1a1a2e]">{p.title}</p>
+                        {p.price && <p className="mt-0.5 text-[10px] font-semibold text-[#2d5a3d]">{p.price}</p>}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -2183,7 +2282,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
         <div className="mt-5 flex justify-center">
           <button
             onClick={handleGenerateMockup}
-            disabled={store.mockupLoading || store.mockupBathroomPhotos.length === 0 || selectedProducts.length === 0}
+            disabled={store.mockupLoading || store.mockupBathroomPhotos.length === 0 || includedProducts.length === 0}
             className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {store.mockupLoading ? (
@@ -2196,7 +2295,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
                 <FaWandMagicSparkles className="text-sm" />
                 Generate Mockup
                 <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                  {store.mockupBathroomPhotos.length} photo{store.mockupBathroomPhotos.length !== 1 ? "s" : ""} + {selectedProducts.length} item{selectedProducts.length !== 1 ? "s" : ""}
+                  {store.mockupBathroomPhotos.length} photo{store.mockupBathroomPhotos.length !== 1 ? "s" : ""} + {includedProducts.length} item{includedProducts.length !== 1 ? "s" : ""}
                 </span>
               </>
             )}
