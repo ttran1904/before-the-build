@@ -2196,7 +2196,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
                   <Image src={imgUrl} alt={`Mockup ${i + 1}`} fill className="object-cover" sizes="600px" unoptimized />
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-xs font-medium text-[#6a6a7a]">Mockup {i + 1}</span>
+                  <span className="text-xs font-medium text-[#6a6a7a]">Angle {i + 1}</span>
                   <a
                     href={imgUrl}
                     download={`bathroom-mockup-${i + 1}.png`}

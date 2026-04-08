@@ -43,7 +43,7 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
       setError("");
       try {
         const res = await fetch(
-          `/api/catalogue/collection-products?q=${encodeURIComponent(collection.serpQuery)}`
+          `/api/catalogue/collection-products?collectionId=${encodeURIComponent(collection.id)}`
         );
         const data = await res.json();
         if (!cancelled) {
@@ -61,7 +61,7 @@ export default function CollectionDetail({ collection }: CollectionDetailProps) 
 
     fetchProducts();
     return () => { cancelled = true; };
-  }, [collection.serpQuery]);
+  }, [collection.id]);
 
   const handleHeartClick = (product: Product, e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
