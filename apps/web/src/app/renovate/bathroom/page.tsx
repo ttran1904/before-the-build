@@ -17,6 +17,7 @@ import {
   FaLink, FaCircleExclamation, FaXmark, FaChevronLeft, FaChevronRight, FaCircleInfo,
   FaDollarSign, FaSackDollar, FaGem,
   FaToilet, FaShower, FaBath, FaCrown,
+  FaCamera, FaUpload, FaPhotoFilm,
 } from "react-icons/fa6";
 import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
 import { BATHROOM_SIZES } from "@/lib/room-sizes/bathroom";
@@ -90,25 +91,23 @@ function SlotDigit({ char, delay, animate }: { char: string; delay: number; anim
 }
 
 /* ── Step definitions ── */
-const STEP_PARENTS: Record<string, { label: string; icon: typeof FaBullseye }> = {
-  goal: { label: "Goal", icon: FaBullseye },
-  "items-materials": { label: "Items & Materials", icon: FaCartShopping },
-  visualize: { label: "Visualize", icon: FaPaintbrush },
-};
-
 const STEPS = [
-  { id: "goal", label: "Priorities", icon: FaBullseye, parent: "goal" },
-  { id: "scope", label: "Scope", icon: FaRuler, parent: "goal" },
+  { id: "goal", label: "Goal", icon: FaBullseye },
   { id: "must-haves", label: "Must-Haves", icon: FaClipboardList },
   { id: "budget", label: "Budget", icon: FaCoins },
-  { id: "items-pictures", label: "Items from Pictures", icon: FaCrosshairs, parent: "items-materials" },
-  { id: "catalogue", label: "Designer's Catalogue", icon: FaSwatchbook, parent: "items-materials" },
-  { id: "moodboard", label: "Moodboard", icon: FaImages, parent: "visualize" },
-  { id: "mockup", label: "Real Mockup", icon: FaPaintbrush, parent: "visualize" },
+  { id: "items-pictures", label: "From Pictures", icon: FaCrosshairs, section: "items-materials" },
+  { id: "catalogue", label: "From Catalogue", icon: FaSwatchbook, section: "items-materials" },
+  { id: "moodboard", label: "Moodboard", icon: FaImages, section: "visualize" },
+  { id: "mockup", label: "Real Mockup", icon: FaCamera, section: "visualize" },
   { id: "timeline", label: "Timeline", icon: FaCalendarDays },
   { id: "contractor", label: "Contractor", icon: FaHelmetSafety },
   { id: "summary", label: "Summary", icon: FaListCheck },
 ];
+
+const SECTION_HEADERS: Record<string, { label: string; icon: typeof FaBullseye }> = {
+  "items-materials": { label: "Items & Materials", icon: FaCartShopping },
+  visualize: { label: "Visualize", icon: FaPaintbrush },
+};
 
 /* ── Dirty-check: build a hash string of inputs that drive AI calls ── */
 function wizardInputHash(s: { goals: string[]; scope: BathroomScope | null; mustHaves: string[]; niceToHaves: string[]; budgetTier: BudgetTier | null; bathroomSize: string; style: DesignStyle | null }) {
@@ -249,18 +248,18 @@ function BathroomWizardPageContent() {
 
   const next = () => {
     // Budget step has 2 sub-steps: budget amount (0) then room size (1)
-    if (currentStep === 3 && budgetSubStep === 0) {
+    if (currentStep === 2 && budgetSubStep === 0) {
       setBudgetSubStep(1);
       return;
     }
     const nextIdx = Math.min(currentStep + 1, STEPS.length - 1);
     if (STEPS[nextIdx]?.id === "timeline" && needsTimelineRefresh) fetchTimeline();
     if (STEPS[nextIdx]?.id === "contractor") { /* contractor step */ }
-    if (currentStep === 3) setBudgetSubStep(0);
+    if (currentStep === 2) setBudgetSubStep(0);
     setCurrentStep(nextIdx);
   };
   const back = () => {
-    if (currentStep === 3 && budgetSubStep === 1) {
+    if (currentStep === 2 && budgetSubStep === 1) {
       setBudgetSubStep(0);
       return;
     }
@@ -286,30 +285,30 @@ function BathroomWizardPageContent() {
         <p className="mx-6 mt-1.5 text-[10px] text-white/50">Step {currentStep + 1} of {STEPS.length}</p>
 
         {/* Step list */}
-        <nav className="mt-3 flex-1 space-y-1 px-3 overflow-y-auto">
+        <nav className="mt-3 flex-1 space-y-0.5 px-3 overflow-y-auto">
           {STEPS.map((step, i) => {
             const done = i < currentStep;
             const active = i === currentStep;
-            const isSubStep = "parent" in step;
-            // Show parent heading before first sub-step
-            const showParentHeading = isSubStep && (i === 0 || !("parent" in STEPS[i - 1]));
+            const isSubStep = "section" in step;
+            // Show section heading before first sub-step of a section
+            const showSectionHeading = isSubStep && (i === 0 || (STEPS[i - 1] as { section?: string }).section !== (step as { section: string }).section);
             return (
               <div key={step.id}>
-                {showParentHeading && (() => {
-                  const parentConfig = STEP_PARENTS[(step as { parent: string }).parent];
-                  const ParentIcon = parentConfig?.icon || FaBullseye;
+                {showSectionHeading && (() => {
+                  const sectionConfig = SECTION_HEADERS[(step as { section: string }).section];
+                  const SectionIcon = sectionConfig?.icon || FaBullseye;
                   return (
-                    <div className="flex items-center gap-3 px-3 py-2 text-xs font-semibold tracking-wide text-white/50">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                        <ParentIcon className="text-[10px]" />
+                    <div className="mt-4 mb-1 flex items-center gap-2 px-3 py-1">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white/10">
+                        <SectionIcon className="text-[10px] text-white/60" />
                       </span>
-                      {parentConfig?.label || "Section"}
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-white/50">{sectionConfig?.label || "Section"}</span>
                     </div>
                   );
                 })()}
                 <button
-                  onClick={() => { if (done) { setCurrentStep(i); if (i === 3) setBudgetSubStep(0); } }}
-                  className={`group flex w-full items-center gap-3 rounded-lg ${isSubStep ? "pl-8" : "pl-3"} pr-3 py-2.5 text-left transition ${
+                  onClick={() => { if (done) { setCurrentStep(i); if (i === 2) setBudgetSubStep(0); } }}
+                  className={`group flex w-full items-center gap-3 rounded-lg ${isSubStep ? "pl-8" : "pl-3"} pr-3 py-2 text-left transition ${
                     active
                       ? "bg-white/15 text-white"
                       : done
@@ -375,20 +374,19 @@ function BathroomWizardPageContent() {
             </button>
           </div>
         </div>
-        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${currentStep === 9 ? "max-w-5xl" : [4, 5, 6, 7].includes(currentStep) ? "max-w-[1400px]" : currentStep === 2 || currentStep === 8 ? "max-w-6xl" : "max-w-3xl"} w-full ${[4, 5, 6, 7].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[200px]" : ""}`}>
+        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${currentStep === 8 ? "max-w-5xl" : [3, 4, 5, 6].includes(currentStep) ? "max-w-[1400px]" : currentStep === 1 || currentStep === 7 ? "max-w-6xl" : "max-w-3xl"} w-full ${[3, 4, 5, 6].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[200px]" : ""}`}>
           {currentStep === 0 && <GoalStep />}
-          {currentStep === 1 && <ScopeStep />}
-          {currentStep > 1 && (
+          {currentStep > 0 && (
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
-            {currentStep === 2 && <MustHavesStep />}
-            {currentStep === 3 && <BudgetStep subStep={budgetSubStep} />}
-            {currentStep === 4 && <MoodboardStep view="items-pictures" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 5 && <MoodboardStep view="catalogue" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 6 && <MoodboardStep view="moodboard" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 7 && <MoodboardStep view="mockup" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 8 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
-            {currentStep === 9 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
-            {currentStep === 10 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} />}
+            {currentStep === 1 && <MustHavesStep />}
+            {currentStep === 2 && <BudgetStep subStep={budgetSubStep} />}
+            {currentStep === 3 && <MoodboardStep view="items-pictures" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
+            {currentStep === 4 && <MoodboardStep view="catalogue" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
+            {currentStep === 5 && <MoodboardStep view="moodboard" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
+            {currentStep === 6 && <MoodboardStep view="mockup" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
+            {currentStep === 7 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
+            {currentStep === 8 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
+            {currentStep === 9 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} />}
           </div>
           )}
 
@@ -421,7 +419,7 @@ function BathroomWizardPageContent() {
       </main>
 
       {/* ── Right sidebar: Items Checklist (Moodboard step only) ── */}
-      {[4, 5, 6, 7].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) && (
+      {[3, 4, 5, 6].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) && (
         <div
           className="fixed z-20 flex items-center"
           style={{ top: "52px", right: "-16px", width: "200px", height: "calc(100vh - 52px)" }}
@@ -758,11 +756,10 @@ function BudgetBuilderPopout({
   );
 }
 
-/* ── Goal Step ── */
+/* ── Goal Step (Priorities + Scope combined) ── */
 function GoalStep() {
-  const { goals, toggleGoal } = useWizardStore();
+  const { goals, toggleGoal, scope, setScope } = useWizardStore();
 
-  // Sorted by popularity (most → least common bathroom reno goals)
   const GOALS = [
     { id: "update_style", label: "Update Style", icon: FaPaintRoller },
     { id: "fix_problems", label: "Fix Problems", icon: FaWrench },
@@ -773,43 +770,6 @@ function GoalStep() {
     { id: "family_friendly", label: "Family-Friendly", icon: FaChildReaching },
   ];
 
-  return (
-    <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
-      <div className="w-full max-w-2xl rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">
-          What&apos;s the main goal of your bathroom renovation?
-        </h2>
-        <p className="mt-2 text-sm text-[#6a6a7a]">
-          Select all that apply
-        </p>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {GOALS.map((g) => (
-            <button
-              key={g.id}
-              onClick={() => toggleGoal(g.id)}
-              className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
-                goals.includes(g.id)
-                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-              }`}
-            >
-              <span className="text-2xl text-[#2d5a3d]"><g.icon /></span>
-              <div className="flex-1 font-semibold text-[#1a1a2e]">{g.label}</div>
-              {goals.includes(g.id) && (
-                <FaCheck className="text-sm text-[#2d5a3d]" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Scope Step ── */
-function ScopeStep() {
-  const { scope, setScope } = useWizardStore();
-
   const SCOPES: { id: BathroomScope; label: string; desc: string; icon: typeof FaPaintbrush }[] = [
     { id: "cosmetic", label: "Cosmetic Refresh", desc: "Paint, fixtures, hardware, accessories. Minimal disruption.", icon: FaPaintbrush },
     { id: "partial", label: "Partial Remodel", desc: "New vanity, flooring, paint. Keep existing layout.", icon: FaScrewdriverWrench },
@@ -818,30 +778,60 @@ function ScopeStep() {
   ];
 
   return (
-    <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
-      <div className="w-full max-w-2xl rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
-        <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s the scope of work?</h2>
-        <div className="mt-6 space-y-3">
-          {SCOPES.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setScope(s.id)}
-              className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
-                scope === s.id
-                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-              }`}
-            >
-              <span className="text-2xl text-[#2d5a3d]"><s.icon /></span>
-              <div className="flex-1">
-                <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
-                <div className="mt-0.5 text-sm text-[#6a6a7a]">{s.desc}</div>
-              </div>
-              {scope === s.id && (
-                <FaCheck className="text-sm text-[#2d5a3d]" />
-              )}
-            </button>
-          ))}
+    <div className="flex items-center justify-center">
+      <div className="w-full max-w-2xl space-y-10">
+        {/* Priorities */}
+        <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
+          <h2 className="text-2xl font-bold text-[#1a1a2e]">
+            What&apos;s the main goal of your bathroom renovation?
+          </h2>
+          <p className="mt-2 text-sm text-[#6a6a7a]">Select all that apply</p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {GOALS.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => toggleGoal(g.id)}
+                className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
+                  goals.includes(g.id)
+                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+                }`}
+              >
+                <span className="text-2xl text-[#2d5a3d]"><g.icon /></span>
+                <div className="flex-1 font-semibold text-[#1a1a2e]">{g.label}</div>
+                {goals.includes(g.id) && (
+                  <FaCheck className="text-sm text-[#2d5a3d]" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Scope */}
+        <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
+          <h2 className="text-2xl font-bold text-[#1a1a2e]">What&apos;s the scope of work?</h2>
+          <div className="mt-6 space-y-3">
+            {SCOPES.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setScope(s.id)}
+                className={`flex w-full items-center gap-4 rounded-xl border-2 p-5 text-left transition ${
+                  scope === s.id
+                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+                }`}
+              >
+                <span className="text-2xl text-[#2d5a3d]"><s.icon /></span>
+                <div className="flex-1">
+                  <div className="font-semibold text-[#1a1a2e]">{s.label}</div>
+                  <div className="mt-0.5 text-sm text-[#6a6a7a]">{s.desc}</div>
+                </div>
+                {scope === s.id && (
+                  <FaCheck className="text-sm text-[#2d5a3d]" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -1546,12 +1536,12 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
         </div>
       )}
 
-      {/* ── SECTION: Discover Items You Want ── */}
+      {/* ── SECTION: Look for Items from Pictures ── */}
       {view === "items-pictures" && (
-        <div className="mt-6">
+        <div>
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-[#1a1a2e]">Discover the Items You Want</h2>
+              <h2 className="text-2xl font-bold text-[#1a1a2e]">Items from Pictures</h2>
               <p className="mt-2 text-sm text-[#6a6a7a]">
                 Draw a box around any item. We&apos;ll find where to buy it online.
               </p>
@@ -1561,7 +1551,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                 href="/explore?from=moodboard"
                 className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#234a31]"
               >
-                <FaPlus className="text-[10px]" /> Add More from Explore
+                <FaPlus className="text-[10px]" /> Add Pictures
               </Link>
             )}
           </div>
@@ -1992,23 +1982,239 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
 
       {/* ── SECTION: Real Mockup ── */}
       {view === "mockup" && (
-        <div className="mt-6">
-          <h2 className="text-2xl font-bold text-[#1a1a2e]">Real Mockup</h2>
-          <p className="mt-2 text-sm text-[#6a6a7a]">See your selected items in a realistic bathroom rendering.</p>
-          <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-16 text-center">
-            <FaPaintbrush className="text-4xl text-[#d5d3cd]" />
-            <p className="text-lg font-medium text-[#9a9aaa]">Coming Soon</p>
-            <p className="max-w-md text-sm text-[#c5c3bd]">
-              Upload a photo of your current bathroom, and AI will generate a realistic mockup
-              with all your selected items placed in the scene &mdash; giving you a preview before you build.
-            </p>
-            {selectedProducts.length > 0 && (
-              <div className="mt-4 rounded-xl bg-[#2d5a3d]/5 px-4 py-3">
-                <p className="text-xs font-medium text-[#2d5a3d]">
-                  {selectedProducts.length} item{selectedProducts.length !== 1 ? "s" : ""} selected &mdash; ready for mockup generation
-                </p>
+        <RealMockupSection selectedProducts={selectedProducts} />
+      )}
+    </div>
+  );
+}
+
+/* ── Real Mockup Section ── */
+function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }) {
+  const store = useWizardStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    setError(null);
+
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith("image/")) {
+        setError("Please upload image files only (JPG, PNG, WebP).");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setError("Image must be under 10 MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          store.addMockupPhoto(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  };
+
+  const handleGenerateMockup = async () => {
+    if (store.mockupBathroomPhotos.length === 0) {
+      setError("Please upload at least one photo of your bathroom.");
+      return;
+    }
+    if (selectedProducts.length === 0) {
+      setError("Please select items in the Items & Materials section first.");
+      return;
+    }
+
+    store.setMockupLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/ai/generate-mockup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bathroomPhotos: store.mockupBathroomPhotos,
+          products: selectedProducts.map((p) => ({
+            title: p.title,
+            thumbnail: p.thumbnail,
+            price: p.price,
+            source: p.source,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to generate mockup. Please try again.");
+      } else {
+        store.setMockupGeneratedImages(data.images || []);
+      }
+    } catch {
+      setError("Failed to generate mockup. Please try again.");
+    } finally {
+      store.setMockupLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-6">
+      <h2 className="text-2xl font-bold text-[#1a1a2e]">Real Mockup</h2>
+      <p className="mt-2 text-sm text-[#6a6a7a]">
+        Upload photos of your current bathroom, then generate a realistic AI mockup with your selected items.
+      </p>
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+        {/* ── Left: Upload bathroom photos ── */}
+        <div>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+            <FaCamera className="text-xs text-[#2d5a3d]" />
+            Your Bathroom Photos
+          </h3>
+          <p className="mt-1 text-xs text-[#9a9aaa]">
+            Upload at least 1 angle. Multiple angles give better results.
+          </p>
+
+          {/* Upload area */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {store.mockupBathroomPhotos.map((photo, i) => (
+              <div key={i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1]">
+                <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
+                <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
+                <button
+                  onClick={() => store.removeMockupPhoto(i)}
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                >
+                  <FaXmark className="text-xs" />
+                </button>
+                <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+                  Angle {i + 1}
+                </span>
               </div>
-            )}
+            ))}
+
+            {/* Add photo button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+            >
+              <FaUpload className="text-xl text-[#9a9aaa]" />
+              <span className="text-xs font-medium text-[#6a6a7a]">
+                {store.mockupBathroomPhotos.length === 0 ? "Upload Photo" : "Add Another"}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Right: Selected items summary ── */}
+        <div>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+            <FaCartShopping className="text-xs text-[#2d5a3d]" />
+            Items to Include
+            <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">
+              {selectedProducts.length}
+            </span>
+          </h3>
+          <p className="mt-1 text-xs text-[#9a9aaa]">
+            These items from your selections will be placed into the mockup.
+          </p>
+
+          {selectedProducts.length === 0 ? (
+            <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] p-8 text-center">
+              <FaCartShopping className="text-2xl text-[#d5d3cd]" />
+              <p className="text-xs text-[#9a9aaa]">No items selected yet.</p>
+              <p className="text-xs text-[#c5c3bd]">Go to Items &amp; Materials to select products.</p>
+            </div>
+          ) : (
+            <div className="mt-4 max-h-[300px] space-y-2 overflow-y-auto pr-1">
+              {selectedProducts.map((p, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-xl border border-[#e8e6e1] p-2.5">
+                  {p.thumbnail && (
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+                      <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="40px" unoptimized />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-[#1a1a2e]">{p.title}</p>
+                    <p className="text-[10px] text-[#6a6a7a]">{p.source} {p.price && `· ${p.price}`}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+          <FaCircleExclamation className="shrink-0 text-xs" />
+          {error}
+        </div>
+      )}
+
+      {/* Generate button */}
+      <div className="mt-8 flex justify-center">
+        <button
+          onClick={handleGenerateMockup}
+          disabled={store.mockupLoading || store.mockupBathroomPhotos.length === 0 || selectedProducts.length === 0}
+          className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {store.mockupLoading ? (
+            <>
+              <FaSpinner className="animate-spin text-sm" />
+              Generating Mockup...
+            </>
+          ) : (
+            <>
+              <FaWandMagicSparkles className="text-sm" />
+              Generate Mockup
+              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                {store.mockupBathroomPhotos.length} photo{store.mockupBathroomPhotos.length !== 1 ? "s" : ""} + {selectedProducts.length} item{selectedProducts.length !== 1 ? "s" : ""}
+              </span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Generated results */}
+      {store.mockupGeneratedImages.length > 0 && (
+        <div className="mt-10">
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-[#1a1a2e]">
+            <FaPhotoFilm className="text-[#2d5a3d]" />
+            Your Mockup{store.mockupGeneratedImages.length > 1 ? "s" : ""}
+          </h3>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {store.mockupGeneratedImages.map((imgUrl, i) => (
+              <div key={i} className="overflow-hidden rounded-2xl border border-[#e8e6e1] shadow-sm">
+                <div className="relative aspect-[4/3] w-full">
+                  <Image src={imgUrl} alt={`Mockup ${i + 1}`} fill className="object-cover" sizes="600px" unoptimized />
+                </div>
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-xs font-medium text-[#6a6a7a]">Mockup {i + 1}</span>
+                  <a
+                    href={imgUrl}
+                    download={`bathroom-mockup-${i + 1}.png`}
+                    className="flex items-center gap-1.5 rounded-lg border border-[#d5d3cd] px-3 py-1 text-xs font-medium text-[#4a4a5a] transition hover:bg-[#f8f7f4]"
+                  >
+                    <FaArrowUpRightFromSquare className="text-[9px]" /> Download
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

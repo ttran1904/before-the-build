@@ -33,6 +33,10 @@ export interface BathroomWizardState {
   moodboardPointedItems: Record<string, PointedItem[]>;
   moodboardManualProducts: Product[];
   moodboardDragPositions: Record<number, { x: number; y: number }>;
+  // Real Mockup state
+  mockupBathroomPhotos: string[]; // base64 data URLs of uploaded bathroom photos
+  mockupGeneratedImages: string[]; // URLs of AI-generated mockup images
+  mockupLoading: boolean;
 }
 
 interface WizardActions {
@@ -51,6 +55,10 @@ interface WizardActions {
   setMoodboardPointedItems: (updater: Record<string, PointedItem[]> | ((prev: Record<string, PointedItem[]>) => Record<string, PointedItem[]>)) => void;
   setMoodboardManualProducts: (updater: Product[] | ((prev: Product[]) => Product[])) => void;
   setMoodboardDragPositions: (updater: Record<number, { x: number; y: number }> | ((prev: Record<number, { x: number; y: number }>) => Record<number, { x: number; y: number }>)) => void;
+  addMockupPhoto: (dataUrl: string) => void;
+  removeMockupPhoto: (index: number) => void;
+  setMockupGeneratedImages: (images: string[]) => void;
+  setMockupLoading: (loading: boolean) => void;
   reset: () => void;
 }
 
@@ -69,6 +77,9 @@ const initialState: BathroomWizardState = {
   moodboardPointedItems: {},
   moodboardManualProducts: [],
   moodboardDragPositions: {},
+  mockupBathroomPhotos: [],
+  mockupGeneratedImages: [],
+  mockupLoading: false,
 };
 
 export const useWizardStore = create<BathroomWizardState & WizardActions>()(
@@ -110,6 +121,14 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>()(
       setMoodboardDragPositions: (updater) => set((state) => ({
         moodboardDragPositions: typeof updater === "function" ? updater(state.moodboardDragPositions) : updater,
       })),
+      addMockupPhoto: (dataUrl) => set((state) => ({
+        mockupBathroomPhotos: [...state.mockupBathroomPhotos, dataUrl],
+      })),
+      removeMockupPhoto: (index) => set((state) => ({
+        mockupBathroomPhotos: state.mockupBathroomPhotos.filter((_, i) => i !== index),
+      })),
+      setMockupGeneratedImages: (images) => set({ mockupGeneratedImages: images }),
+      setMockupLoading: (loading) => set({ mockupLoading: loading }),
       reset: () => set(initialState),
     }),
     {
