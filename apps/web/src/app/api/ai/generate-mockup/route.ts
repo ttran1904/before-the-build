@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
  * POST /api/ai/generate-mockup
  *
  * Accepts bathroom photos (as base64 data URLs) and selected product
- * thumbnails, then calls OpenAI's image generation API (gpt-image-1) to
+ * thumbnails, then calls OpenAI's image edit API (gpt-image-1) to
  * produce a realistic mockup of the remodeled bathroom.
  *
  * Body: {
@@ -21,6 +21,30 @@ interface ProductInput {
   price?: string;
   source?: string;
 }
+
+/* ── helpers ── */
+
+/** Convert a base64 data-URL to a Blob (works in Node 18+). */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, base64] = dataUrl.split(",");
+  const mime = header.match(/:(.*?);/)?.[1] || "image/png";
+  const bytes = Buffer.from(base64, "base64");
+  return new Blob([bytes], { type: mime });
+}
+
+/** Fetch an external image URL and return it as a Blob. */
+async function fetchImageAsBlob(url: string): Promise<Blob | null> {
+  if (url.startsWith("data:")) return dataUrlToBlob(url);
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) return null;
+    return res.blob();
+  } catch {
+    return null;
+  }
+}
+
+/* ── route handler ── */
 
 export async function POST(req: NextRequest) {
   const { bathroomPhotos, products } = (await req.json()) as {
@@ -56,28 +80,6 @@ export async function POST(req: NextRequest) {
       .map((p, i) => `${i + 1}. ${p.title}${p.price ? ` (${p.price})` : ""}`)
       .join("\n");
 
-    // Build input images array: bathroom photos + product thumbnails
-    // OpenAI gpt-image-1 supports multiple input images
-    const inputImages: { type: "input_image"; input_image: { url: string } }[] = [];
-
-    // Add bathroom photos (limit to 3 to stay within API limits)
-    for (const photo of bathroomPhotos.slice(0, 3)) {
-      inputImages.push({
-        type: "input_image",
-        input_image: { url: photo },
-      });
-    }
-
-    // Add product thumbnails (limit to 4)
-    for (const product of products.slice(0, 4)) {
-      if (product.thumbnail) {
-        inputImages.push({
-          type: "input_image",
-          input_image: { url: product.thumbnail },
-        });
-      }
-    }
-
     const prompt = `You are an expert interior designer. I'm giving you photos of my current bathroom and images of specific products I've selected for my renovation.
 
 Please generate a photorealistic mockup of the renovated bathroom that:
@@ -91,24 +93,42 @@ ${productDescriptions}
 
 Generate ONE high-quality, photorealistic image of the remodeled bathroom.`;
 
-    const response = await fetch("https://api.openai.com/v1/images/generations", {
+    // ── Build multipart form data with all images ──
+    const formData = new FormData();
+    formData.append("model", "gpt-image-1");
+    formData.append("prompt", prompt);
+    formData.append("n", "1");
+    formData.append("size", "1536x1024");
+    formData.append("quality", "high");
+
+    // Append bathroom photos (limit 3)
+    for (let i = 0; i < Math.min(bathroomPhotos.length, 3); i++) {
+      const blob = dataUrlToBlob(bathroomPhotos[i]);
+      formData.append("image[]", blob, `bathroom_${i}.png`);
+    }
+
+    // Fetch product thumbnails and append them (limit 4)
+    for (let i = 0; i < Math.min(products.length, 4); i++) {
+      const thumb = products[i].thumbnail;
+      if (!thumb) continue;
+      const blob = await fetchImageAsBlob(thumb);
+      if (blob) {
+        formData.append("image[]", blob, `product_${i}.png`);
+      }
+    }
+
+    // ── Call OpenAI Images Edit endpoint (supports input images) ──
+    const response = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${openaiKey}`,
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "gpt-image-1",
-        prompt,
-        n: 1,
-        size: "1536x1024",
-        quality: "high",
-      }),
+      body: formData,
     });
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      console.error("OpenAI image generation error:", errData);
+      console.error("OpenAI image edit error:", errData);
       return NextResponse.json(
         { error: "Failed to generate mockup. Please try again." },
         { status: 500 },
