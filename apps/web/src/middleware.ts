@@ -26,7 +26,29 @@ export async function middleware(request: NextRequest) {
   );
 
   // Refresh session if it exists
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+
+  // Protected routes — redirect to sign-in if not authenticated
+  const protectedPaths = ["/dashboard", "/design", "/chat", "/build-book", "/renovate"];
+  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+
+  if (isProtected && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/sign-in";
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users away from auth pages
+  const authPaths = ["/sign-in", "/sign-up"];
+  const isAuthPage = authPaths.some((p) => pathname.startsWith(p));
+
+  if (isAuthPage && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }

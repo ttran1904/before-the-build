@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FaHouse } from "react-icons/fa6";
+import { FaHouse, FaGoogle } from "react-icons/fa6";
 import { useAuth } from "@/lib/auth-context";
+import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -13,6 +14,22 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      setError(error.message);
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +90,30 @@ export default function SignInPage() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-[#e8e6e1]" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-[#6a6a7a]">or</span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading}
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-[#d5d3cd] bg-white py-2.5 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#f8f7f4] disabled:opacity-50"
+        >
+          <FaGoogle className="text-base" />
+          {googleLoading ? "Redirecting..." : "Sign in with Google"}
+        </button>
+
+        <div className="text-center">
+          <Link href="/forgot-password" className="text-sm text-[#6a6a7a] hover:text-[#2d5a3d] hover:underline">
+            Forgot your password?
+          </Link>
+        </div>
 
         <p className="text-center text-sm text-[#6a6a7a]">
           Don&apos;t have an account?{" "}
