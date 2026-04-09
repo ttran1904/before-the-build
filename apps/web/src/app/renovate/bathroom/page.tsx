@@ -17,7 +17,8 @@ import {
   FaLink, FaCircleExclamation, FaXmark, FaChevronLeft, FaChevronRight, FaCircleInfo,
   FaDollarSign, FaSackDollar, FaGem,
   FaToilet, FaShower, FaBath, FaCrown,
-  FaCamera, FaUpload, FaPhotoFilm,
+  FaCamera, FaUpload, FaPhotoFilm, FaFilePdf,
+  FaChevronDown, FaChevronUp, FaTableList, FaChartPie,
 } from "react-icons/fa6";
 import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
 import { BATHROOM_SIZES } from "@/lib/room-sizes/bathroom";
@@ -387,7 +388,7 @@ function BathroomWizardPageContent() {
             {currentStep === 6 && <MoodboardStep view="mockup" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
             {currentStep === 7 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
             {currentStep === 8 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
-            {currentStep === 9 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} />}
+            {currentStep === 9 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} pointedItems={moodboardPointedItems} manualProducts={moodboardManualProducts} dragPositions={moodboardDragPositions} thumbtackResults={thumbtackResults} googleResults={googleResults} />}
           </div>
           )}
 
@@ -409,10 +410,10 @@ function BathroomWizardPageContent() {
               </button>
             ) : (
               <button
-                onClick={() => router.push("/renovate/bathroom/visualize")}
+                onClick={() => router.push("/build-book")}
                 className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
               >
-                <FaWandMagicSparkles className="text-xs" /> See Your Design
+                <FaFilePdf className="text-xs" /> View Build Book
               </button>
             )}
           </div>
@@ -2786,10 +2787,21 @@ function ContractorStep({ thumbtack, google, loading, zip, onZipChange, onSearch
   );
 }
 
-/* ── Summary Step ── */
-function SummaryStep({ tasks, contractorCount, budgetGraph }: { tasks: TimelineTask[]; contractorCount: number; budgetGraph: BudgetGraphResult }) {
+/* ── Build Book Step (formerly Summary) ── */
+function SummaryStep({ tasks, contractorCount, budgetGraph, pointedItems, manualProducts, dragPositions, thumbtackResults, googleResults }: {
+  tasks: TimelineTask[];
+  contractorCount: number;
+  budgetGraph: BudgetGraphResult;
+  pointedItems: Record<string, PointedItem[]>;
+  manualProducts: Product[];
+  dragPositions: Record<number, { x: number; y: number }>;
+  thumbtackResults: Contractor[];
+  googleResults: Contractor[];
+}) {
   const store = useWizardStore();
-  const moodboardCount = useMoodboardStore.getState().items.length;
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [contractorOpen, setContractorOpen] = useState(false);
+  const [budgetOpen, setBudgetOpen] = useState(true);
 
   const GOAL_META: Record<string, { label: string; icon: typeof FaPaintRoller }> = {
     increase_value: { label: "Increase Home Value", icon: FaChartLine },
@@ -2808,29 +2820,79 @@ function SummaryStep({ tasks, contractorCount, budgetGraph }: { tasks: TimelineT
     addition: { label: "Addition / Expansion", icon: FaRuler },
   };
 
-  const TIER_META: Record<string, { label: string; color: string; icon: typeof FaDollarSign }> = {
-    basic: { label: "Basic", color: "#87CEEB", icon: FaDollarSign },
-    mid: { label: "Mid-Range", color: "#2d5a3d", icon: FaSackDollar },
-    high: { label: "High-End", color: "#d4956a", icon: FaGem },
-  };
-
-  const totalDays = tasks.length > 0
-    ? Math.max(...tasks.map((t) => t.startDay + t.duration))
-    : 0;
-
+  const totalDays = tasks.length > 0 ? Math.max(...tasks.map((t) => t.startDay + t.duration)) : 0;
   const milestoneCount = tasks.filter(t => t.milestone).length;
+  const phases = [...new Set(tasks.map((t) => t.phase))];
+  const PHASE_COLORS: Record<string, string> = { Planning: "#3b82f6", Demolition: "#ef4444", "Rough-In": "#f97316", Installation: "#22c55e", Finishing: "#a855f7" };
 
   const formatCurrency = (n: number) => `$${n.toLocaleString()}`;
+  const fmtDecimal = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
   const scopeMeta = store.scope ? SCOPE_META[store.scope] : null;
-  const tierMeta = store.budgetTier ? TIER_META[store.budgetTier] : null;
   const sizeInfo = BATHROOM_SIZES.find(s => s.id === store.bathroomSize);
+
+  /* Build selected products list */
+  const selectedProducts: Product[] = useMemo(() => {
+    const fromPointed = Object.values(pointedItems).flatMap((items) =>
+      items
+        .filter((p) => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
+        .map((p) => p.products[p.selectedProductIdx!]),
+    );
+    return [...fromPointed, ...manualProducts];
+  }, [pointedItems, manualProducts]);
+
+  /* Product summary (deduplicated with quantities) */
+  const productSummary = useMemo(() => {
+    const map = new Map<string, { product: Product; quantity: number; unitPrice: number | null }>();
+    for (const p of selectedProducts) {
+      const key = p.title + "|" + p.url;
+      const existing = map.get(key);
+      const cleaned = p.price.replace(/[^0-9.]/g, "");
+      const val = parseFloat(cleaned);
+      if (existing) { existing.quantity += 1; }
+      else { map.set(key, { product: p, quantity: 1, unitPrice: isNaN(val) ? null : val }); }
+    }
+    return Array.from(map.values());
+  }, [selectedProducts]);
+
+  const productTotal = productSummary.reduce((sum, r) => r.unitPrice != null ? sum + r.unitPrice * r.quantity : sum, 0);
+
+  /* Default position helper for moodboard canvas */
+  const getDefaultPosition = (idx: number, total: number, cw: number, ch: number) => {
+    const cols = total <= 2 ? total : total <= 4 ? 2 : 3;
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    const cellW = cw / cols;
+    const cellH = ch / Math.ceil(total / cols);
+    return { x: col * cellW + (cellW - 160) / 2, y: row * cellH + (cellH - 160) / 2 };
+  };
+
+  /* Pie chart segments */
+  const pieSegments = budgetGraph.breakdown.map((item, i) => ({
+    pct: item.pct,
+    color: POPOUT_BREAKDOWN_COLORS[i % POPOUT_BREAKDOWN_COLORS.length],
+    label: item.category,
+    amount: formatCurrency(item.amount),
+  }));
+
+  /* Render stars for contractors */
+  const renderStars = (rating: number) => {
+    if (rating === 0) return null;
+    const full = Math.floor(rating);
+    const half = rating - full >= 0.5;
+    return (
+      <span className="flex items-center gap-0.5 text-[#d4956a]">
+        {Array.from({ length: full }, (_, i) => <FaStar key={i} className="text-[10px]" />)}
+        {half && <FaStarHalfStroke className="text-[10px]" />}
+      </span>
+    );
+  };
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Renovation Plan</h2>
+      <h2 className="text-2xl font-bold text-[#1a1a2e]">Your Build Book</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
-        Everything&apos;s set! Here&apos;s your bathroom renovation summary.
+        Everything&apos;s set! Here&apos;s your complete bathroom renovation build book.
       </p>
 
       {/* ── Budget Hero Card ── */}
@@ -2857,8 +2919,6 @@ function SummaryStep({ tasks, contractorCount, budgetGraph }: { tasks: TimelineT
             )}
           </div>
         )}
-
-        {/* Mini breakdown bar */}
         {budgetGraph.breakdown.length > 0 && (
           <div className="mt-4">
             <div className="flex h-2 overflow-hidden rounded-full">
@@ -2898,9 +2958,8 @@ function SummaryStep({ tasks, contractorCount, budgetGraph }: { tasks: TimelineT
         </div>
       </div>
 
-      {/* ── Detail Rows ── */}
+      {/* ── Detail Rows: Goals, Scope, Size, Budget, Must-Haves, Nice-to-Haves ── */}
       <div className="mt-5 space-y-3">
-        {/* Goals */}
         <SummaryRow icon={FaBullseye} label="Goals" iconColor="#2d5a3d">
           {store.goals.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
@@ -2919,7 +2978,6 @@ function SummaryStep({ tasks, contractorCount, budgetGraph }: { tasks: TimelineT
           )}
         </SummaryRow>
 
-        {/* Scope */}
         <SummaryRow icon={FaRuler} label="Scope" iconColor="#2d5a3d">
           {scopeMeta ? (
             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a1a2e]">
@@ -2930,43 +2988,18 @@ function SummaryStep({ tasks, contractorCount, budgetGraph }: { tasks: TimelineT
           )}
         </SummaryRow>
 
-        {/* Size */}
         <SummaryRow icon={FaExpand} label="Size" iconColor="#2d5a3d">
           <span className="text-sm font-medium text-[#1a1a2e]">{sizeInfo?.label || store.bathroomSize}</span>
         </SummaryRow>
 
-        {/* Budget Tier */}
-        <SummaryRow icon={FaCoins} label="Budget Tier" iconColor={tierMeta?.color || "#2d5a3d"}>
-          {tierMeta ? (
-            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a1a2e]">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full text-white text-[10px]" style={{ backgroundColor: tierMeta.color }}>
-                <tierMeta.icon />
-              </span>
-              {tierMeta.label}
-            </span>
-          ) : (
-            <span className="text-sm text-[#9a9aaa]">—</span>
-          )}
-        </SummaryRow>
-
-        {/* Style */}
-        <SummaryRow icon={FaSwatchbook} label="Style" iconColor="#2d5a3d">
-          <span className="text-sm font-medium text-[#1a1a2e]">{store.style || "—"}</span>
-        </SummaryRow>
-
-        {/* Moodboard */}
-        <SummaryRow icon={FaImages} label="Moodboard" iconColor="#2d5a3d">
+        <SummaryRow icon={FaCoins} label="Budget" iconColor="#2d5a3d">
           <span className="text-sm font-medium text-[#1a1a2e]">
-            {moodboardCount > 0 ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#2d5a3d] px-1.5 text-[10px] font-bold text-white">{moodboardCount}</span>
-                saved image{moodboardCount !== 1 ? "s" : ""}
-              </span>
-            ) : "No images saved"}
+            {store.budgetAmount != null && store.budgetAmount > 0
+              ? formatCurrency(store.budgetAmount)
+              : formatCurrency(budgetGraph.estimatedLow) + " – " + formatCurrency(budgetGraph.estimatedHigh)}
           </span>
         </SummaryRow>
 
-        {/* Must-Haves */}
         <SummaryRow icon={FaClipboardList} label="Must-Haves" iconColor="#2d5a3d">
           {store.mustHaves.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
@@ -2981,7 +3014,6 @@ function SummaryStep({ tasks, contractorCount, budgetGraph }: { tasks: TimelineT
           )}
         </SummaryRow>
 
-        {/* Nice-to-Haves */}
         <SummaryRow icon={FaStar} label="Nice-to-Haves" iconColor="#d4956a">
           {store.niceToHaves.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
@@ -2995,76 +3027,350 @@ function SummaryStep({ tasks, contractorCount, budgetGraph }: { tasks: TimelineT
             <span className="text-sm text-[#9a9aaa]">None selected</span>
           )}
         </SummaryRow>
-
-        {/* Timeline */}
-        <SummaryRow icon={FaCalendarDays} label="Timeline" iconColor="#2d5a3d">
-          {tasks.length > 0 ? (
-            <span className="inline-flex items-center gap-3 text-sm font-medium text-[#1a1a2e]">
-              {totalDays} days
-              <span className="text-[#6a6a7a]">·</span>
-              {tasks.length} tasks
-              {milestoneCount > 0 && (
-                <>
-                  <span className="text-[#6a6a7a]">·</span>
-                  <span className="inline-flex items-center gap-1 text-[#d4a24c]">
-                    <FaDiamond className="text-[8px]" /> {milestoneCount} milestone{milestoneCount !== 1 ? "s" : ""}
-                  </span>
-                </>
-              )}
-            </span>
-          ) : (
-            <span className="text-sm text-[#9a9aaa]">—</span>
-          )}
-        </SummaryRow>
-
-        {/* Contractors */}
-        <SummaryRow icon={FaHelmetSafety} label="Contractors" iconColor="#2d5a3d">
-          {contractorCount > 0 ? (
-            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a1a2e]">
-              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#2d5a3d] px-1.5 text-[10px] font-bold text-white">{contractorCount}</span>
-              matched pro{contractorCount !== 1 ? "s" : ""}
-            </span>
-          ) : (
-            <span className="text-sm text-[#9a9aaa]">—</span>
-          )}
-        </SummaryRow>
       </div>
 
-      {/* ── Item Cost Breakdown ── */}
-      {budgetGraph.itemBreakdown.length > 0 && (
-        <div className="mt-5">
+      {/* ── Moodboard Canvas ── */}
+      {selectedProducts.length > 0 && (
+        <div className="mt-6">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
-            <FaListCheck className="text-xs text-[#2d5a3d]" /> Item Cost Breakdown
+            <FaImages className="text-xs text-[#2d5a3d]" /> Moodboard
           </h3>
-          <div className="space-y-2">
-            {budgetGraph.itemBreakdown.map((item, i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg bg-[#f8f7f4] px-4 py-2.5">
-                <div className="flex items-center gap-2">
-                  <span className={`inline-block h-2 w-2 rounded-full ${item.source === "must-have" ? "bg-[#2d5a3d]" : "bg-[#d4956a]"}`} />
-                  <span className="text-sm font-medium text-[#1a1a2e]">{item.label}</span>
-                  {item.overridden && (
-                    <span className="rounded bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#2d5a3d]">Moodboard price</span>
+          <div className="relative h-[400px] overflow-hidden rounded-xl border border-[#e8e6e1] bg-white">
+            {selectedProducts.map((p, i) => {
+              const pos = dragPositions[i] || getDefaultPosition(i, selectedProducts.length, 700, 400);
+              return (
+                <div key={i} className="absolute" style={{ left: pos.x, top: pos.y }}>
+                  {p.thumbnail ? (
+                    <div className="relative h-[140px] w-[140px]">
+                      <Image src={p.thumbnail} alt={p.title} fill className="object-contain" sizes="140px" unoptimized />
+                    </div>
+                  ) : (
+                    <div className="flex h-[140px] w-[140px] items-center justify-center rounded-lg bg-[#f8f7f4]">
+                      <FaCartShopping className="text-2xl text-[#d5d3cd]" />
+                    </div>
                   )}
+                  <p className="mt-0.5 max-w-[140px] truncate text-center text-[9px] font-medium text-[#6a6a7a]">{p.title}</p>
                 </div>
-                <span className="text-sm font-semibold text-[#1a1a2e]">
-                  {formatCurrency(item.totalLow)} – {formatCurrency(item.totalHigh)}
-                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Real Mockup Renderings ── */}
+      {store.mockupGeneratedImages.length > 0 && (
+        <div className="mt-6">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+            <FaPhotoFilm className="text-xs text-[#2d5a3d]" /> Real Mockup Renderings
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {store.mockupGeneratedImages.map((imgUrl, i) => (
+              <div key={i} className="overflow-hidden rounded-xl border border-[#e8e6e1] bg-white shadow-sm">
+                <div className="relative aspect-[3/2] w-full">
+                  <Image src={imgUrl} alt={`Mockup angle ${i + 1}`} fill className="object-cover" sizes="500px" unoptimized />
+                </div>
+                <div className="px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-[#2d5a3d]">
+                    <FaCircleCheck className="text-[10px]" /> Angle {i + 1}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* ── Ready banner ── */}
-      <div className="mt-6 rounded-xl border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 p-5">
-        <div className="flex items-center gap-2">
-          <FaCircleCheck className="text-[#2d5a3d]" />
-          <span className="text-sm font-semibold text-[#2d5a3d]">Ready to Visualize</span>
+      {/* ── Product Selections (image grid) ── */}
+      {selectedProducts.length > 0 && (
+        <div className="mt-6">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+            <FaCartShopping className="text-xs text-[#2d5a3d]" /> Product Selections
+          </h3>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+            {selectedProducts.map((p, i) => (
+              <div key={i} className="overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:shadow-sm">
+                {p.thumbnail ? (
+                  <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
+                    <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="150px" unoptimized />
+                  </div>
+                ) : (
+                  <div className="flex aspect-square w-full items-center justify-center bg-[#f8f7f4]">
+                    <FaCartShopping className="text-xl text-[#d5d3cd]" />
+                  </div>
+                )}
+                <div className="p-2">
+                  <p className="line-clamp-2 text-[10px] font-medium leading-tight text-[#1a1a2e]">{p.title}</p>
+                  <p className="mt-1 text-xs font-bold text-[#2d5a3d]">{p.price || "$TBD"}</p>
+                  {p.url && (
+                    <a href={p.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-[#2d8a9a] hover:underline">
+                      LINK <FaArrowUpRightFromSquare className="text-[7px]" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="mt-2 text-sm text-[#4a4a5a]">
-          Your plan is complete with timeline and contractor matches. Click &quot;See Your Design&quot; to generate an AI visualization of your new bathroom.
-        </p>
+      )}
+
+      {/* ── Product List & Summary (spreadsheet) ── */}
+      {productSummary.length > 0 && (
+        <div className="mt-6">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+            <FaTableList className="text-xs text-[#2d5a3d]" /> Product List &amp; Summary
+          </h3>
+          <div className="overflow-x-auto rounded-xl border border-[#e8e6e1]">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#f8f7f4]">
+                <tr className="border-b border-[#e8e6e1]">
+                  <th className="px-3 py-2.5 font-bold text-[#1a1a2e]">Description</th>
+                  <th className="px-3 py-2.5 font-bold text-[#1a1a2e]">Source</th>
+                  <th className="px-3 py-2.5 font-bold text-[#1a1a2e]">Link</th>
+                  <th className="px-3 py-2.5 text-center font-bold text-[#1a1a2e]">Qty</th>
+                  <th className="px-3 py-2.5 text-right font-bold text-[#1a1a2e]">Price/Item</th>
+                  <th className="px-3 py-2.5 text-right font-bold text-[#1a1a2e]">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productSummary.map((row, i) => {
+                  const totalForRow = row.unitPrice != null ? row.unitPrice * row.quantity : null;
+                  return (
+                    <tr key={i} className="border-b border-[#e8e6e1] bg-white hover:bg-[#fafaf8] transition">
+                      <td className="px-3 py-2.5 font-semibold text-[#1a1a2e] uppercase">{row.product.title}</td>
+                      <td className="px-3 py-2.5 text-[#4a4a5a]">{row.product.source || "—"}</td>
+                      <td className="px-3 py-2.5">
+                        {row.product.url ? (
+                          <a href={row.product.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#2d8a9a] hover:underline">SHOP NOW</a>
+                        ) : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-center text-[#4a4a5a]">{row.quantity}</td>
+                      <td className="px-3 py-2.5 text-right text-[#4a4a5a]">{row.unitPrice != null ? fmtDecimal(row.unitPrice) : "TBD"}</td>
+                      <td className="px-3 py-2.5 text-right font-semibold text-[#1a1a2e]">{totalForRow != null ? fmtDecimal(totalForRow) : "$0.00"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-[#f8f7f4]">
+                  <td colSpan={5} className="px-3 py-2.5 text-right font-bold text-[#1a1a2e]">Products Total</td>
+                  <td className="px-3 py-2.5 text-right font-bold text-[#2d5a3d]">{fmtDecimal(productTotal)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Budget Breakdown (collapsible) ── */}
+      <div className="mt-6">
+        <button
+          onClick={() => setBudgetOpen(v => !v)}
+          className="flex w-full items-center justify-between rounded-xl border border-[#e8e6e1] bg-white px-4 py-3.5 transition hover:border-[#d5d3cd] hover:shadow-sm"
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+            <FaChartPie className="text-xs text-[#2d5a3d]" /> Budget Estimator Breakdown
+          </span>
+          {budgetOpen ? <FaChevronUp className="text-xs text-[#6a6a7a]" /> : <FaChevronDown className="text-xs text-[#6a6a7a]" />}
+        </button>
+        {budgetOpen && (
+          <div className="mt-3 rounded-xl border border-[#e8e6e1] bg-white p-5">
+            {/* Breakdown table + pie */}
+            <div className="flex items-start gap-6">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center border-b-2 border-[#1a1a2e] pb-2 mb-1">
+                  <span className="flex-1 text-sm font-bold text-[#1a1a2e]">Cost Breakdown</span>
+                  <span className="w-32 text-right text-sm font-bold text-[#1a1a2e]">{formatCurrency(budgetGraph.estimatedMid)}</span>
+                </div>
+                {budgetGraph.breakdown.map((item, i) => (
+                  <div key={item.category} className="flex items-center border-b border-[#e8e6e1] py-2">
+                    <div className="flex flex-1 items-center gap-2">
+                      <span className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: POPOUT_BREAKDOWN_COLORS[i % POPOUT_BREAKDOWN_COLORS.length] }} />
+                      <span className="text-xs text-[#1a1a2e]">{item.category}</span>
+                    </div>
+                    <span className="w-10 text-right text-xs text-[#6a6a7a]">{item.pct}%</span>
+                    <span className="w-32 text-right text-xs font-medium text-[#1a1a2e]">
+                      {item.lowAmount === item.highAmount ? formatCurrency(item.amount) : `${formatCurrency(item.lowAmount)}–${formatCurrency(item.highAmount)}`}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center pt-2 mt-1">
+                  <div className="flex flex-1 items-center gap-2">
+                    <span className="h-3 w-3 shrink-0" />
+                    <span className="text-xs font-bold text-[#2d5a3d]">Estimated Total</span>
+                  </div>
+                  <span className="w-10" />
+                  <span className="w-32 text-right text-xs font-bold text-[#2d5a3d]">
+                    {formatCurrency(budgetGraph.estimatedLow)} – {formatCurrency(budgetGraph.estimatedHigh)}
+                  </span>
+                </div>
+              </div>
+              <div className="shrink-0">
+                <PieChart segments={pieSegments} size={140} />
+              </div>
+            </div>
+
+            {/* Rationale */}
+            <p className="mt-4 border-t border-[#e8e6e1] pt-3 text-[11px] italic leading-relaxed text-[#6a6a7a]">{budgetGraph.rationale}</p>
+
+            {/* Disclaimer */}
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-[#d4a24c]/30 bg-[#fef9ee] px-3 py-2">
+              <FaCircleExclamation className="mt-0.5 shrink-0 text-[10px] text-[#d4a24c]" />
+              <p className="text-[10px] leading-relaxed text-[#6a6a7a]">
+                <span className="font-semibold text-[#4a4a5a]">Disclaimer:</span> These figures are <span className="font-semibold">estimates only</span> based on typical market rates. Always obtain multiple quotes before committing.
+              </p>
+            </div>
+
+            {/* Item-level breakdown */}
+            {budgetGraph.itemBreakdown.length > 0 && (
+              <div className="mt-4 border-t border-[#e8e6e1] pt-3">
+                <h4 className="text-xs font-bold text-[#1a1a2e] mb-2">Item Breakdown</h4>
+                <div className="text-[10px]">
+                  <div className="flex items-center font-semibold text-[#6a6a7a] uppercase tracking-wide pb-1 border-b border-[#e8e6e1]">
+                    <span className="flex-1">Item</span>
+                    <span className="w-20 text-right">Material</span>
+                    <span className="w-20 text-right">Labor</span>
+                    <span className="w-24 text-right">Total</span>
+                  </div>
+                  {budgetGraph.itemBreakdown.map((item) => {
+                    const matFixed = item.materialLow === item.materialHigh;
+                    const labFixed = item.laborLow === item.laborHigh;
+                    const totFixed = item.totalLow === item.totalHigh;
+                    return (
+                      <div key={item.label} className="flex items-center py-1.5 border-b border-[#e8e6e1]/50">
+                        <div className="flex-1 min-w-0 flex items-center gap-1">
+                          <span className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${item.source === "must-have" ? "bg-[#2d5a3d]" : "bg-[#d4a24c]"}`} />
+                          <span className="text-[#1a1a2e] truncate">{item.label}</span>
+                          {item.overridden && <span className="shrink-0 rounded bg-[#2d5a3d]/10 px-1 py-0.5 text-[7px] font-semibold text-[#2d5a3d]">REAL</span>}
+                        </div>
+                        <span className="w-20 text-right text-[#6a6a7a]">{matFixed ? formatCurrency(item.materialLow) : `${formatCurrency(item.materialLow)}–${formatCurrency(item.materialHigh)}`}</span>
+                        <span className="w-20 text-right text-[#6a6a7a]">{labFixed ? formatCurrency(item.laborLow) : `${formatCurrency(item.laborLow)}–${formatCurrency(item.laborHigh)}`}</span>
+                        <span className="w-24 text-right font-medium text-[#1a1a2e]">{totFixed ? formatCurrency(item.totalLow) : `${formatCurrency(item.totalLow)}–${formatCurrency(item.totalHigh)}`}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* ── Timeline (collapsible) ── */}
+      {tasks.length > 0 && (
+        <div className="mt-4">
+          <button
+            onClick={() => setTimelineOpen(v => !v)}
+            className="flex w-full items-center justify-between rounded-xl border border-[#e8e6e1] bg-white px-4 py-3.5 transition hover:border-[#d5d3cd] hover:shadow-sm"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+              <FaCalendarDays className="text-xs text-[#2d5a3d]" /> Timeline
+              <span className="text-xs font-normal text-[#6a6a7a]">({totalDays} days · {tasks.length} tasks{milestoneCount > 0 && ` · ${milestoneCount} milestones`})</span>
+            </span>
+            {timelineOpen ? <FaChevronUp className="text-xs text-[#6a6a7a]" /> : <FaChevronDown className="text-xs text-[#6a6a7a]" />}
+          </button>
+          {timelineOpen && (
+            <div className="mt-3 space-y-3">
+              {phases.map((phase) => {
+                const phaseTasks = tasks.filter((t) => t.phase === phase);
+                const phaseDays = phaseTasks.reduce((sum, t) => sum + t.duration, 0);
+                const phaseColor = PHASE_COLORS[phase] || "#2d5a3d";
+                return (
+                  <div key={phase} className="rounded-lg border border-[#e8e6e1] bg-white p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: phaseColor }} />
+                        <h4 className="text-sm font-semibold text-[#1a1a2e]">{phase}</h4>
+                      </div>
+                      <span className="text-xs text-[#9a9aaa]">{phaseDays} days</span>
+                    </div>
+                    <ul className="space-y-1">
+                      {phaseTasks.map((t) => (
+                        <li key={t.name} className="flex items-center justify-between text-xs text-[#4a4a5a]">
+                          <span className="flex items-center gap-1.5">
+                            {t.milestone && <FaDiamond className="text-[8px] text-[#d4a24c]" />}
+                            {t.name}
+                          </span>
+                          <span className="text-[#9a9aaa]">{t.duration}d</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Contractors (collapsible, optional) ── */}
+      {contractorCount > 0 && (
+        <div className="mt-4">
+          <button
+            onClick={() => setContractorOpen(v => !v)}
+            className="flex w-full items-center justify-between rounded-xl border border-[#e8e6e1] bg-white px-4 py-3.5 transition hover:border-[#d5d3cd] hover:shadow-sm"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+              <FaHelmetSafety className="text-xs text-[#2d5a3d]" /> Contractors
+              <span className="text-xs font-normal text-[#6a6a7a]">({contractorCount} matched)</span>
+            </span>
+            {contractorOpen ? <FaChevronUp className="text-xs text-[#6a6a7a]" /> : <FaChevronDown className="text-xs text-[#6a6a7a]" />}
+          </button>
+          {contractorOpen && (
+            <div className="mt-3 space-y-3">
+              {thumbtackResults.length > 0 && (
+                <div>
+                  <p className="mb-2 text-[10px] font-medium text-[#009fd9]">Thumbtack Results</p>
+                  {thumbtackResults.slice(0, 5).map((c, i) => (
+                    <div key={i} className="mb-2 flex items-center gap-3 rounded-lg border border-[#e8e6e1] bg-white px-3 py-2.5">
+                      {c.thumbnail && (
+                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+                          <Image src={c.thumbnail} alt={c.name} fill className="object-cover" sizes="40px" unoptimized />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-[#1a1a2e] truncate">{c.name}</span>
+                          {c.verified && <span className="text-[8px] font-semibold text-[#2d5a3d]">Verified</span>}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-[#6a6a7a]">
+                          {c.rating > 0 && <span className="flex items-center gap-1">{renderStars(c.rating)} {c.rating}</span>}
+                          <span>{c.location}</span>
+                        </div>
+                      </div>
+                      {c.url && (
+                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-lg bg-[#2d5a3d] px-3 py-1.5 text-[10px] font-semibold text-white hover:bg-[#234a31]">
+                          View
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {googleResults.length > 0 && (
+                <div>
+                  <p className="mb-2 text-[10px] font-medium text-[#4285f4]">Google Results</p>
+                  {googleResults.slice(0, 5).map((c, i) => (
+                    <div key={i} className="mb-2 flex items-center gap-3 rounded-lg border border-[#e8e6e1] bg-white px-3 py-2.5">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-semibold text-[#1a1a2e] truncate">{c.name}</span>
+                        <div className="flex items-center gap-2 text-[10px] text-[#6a6a7a]">
+                          {c.rating > 0 && <span className="flex items-center gap-1">{renderStars(c.rating)} {c.rating}</span>}
+                          <span>{c.location}</span>
+                        </div>
+                      </div>
+                      {c.url && (
+                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-lg bg-[#2d5a3d] px-3 py-1.5 text-[10px] font-semibold text-white hover:bg-[#234a31]">
+                          View
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
