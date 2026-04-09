@@ -10,6 +10,16 @@ import type { PointedItem, Product } from "@/lib/moodboard/types";
 export type BathroomScope = "cosmetic" | "partial" | "full" | "addition";
 export type BudgetTier = "basic" | "mid" | "high";
 
+/** Fields accepted by the setDimensions batch setter */
+export type DimensionFields = {
+  roomWidth: string; roomWidthIn: string; roomWidthM: string;
+  roomLength: string; roomLengthIn: string; roomLengthM: string;
+  roomHeight: string; roomHeightIn: string; roomHeightM: string;
+  showerWidth: string; showerWidthIn: string; showerWidthM: string;
+  showerLength: string; showerLengthIn: string; showerLengthM: string;
+  measurementUnit: "ft" | "m";
+};
+
 export interface BathroomWizardState {
   // Step 1: Goal (multi-select)
   goals: string[];
@@ -36,6 +46,12 @@ export interface BathroomWizardState {
   showerWidthIn: string;
   showerLength: string;
   showerLengthIn: string;
+  // Meter mirrors (pre-computed for instant unit toggle)
+  roomWidthM: string;
+  roomLengthM: string;
+  roomHeightM: string;
+  showerWidthM: string;
+  showerLengthM: string;
   measurementUnit: "ft" | "m";
   currentStep: number;
   // Price overrides from moodboard selections
@@ -71,6 +87,8 @@ interface WizardActions {
   setShowerLength: (l: string) => void;
   setShowerLengthIn: (l: string) => void;
   setMeasurementUnit: (unit: "ft" | "m") => void;
+  /** Batch-set any combination of dimension + unit fields in a single re-render */
+  setDimensions: (dims: Partial<DimensionFields>) => void;
   setCurrentStep: (step: number) => void;
   setPriceOverride: (override: PriceOverride) => void;
   removePriceOverride: (itemLabel: string) => void;
@@ -104,6 +122,11 @@ const initialState: BathroomWizardState = {
   showerWidthIn: "",
   showerLength: "",
   showerLengthIn: "",
+  roomWidthM: "",
+  roomLengthM: "",
+  roomHeightM: "",
+  showerWidthM: "",
+  showerLengthM: "",
   measurementUnit: "ft" as const,
   currentStep: 0,
   priceOverrides: [],
@@ -146,6 +169,7 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>()(
       setShowerLength: (showerLength) => set({ showerLength }),
       setShowerLengthIn: (showerLengthIn) => set({ showerLengthIn }),
       setMeasurementUnit: (measurementUnit) => set({ measurementUnit }),
+      setDimensions: (dims) => set(dims),
       setCurrentStep: (currentStep) => set({ currentStep }),
       setPriceOverride: (override) => set((state) => ({
         priceOverrides: [

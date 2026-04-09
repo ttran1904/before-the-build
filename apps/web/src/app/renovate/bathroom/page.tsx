@@ -23,6 +23,7 @@ import {
 import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
 import { BATHROOM_SIZES, type BathroomSize } from "@/lib/room-sizes/bathroom";
 import { computeBudgetGraph, type BudgetGraphResult } from "@/lib/budget-engine/budget-graph";
+import { ftInToMStr, mStrToFtIn, displayArea } from "@/lib/units";
 import type { PointedItem, Product } from "@/lib/moodboard/types";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
@@ -151,6 +152,7 @@ function BathroomWizardPageContent() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [currentStep, setCurrentStep] = useState(initialStep);
+  const [highestStep, setHighestStep] = useState(initialStep);
 
   /* AI data for Timeline step */
   const [timelineTasks, setTimelineTasks] = useState<TimelineTask[]>([]);
@@ -196,19 +198,13 @@ function BathroomWizardPageContent() {
     allPointedFlat.filter((pi) => !pi.loading && !pi.matchedItemLabel && pi.selectedProductIdx !== null),
   [allPointedFlat]);
 
-  /* Compute actual room sqft from user dimensions (convert meters→ft if needed) */
+  /* Compute actual room sqft — ft+in values are always pre-computed regardless of unit mode */
   const roomSqft = useMemo(() => {
-    if (store.measurementUnit === "ft") {
-      const wIn = (Number(store.roomWidth) || 0) * 12 + (Number(store.roomWidthIn) || 0);
-      const lIn = (Number(store.roomLength) || 0) * 12 + (Number(store.roomLengthIn) || 0);
-      if (!wIn || !lIn) return null;
-      return Math.round((wIn * lIn) / 144);
-    }
-    const w = Number(store.roomWidth);
-    const l = Number(store.roomLength);
-    if (!w || !l) return null;
-    return Math.round(w * l * 10.7639);
-  }, [store.roomWidth, store.roomWidthIn, store.roomLength, store.roomLengthIn, store.measurementUnit]);
+    const wIn = (Number(store.roomWidth) || 0) * 12 + (Number(store.roomWidthIn) || 0);
+    const lIn = (Number(store.roomLength) || 0) * 12 + (Number(store.roomLengthIn) || 0);
+    if (!wIn || !lIn) return null;
+    return Math.round((wIn * lIn) / 144);
+  }, [store.roomWidth, store.roomWidthIn, store.roomLength, store.roomLengthIn]);
 
   /* Budget — nice-to-haves only included when matched in moodboard */
   const budgetGraph: BudgetGraphResult = useMemo(() => computeBudgetGraph({
@@ -300,6 +296,7 @@ function BathroomWizardPageContent() {
     if (STEPS[nextIdx]?.id === "contractor") { /* contractor step */ }
     if (currentStep === 0) setGoalSubStep(0);
     setCurrentStep(nextIdx);
+    setHighestStep((h) => Math.max(h, nextIdx));
   };
   const back = () => {
     if (currentStep === 0 && goalSubStep === 1) {
@@ -331,6 +328,7 @@ function BathroomWizardPageContent() {
         <nav className="mt-3 flex-1 space-y-0.5 px-3 overflow-y-auto">
           {STEPS.map((step, i) => {
             const done = i < currentStep;
+            const visited = i <= highestStep;
             const active = i === currentStep;
             const isSubStep = "section" in step;
             // Show section heading before first sub-step of a section
@@ -350,13 +348,19 @@ function BathroomWizardPageContent() {
                   );
                 })()}
                 <button
-                  onClick={() => { if (done) { setCurrentStep(i); if (i === 0) setGoalSubStep(0); } }}
+                  onClick={() => {
+                    if (visited && !active) {
+                      if (STEPS[i]?.id === "timeline" && needsTimelineRefresh) fetchTimeline();
+                      setCurrentStep(i);
+                      if (i === 0) setGoalSubStep(0);
+                    }
+                  }}
                   className={`group flex w-full items-center gap-3 rounded-lg ${isSubStep ? "pl-8" : "pl-3"} pr-3 py-2 text-left transition ${
                     active
                       ? "bg-white/15 text-white"
-                      : done
+                      : visited
                         ? "cursor-pointer text-white/80 hover:bg-white/10"
-                        : "text-white/35"
+                        : "cursor-not-allowed text-white/35"
                   }`}
                 >
                   <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs transition ${
@@ -364,13 +368,18 @@ function BathroomWizardPageContent() {
                       ? "bg-white text-[#2d5a3d]"
                       : done
                         ? "bg-white/25 text-white"
-                        : "bg-white/10 text-white/40"
+                        : visited && !active
+                          ? "bg-white/20 text-white/70"
+                          : "bg-white/10 text-white/40"
                   }`}>
                     {done ? <FaCheck className="text-[10px]" /> : <step.icon className="text-[10px]" />}
                   </span>
                   <span className={`${isSubStep ? "text-xs" : "text-sm"} font-medium`}>{step.label}</span>
                   {done && (
                     <FaCircleCheck className="ml-auto text-xs text-white/40" />
+                  )}
+                  {!done && !active && !visited && (
+                    <span className="ml-auto text-[9px] text-white/20">●</span>
                   )}
                 </button>
               </div>
@@ -805,10 +814,10 @@ function GoalStep({ subStep }: { subStep: number }) {
   const store = useWizardStore();
   const { goals, toggleGoal, scope, setScope, bathroomSize, setBathroomSize,
     roomWidth, roomWidthIn, roomLength, roomLengthIn, roomHeight, roomHeightIn,
-    setRoomWidth, setRoomWidthIn, setRoomLength, setRoomLengthIn, setRoomHeight, setRoomHeightIn,
+    roomWidthM, roomLengthM, roomHeightM,
     showerWidth, showerWidthIn, showerLength, showerLengthIn,
-    setShowerWidth, setShowerWidthIn, setShowerLength, setShowerLengthIn,
-    measurementUnit, setMeasurementUnit } = store;
+    showerWidthM, showerLengthM,
+    measurementUnit } = store;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const GOALS = [
@@ -828,57 +837,42 @@ function GoalStep({ subStep }: { subStep: number }) {
     { id: "addition", label: "Addition / Expansion", desc: "Expand bathroom footprint. Structural changes.", icon: FaRuler },
   ];
 
-  /* ── Dimension helpers (used on page 2) ── */
-  const handleDimensionChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  /* ── Dimension helpers (pre-compute mirrors for instant toggle) ── */
+
+  /** Generic handler: updates the typed field + pre-computes the mirror representation */
+  const handleDim = (
+    ftKey: string, inKey: string, mKey: string,
+    field: "ft" | "in" | "m",
+  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9.]/g, "");
-    setter(raw);
-  };
-
-  const toInches = (ft: string, inches: string) =>
-    (Number(ft) || 0) * 12 + (Number(inches) || 0);
-
-  const computeArea = (main: string, mainIn: string, main2: string, main2In: string) => {
-    if (measurementUnit === "ft") {
-      const a = toInches(main, mainIn);
-      const b = toInches(main2, main2In);
-      if (!a || !b) return null;
-      return `≈ ${Math.round((a * b) / 144)} sq ft`;
+    const updates: Record<string, string> = {};
+    if (field === "ft") {
+      updates[ftKey] = raw;
+      updates[mKey] = ftInToMStr(raw, (store as any)[inKey] || "");
+    } else if (field === "in") {
+      updates[inKey] = raw;
+      updates[mKey] = ftInToMStr((store as any)[ftKey] || "", raw);
+    } else {
+      updates[mKey] = raw;
+      const converted = mStrToFtIn(raw);
+      updates[ftKey] = converted.ft;
+      updates[inKey] = converted.inches;
     }
-    const a = Number(main) || 0;
-    const b = Number(main2) || 0;
-    if (!a || !b) return null;
-    return `≈ ${(a * b).toFixed(1)} m²`;
+    store.setDimensions(updates);
   };
 
+  /** Toggle ft ↔ m — just flip the flag (mirrors are pre-computed). Handles legacy data too. */
   const handleUnitToggle = (newUnit: "ft" | "m") => {
     if (newUnit === measurementUnit) return;
-    const convert = (main: string, inPart: string): { main: string; inPart: string } => {
-      if (!main && !inPart) return { main: "", inPart: "" };
-      if (measurementUnit === "ft") {
-        const totalIn = toInches(main, inPart);
-        if (totalIn <= 0) return { main: "", inPart: "" };
-        const meters = totalIn * 0.0254;
-        return { main: meters % 1 === 0 ? meters.toString() : parseFloat(meters.toFixed(2)).toString(), inPart: "" };
-      } else {
-        const meters = Number(main) || 0;
-        if (meters <= 0) return { main: "", inPart: "" };
-        const totalIn = Math.round(meters / 0.0254);
-        const ft = Math.floor(totalIn / 12);
-        const inches = totalIn % 12;
-        return { main: ft.toString(), inPart: inches > 0 ? inches.toString() : "" };
-      }
-    };
-    const w = convert(roomWidth, roomWidthIn);
-    const l = convert(roomLength, roomLengthIn);
-    const h = convert(roomHeight, roomHeightIn);
-    const sw = convert(showerWidth, showerWidthIn);
-    const sl = convert(showerLength, showerLengthIn);
-    setRoomWidth(w.main); setRoomWidthIn(w.inPart);
-    setRoomLength(l.main); setRoomLengthIn(l.inPart);
-    setRoomHeight(h.main); setRoomHeightIn(h.inPart);
-    setShowerWidth(sw.main); setShowerWidthIn(sw.inPart);
-    setShowerLength(sl.main); setShowerLengthIn(sl.inPart);
-    setMeasurementUnit(newUnit);
+    // Single batch set — always ensures mirrors exist for legacy data
+    store.setDimensions({
+      measurementUnit: newUnit,
+      roomWidthM: roomWidthM || ftInToMStr(roomWidth, roomWidthIn),
+      roomLengthM: roomLengthM || ftInToMStr(roomLength, roomLengthIn),
+      roomHeightM: roomHeightM || ftInToMStr(roomHeight, roomHeightIn),
+      showerWidthM: showerWidthM || ftInToMStr(showerWidth, showerWidthIn),
+      showerLengthM: showerLengthM || ftInToMStr(showerLength, showerLengthIn),
+    });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -899,10 +893,11 @@ function GoalStep({ subStep }: { subStep: number }) {
   };
 
   /* Reusable dimension input — renders ft+in pair or single m input */
-  const DimensionInput = ({ label, value, valueIn, onChange, onChangeIn, placeholder }: {
-    label: string; value: string; valueIn: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  const DimensionInput = ({ label, value, valueIn, valueM, onChangeFt, onChangeIn, onChangeM, placeholder }: {
+    label: string; value: string; valueIn: string; valueM: string;
+    onChangeFt: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onChangeIn: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChangeM: (e: React.ChangeEvent<HTMLInputElement>) => void;
     placeholder?: string;
   }) => (
     <div>
@@ -911,21 +906,21 @@ function GoalStep({ subStep }: { subStep: number }) {
         {label} <span className="text-red-400">*</span>
       </label>
       {measurementUnit === "ft" ? (
-        <div className="flex gap-1.5">
-          <div className="relative flex-1">
-            <input type="text" inputMode="decimal" placeholder={placeholder || "0"} value={value} onChange={onChange}
+        <div className="flex items-center gap-1.5">
+          <div className="relative w-32">
+            <input type="text" inputMode="decimal" placeholder={placeholder || "0"} value={value} onChange={onChangeFt}
               className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white py-3 pl-4 pr-8 text-lg font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]" />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[#9a9aaa]">ft</span>
           </div>
-          <div className="relative flex-1">
+          <div className="relative w-16">
             <input type="text" inputMode="decimal" placeholder="0" value={valueIn} onChange={onChangeIn}
-              className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white py-3 pl-4 pr-8 text-lg font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]" />
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[#9a9aaa]">in</span>
+              className="w-full rounded-lg border border-[#e8e6e1] bg-[#fafaf8] py-2.5 pl-3 pr-6 text-sm text-[#6a6a7a] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d] focus:text-[#1a1a2e]" />
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[#b0b0ba]">in</span>
           </div>
         </div>
       ) : (
-        <div className="relative">
-          <input type="text" inputMode="decimal" placeholder={placeholder || "0"} value={value} onChange={onChange}
+        <div className="relative w-32">
+          <input type="text" inputMode="decimal" placeholder={placeholder || "0"} value={valueM} onChange={onChangeM}
             className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white py-3 pl-4 pr-10 text-lg font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]" />
           <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#9a9aaa]">m</span>
         </div>
@@ -934,10 +929,11 @@ function GoalStep({ subStep }: { subStep: number }) {
   );
 
   /* Smaller dimension input for shower sub-question */
-  const SmallDimensionInput = ({ label, value, valueIn, onChange, onChangeIn }: {
-    label: string; value: string; valueIn: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  const SmallDimensionInput = ({ label, value, valueIn, valueM, onChangeFt, onChangeIn, onChangeM }: {
+    label: string; value: string; valueIn: string; valueM: string;
+    onChangeFt: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onChangeIn: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChangeM: (e: React.ChangeEvent<HTMLInputElement>) => void;
   }) => (
     <div className="flex-1">
       <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#4a4a5a]">
@@ -946,7 +942,7 @@ function GoalStep({ subStep }: { subStep: number }) {
       {measurementUnit === "ft" ? (
         <div className="flex gap-1">
           <div className="relative flex-1">
-            <input type="text" inputMode="decimal" placeholder="0" value={value} onChange={onChange}
+            <input type="text" inputMode="decimal" placeholder="0" value={value} onChange={onChangeFt}
               className="w-full rounded-lg border-2 border-[#e8e6e1] bg-white py-2.5 pl-3 pr-7 text-base font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]" />
             <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[#9a9aaa]">ft</span>
           </div>
@@ -958,7 +954,7 @@ function GoalStep({ subStep }: { subStep: number }) {
         </div>
       ) : (
         <div className="relative">
-          <input type="text" inputMode="decimal" placeholder="0" value={value} onChange={onChange}
+          <input type="text" inputMode="decimal" placeholder="0" value={valueM} onChange={onChangeM}
             className="w-full rounded-lg border-2 border-[#e8e6e1] bg-white py-2.5 pl-3 pr-8 text-base font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]" />
           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[#9a9aaa]">m</span>
         </div>
@@ -966,8 +962,25 @@ function GoalStep({ subStep }: { subStep: number }) {
     </div>
   );
 
-  const roomArea = computeArea(roomWidth, roomWidthIn, roomLength, roomLengthIn);
-  const showerArea = computeArea(showerWidth, showerWidthIn, showerLength, showerLengthIn);
+  const displayArea = (w: string, wIn: string, l: string, lIn: string, unit: "ft" | "m"): string => {
+    if (unit === "ft") {
+      const wTotal = (Number(w) || 0) + (Number(wIn) || 0) / 12;
+      const lTotal = (Number(l) || 0) + (Number(lIn) || 0) / 12;
+      if (wTotal === 0 || lTotal === 0) return "";
+      return `${(wTotal * lTotal).toFixed(1)} sq ft`;
+    }
+    const wVal = Number(w) || 0;
+    const lVal = Number(l) || 0;
+    if (wVal === 0 || lVal === 0) return "";
+    return `${(wVal * lVal).toFixed(2)} m²`;
+  };
+
+  const roomArea = measurementUnit === "ft"
+    ? displayArea(roomWidth, roomWidthIn, roomLength, roomLengthIn, "ft")
+    : displayArea(roomWidthM, "", roomLengthM, "", "m");
+  const showerArea = measurementUnit === "ft"
+    ? displayArea(showerWidth, showerWidthIn, showerLength, showerLengthIn, "ft")
+    : displayArea(showerWidthM, "", showerLengthM, "", "m");
 
   /* ────── Page 1: Goals + Scope ────── */
   if (subStep === 0) {
@@ -1070,28 +1083,6 @@ function GoalStep({ subStep }: { subStep: number }) {
             </div>
           </div>
 
-          {/* ── Sub-question: Shower / Tub area dimensions ── */}
-          {(bathroomSize === "three-quarter" || bathroomSize === "full-bath" || bathroomSize === "primary") && (
-            <div className="-mt-4 ml-5 rounded-xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
-              <h3 className="flex items-center gap-2 text-base font-semibold text-[#1a1a2e]">
-                {bathroomSize === "three-quarter" ? <FaShower className="text-sm text-[#2d5a3d]" /> : <FaBath className="text-sm text-[#2d5a3d]" />}
-                {bathroomSize === "three-quarter" ? "Shower area dimensions" : "Shower + tub area dimensions"}
-              </h3>
-              <div className="mt-3 flex items-end gap-3">
-                <SmallDimensionInput label="Width" value={showerWidth} valueIn={showerWidthIn}
-                  onChange={handleDimensionChange(setShowerWidth)} onChangeIn={handleDimensionChange(setShowerWidthIn)} />
-                <span className="pb-3 text-sm font-medium text-[#9a9aaa]">×</span>
-                <SmallDimensionInput label="Length" value={showerLength} valueIn={showerLengthIn}
-                  onChange={handleDimensionChange(setShowerLength)} onChangeIn={handleDimensionChange(setShowerLengthIn)} />
-                {showerArea && (
-                  <span className="pb-3 flex items-center gap-1 text-sm font-medium text-[#2d5a3d] whitespace-nowrap">
-                    = {showerArea.replace("≈ ", "")}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* ── Question 2: Room Dimensions ── */}
           <div>
             <div className="flex items-center justify-between">
@@ -1121,23 +1112,56 @@ function GoalStep({ subStep }: { subStep: number }) {
             </div>
             <p className="mt-1 text-sm text-[#6a6a7a]">Enter dimensions in {measurementUnit === "ft" ? "feet & inches" : "meters"}.</p>
 
-            <div className="mt-5 grid grid-cols-3 gap-4">
-              <DimensionInput label="Width" value={roomWidth} valueIn={roomWidthIn}
-                onChange={handleDimensionChange(setRoomWidth)} onChangeIn={handleDimensionChange(setRoomWidthIn)} />
-              <DimensionInput label="Length" value={roomLength} valueIn={roomLengthIn}
-                onChange={handleDimensionChange(setRoomLength)} onChangeIn={handleDimensionChange(setRoomLengthIn)} />
-              <DimensionInput label="Ceiling Height" value={roomHeight} valueIn={roomHeightIn}
-                onChange={handleDimensionChange(setRoomHeight)} onChangeIn={handleDimensionChange(setRoomHeightIn)}
+            <div className="mt-5 grid grid-cols-2 gap-x-10 gap-y-5">
+              <DimensionInput label="Width" value={roomWidth} valueIn={roomWidthIn} valueM={roomWidthM}
+                onChangeFt={handleDim("roomWidth", "roomWidthIn", "roomWidthM", "ft")}
+                onChangeIn={handleDim("roomWidth", "roomWidthIn", "roomWidthM", "in")}
+                onChangeM={handleDim("roomWidth", "roomWidthIn", "roomWidthM", "m")} />
+              <DimensionInput label="Length" value={roomLength} valueIn={roomLengthIn} valueM={roomLengthM}
+                onChangeFt={handleDim("roomLength", "roomLengthIn", "roomLengthM", "ft")}
+                onChangeIn={handleDim("roomLength", "roomLengthIn", "roomLengthM", "in")}
+                onChangeM={handleDim("roomLength", "roomLengthIn", "roomLengthM", "m")} />
+              <DimensionInput label="Ceiling Height" value={roomHeight} valueIn={roomHeightIn} valueM={roomHeightM}
+                onChangeFt={handleDim("roomHeight", "roomHeightIn", "roomHeightM", "ft")}
+                onChangeIn={handleDim("roomHeight", "roomHeightIn", "roomHeightM", "in")}
+                onChangeM={handleDim("roomHeight", "roomHeightIn", "roomHeightM", "m")}
                 placeholder={measurementUnit === "ft" ? "8" : "2.4"} />
+              {roomArea && (
+                <div className="flex items-end pb-1">
+                  <span className="inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d]/8 px-3.5 py-2 text-sm font-semibold text-[#2d5a3d]">
+                    <FaRulerCombined className="text-xs opacity-70" />
+                    Floor area: {roomArea}
+                  </span>
+                </div>
+              )}
             </div>
-
-            {roomArea && (
-              <p className="mt-3 flex items-center gap-1.5 text-sm text-[#2d5a3d]">
-                <FaRulerCombined className="text-xs" />
-                {roomArea}
-              </p>
-            )}
           </div>
+
+          {/* ── Sub-question: Shower / Tub area dimensions (after room size) ── */}
+          {(bathroomSize === "three-quarter" || bathroomSize === "full-bath" || bathroomSize === "primary") && (
+            <div className="-mt-4 ml-5 rounded-xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
+              <h3 className="flex items-center gap-2 text-base font-semibold text-[#1a1a2e]">
+                {bathroomSize === "three-quarter" ? <FaShower className="text-sm text-[#2d5a3d]" /> : <FaBath className="text-sm text-[#2d5a3d]" />}
+                {bathroomSize === "three-quarter" ? "Shower area dimensions" : "Shower + tub area dimensions"}
+              </h3>
+              <div className="mt-3 flex items-end gap-3">
+                <SmallDimensionInput label="Width" value={showerWidth} valueIn={showerWidthIn} valueM={showerWidthM}
+                  onChangeFt={handleDim("showerWidth", "showerWidthIn", "showerWidthM", "ft")}
+                  onChangeIn={handleDim("showerWidth", "showerWidthIn", "showerWidthM", "in")}
+                  onChangeM={handleDim("showerWidth", "showerWidthIn", "showerWidthM", "m")} />
+                <span className="pb-3 text-sm font-medium text-[#9a9aaa]">×</span>
+                <SmallDimensionInput label="Length" value={showerLength} valueIn={showerLengthIn} valueM={showerLengthM}
+                  onChangeFt={handleDim("showerLength", "showerLengthIn", "showerLengthM", "ft")}
+                  onChangeIn={handleDim("showerLength", "showerLengthIn", "showerLengthM", "in")}
+                  onChangeM={handleDim("showerLength", "showerLengthIn", "showerLengthM", "m")} />
+                {showerArea && (
+                  <span className="pb-3 flex items-center gap-1 text-sm font-medium text-[#2d5a3d] whitespace-nowrap">
+                    = {showerArea.replace("≈ ", "")}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ── Question 3: Upload Bathroom Photos ── */}
           <div>
