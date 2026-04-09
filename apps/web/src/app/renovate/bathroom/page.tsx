@@ -2942,91 +2942,75 @@ function SummaryStep({ tasks, contractorCount, budgetGraph, pointedItems, manual
         )}
       </div>
 
-      {/* ── Stats Row ── */}
-      <div className="mt-5 grid grid-cols-3 gap-3">
-        <div className="rounded-xl bg-[#f8f7f4] p-4 text-center">
-          <div className="text-2xl font-bold text-[#2d5a3d]">{totalDays || "—"}</div>
-          <div className="mt-1 text-xs text-[#6a6a7a]">Days</div>
+      {/* ── Project Details Grid ── */}
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        {/* Goals — full width */}
+        <div className="col-span-2 rounded-xl border border-[#e8e6e1] bg-white px-4 py-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9a9aaa]">Goals</div>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {store.goals.length > 0 ? store.goals.map(g => {
+              const meta = GOAL_META[g];
+              const Icon = meta?.icon || FaBullseye;
+              return (
+                <span key={g} className="inline-flex items-center gap-1.5 rounded-full bg-[#2d5a3d]/8 px-2.5 py-1 text-xs font-medium text-[#2d5a3d]">
+                  <Icon className="text-[10px]" /> {meta?.label || g}
+                </span>
+              );
+            }) : <span className="text-sm text-[#9a9aaa]">None selected</span>}
+          </div>
         </div>
-        <div className="rounded-xl bg-[#f8f7f4] p-4 text-center">
-          <div className="text-2xl font-bold text-[#2d5a3d]">{tasks.length || "—"}</div>
-          <div className="mt-1 text-xs text-[#6a6a7a]">Tasks</div>
+
+        {/* Scope */}
+        <div className="rounded-xl border border-[#e8e6e1] bg-white px-4 py-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9a9aaa]">Scope</div>
+          <div className="mt-1">
+            {scopeMeta ? (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a1a2e]">
+                <scopeMeta.icon className="text-xs text-[#2d5a3d]" /> {scopeMeta.label}
+              </span>
+            ) : <span className="text-sm text-[#9a9aaa]">—</span>}
+          </div>
         </div>
-        <div className="rounded-xl bg-[#f8f7f4] p-4 text-center">
-          <div className="text-2xl font-bold text-[#2d5a3d]">{contractorCount || "—"}</div>
-          <div className="mt-1 text-xs text-[#6a6a7a]">Matched Pros</div>
+
+        {/* Size */}
+        <div className="rounded-xl border border-[#e8e6e1] bg-white px-4 py-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9a9aaa]">Size</div>
+          <div className="mt-1 text-sm font-medium text-[#1a1a2e]">{sizeInfo?.label || store.bathroomSize}</div>
         </div>
-      </div>
 
-      {/* ── Detail Rows: Goals, Scope, Size, Budget, Must-Haves, Nice-to-Haves ── */}
-      <div className="mt-5 space-y-3">
-        <SummaryRow icon={FaBullseye} label="Goals" iconColor="#2d5a3d">
-          {store.goals.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {store.goals.map(g => {
-                const meta = GOAL_META[g];
-                const Icon = meta?.icon || FaBullseye;
-                return (
-                  <span key={g} className="inline-flex items-center gap-1.5 rounded-full bg-[#2d5a3d]/8 px-2.5 py-1 text-xs font-medium text-[#2d5a3d]">
-                    <Icon className="text-[10px]" /> {meta?.label || g}
-                  </span>
-                );
-              })}
-            </div>
-          ) : (
-            <span className="text-sm text-[#9a9aaa]">None selected</span>
-          )}
-        </SummaryRow>
-
-        <SummaryRow icon={FaRuler} label="Scope" iconColor="#2d5a3d">
-          {scopeMeta ? (
-            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a1a2e]">
-              <scopeMeta.icon className="text-xs text-[#2d5a3d]" /> {scopeMeta.label}
-            </span>
-          ) : (
-            <span className="text-sm text-[#9a9aaa]">—</span>
-          )}
-        </SummaryRow>
-
-        <SummaryRow icon={FaExpand} label="Size" iconColor="#2d5a3d">
-          <span className="text-sm font-medium text-[#1a1a2e]">{sizeInfo?.label || store.bathroomSize}</span>
-        </SummaryRow>
-
-        <SummaryRow icon={FaCoins} label="Budget" iconColor="#2d5a3d">
-          <span className="text-sm font-medium text-[#1a1a2e]">
+        {/* Budget */}
+        <div className="col-span-2 rounded-xl border border-[#e8e6e1] bg-white px-4 py-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9a9aaa]">Budget</div>
+          <div className="mt-1 text-sm font-bold text-[#2d5a3d]">
             {store.budgetAmount != null && store.budgetAmount > 0
               ? formatCurrency(store.budgetAmount)
               : formatCurrency(budgetGraph.estimatedLow) + " – " + formatCurrency(budgetGraph.estimatedHigh)}
-          </span>
-        </SummaryRow>
+          </div>
+        </div>
 
-        <SummaryRow icon={FaClipboardList} label="Must-Haves" iconColor="#2d5a3d">
-          {store.mustHaves.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {store.mustHaves.map(item => (
-                <span key={item} className="inline-flex items-center gap-1 rounded-full border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 px-2.5 py-1 text-xs font-medium text-[#2d5a3d]">
-                  <FaCheck className="text-[8px]" /> {item}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <span className="text-sm text-[#9a9aaa]">None selected</span>
-          )}
-        </SummaryRow>
+        {/* Must-Haves */}
+        <div className="rounded-xl border border-[#e8e6e1] bg-white px-4 py-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9a9aaa]">Must-Haves</div>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {store.mustHaves.length > 0 ? store.mustHaves.map(item => (
+              <span key={item} className="inline-flex items-center gap-1 rounded-full border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 px-2.5 py-1 text-xs font-medium text-[#2d5a3d]">
+                <FaCheck className="text-[8px]" /> {item}
+              </span>
+            )) : <span className="text-sm text-[#9a9aaa]">None</span>}
+          </div>
+        </div>
 
-        <SummaryRow icon={FaStar} label="Nice-to-Haves" iconColor="#d4956a">
-          {store.niceToHaves.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {store.niceToHaves.map(item => (
-                <span key={item} className="inline-flex items-center gap-1 rounded-full border border-[#d4956a]/20 bg-[#d4956a]/5 px-2.5 py-1 text-xs font-medium text-[#d4956a]">
-                  <FaStar className="text-[8px]" /> {item}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <span className="text-sm text-[#9a9aaa]">None selected</span>
-          )}
-        </SummaryRow>
+        {/* Nice-to-Haves */}
+        <div className="rounded-xl border border-[#e8e6e1] bg-white px-4 py-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9a9aaa]">Nice-to-Haves</div>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {store.niceToHaves.length > 0 ? store.niceToHaves.map(item => (
+              <span key={item} className="inline-flex items-center gap-1 rounded-full border border-[#d4956a]/20 bg-[#d4956a]/5 px-2.5 py-1 text-xs font-medium text-[#d4956a]">
+                <FaStar className="text-[8px]" /> {item}
+              </span>
+            )) : <span className="text-sm text-[#9a9aaa]">None</span>}
+          </div>
+        </div>
       </div>
 
       {/* ── Moodboard Canvas ── */}
