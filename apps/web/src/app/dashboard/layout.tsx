@@ -21,14 +21,18 @@ export default function DashboardLayout({
 
         <nav className="flex flex-col gap-0.5">
           <NavItem href="/dashboard" label="Home" icon={FaHouse} />
+          <NavItem href="/explore" label="Explore Ideas" icon={FaCompass} />
           <NavItem href="/dashboard/build-books" label="Build Books" icon={FaBookOpen} />
-          <NavItem href="/dashboard/moodboards" label="Moodboards" icon={FaTableCellsLarge} />
-          <NavItem href="/explore" label="Explore" icon={FaCompass} />
+          <NavItem href="/dashboard/moodboards" label="Idea Boards" icon={FaTableCellsLarge} />
         </nav>
 
-        <div className="mt-auto">
-          <SidebarUserInfo />
-          <NavItem href="/dashboard/settings" label="Settings" icon={FaGear} />
+        <div className="mt-auto space-y-1">
+          <div className="mb-2 border-t border-white/10 pt-3">
+            <SidebarUserInfo />
+          </div>
+          <div className="flex items-center gap-2">
+            <NavItem href="/dashboard/settings" label="Settings" icon={FaGear} />
+          </div>
           <SignOutButton />
         </div>
       </aside>

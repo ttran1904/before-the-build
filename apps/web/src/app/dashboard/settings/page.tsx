@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaGoogle, FaCheck, FaLink, FaLinkSlash } from "react-icons/fa6";
+import { FaGoogle, FaCheck, FaLink, FaLinkSlash, FaPinterest, FaSpinner } from "react-icons/fa6";
 import { useAuth } from "@/lib/auth-context";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -21,6 +21,16 @@ export default function SettingsPage() {
   const emailIdentity = user?.identities?.find((i) => i.provider === "email");
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
   const nameFromGoogle = user?.user_metadata?.full_name || user?.user_metadata?.name;
+
+  // Pinterest connection status
+  const [pinterestConnected, setPinterestConnected] = useState(false);
+  const [pinterestDisconnecting, setPinterestDisconnecting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/pinterest/status").then((r) => r.json()).then((d) => {
+      setPinterestConnected(d.connected);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -157,6 +167,48 @@ export default function SettingsPage() {
             >
               <FaLinkSlash className="text-[10px]" /> Connect
             </button>
+          )}
+        </div>
+
+        {/* Pinterest */}
+        <div className="mt-3 flex items-center justify-between rounded-xl border border-[#e8e6e1] p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#fef2f2]">
+              <FaPinterest className="text-lg text-[#E60023]" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[#1a1a2e]">Pinterest</p>
+              {pinterestConnected ? (
+                <p className="text-xs text-[#2d5a3d]">Connected — import boards from Idea Boards page</p>
+              ) : (
+                <p className="text-xs text-[#6a6a7a]">Import your Pinterest boards as Idea Boards</p>
+              )}
+            </div>
+          </div>
+          {pinterestConnected ? (
+            <button
+              onClick={async () => {
+                setPinterestDisconnecting(true);
+                await fetch("/api/pinterest/status", { method: "DELETE" });
+                setPinterestConnected(false);
+                setPinterestDisconnecting(false);
+              }}
+              disabled={pinterestDisconnecting}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+            >
+              {pinterestDisconnecting ? (
+                <><FaSpinner className="animate-spin text-[10px]" /> Disconnecting…</>
+              ) : (
+                "Disconnect"
+              )}
+            </button>
+          ) : (
+            <a
+              href="/api/pinterest/auth"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#E60023] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#cc001f]"
+            >
+              <FaPinterest className="text-[10px]" /> Connect
+            </a>
           )}
         </div>
       </section>
