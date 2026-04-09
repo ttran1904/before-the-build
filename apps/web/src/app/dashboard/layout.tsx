@@ -4,6 +4,7 @@ import {
 } from "react-icons/fa6";
 import type { IconType } from "react-icons";
 import { SignOutButton } from "@/components/SignOutButton";
+import { SidebarUserInfo } from "@/components/SidebarUserInfo";
 
 export default function DashboardLayout({
   children,
@@ -26,7 +27,8 @@ export default function DashboardLayout({
         </nav>
 
         <div className="mt-auto">
-          <NavItem href="/settings" label="Settings" icon={FaGear} />
+          <SidebarUserInfo />
+          <NavItem href="/dashboard/settings" label="Settings" icon={FaGear} />
           <SignOutButton />
         </div>
       </aside>
