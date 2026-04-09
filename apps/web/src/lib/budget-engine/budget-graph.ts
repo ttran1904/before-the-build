@@ -45,6 +45,8 @@ export interface PriceOverride {
 
 export interface BudgetGraphInput {
   roomSize: BathroomSize;
+  /** Actual room area in sq ft — when provided, narrows the base cost range */
+  roomSqft?: number | null;
   scope: string | null;
   mustHaves: string[];
   niceToHaves: string[];
@@ -106,8 +108,30 @@ const BASE_COST: Record<BathroomSize, { low: number; high: number }> = {
   "primary":        { low: 18_000, high: 45_000 },
 };
 
-function resolveBaseCost(roomSize: BathroomSize): { low: number; high: number } {
-  return BASE_COST[roomSize] ?? BASE_COST["full-bath"];
+/** Typical sqft range per bathroom type — used to interpolate when actual sqft is known */
+const SQFT_RANGE: Record<BathroomSize, { low: number; high: number }> = {
+  "half-bath":      { low: 15, high: 30 },
+  "three-quarter":  { low: 30, high: 50 },
+  "full-bath":      { low: 50, high: 80 },
+  "primary":        { low: 80, high: 150 },
+};
+
+function resolveBaseCost(roomSize: BathroomSize, roomSqft?: number | null): { low: number; high: number } {
+  const base = BASE_COST[roomSize] ?? BASE_COST["full-bath"];
+  if (!roomSqft || roomSqft <= 0) return base;
+
+  // Interpolate within the cost range based on where actual sqft falls in the type's sqft range
+  const sqftRange = SQFT_RANGE[roomSize] ?? SQFT_RANGE["full-bath"];
+  const t = Math.max(0, Math.min(1, (roomSqft - sqftRange.low) / (sqftRange.high - sqftRange.low)));
+
+  // Narrow the range: cost ±10% around the interpolated point
+  const costSpan = base.high - base.low;
+  const midCost = base.low + costSpan * t;
+  const margin = costSpan * 0.10;
+  return {
+    low: Math.max(base.low, Math.round(midCost - margin)),
+    high: Math.min(base.high, Math.round(midCost + margin)),
+  };
 }
 
 /* ─── Node 2: Scope multiplier ─── */
@@ -280,8 +304,8 @@ function resolveWarning(
 /* ─── Graph computation ─── */
 
 export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
-  // Node 1: base cost
-  const base = resolveBaseCost(input.roomSize);
+  // Node 1: base cost (narrowed when actual sqft is known)
+  const base = resolveBaseCost(input.roomSize, input.roomSqft);
 
   // Node 2: scope multiplier
   const scopeMultiplier = resolveScopeMultiplier(input.scope);

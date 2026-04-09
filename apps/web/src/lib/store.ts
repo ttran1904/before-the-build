@@ -26,6 +26,17 @@ export interface BathroomWizardState {
   style: DesignStyle | null;
   // Metadata
   bathroomSize: BathroomSize;
+  roomWidth: string;
+  roomWidthIn: string;
+  roomLength: string;
+  roomLengthIn: string;
+  roomHeight: string;
+  roomHeightIn: string;
+  showerWidth: string;
+  showerWidthIn: string;
+  showerLength: string;
+  showerLengthIn: string;
+  measurementUnit: "ft" | "m";
   currentStep: number;
   // Price overrides from moodboard selections
   priceOverrides: PriceOverride[];
@@ -49,6 +60,17 @@ interface WizardActions {
   setBudgetAmounts: (tier: BudgetTier, amount: number | null) => void;
   setStyle: (style: DesignStyle) => void;
   setBathroomSize: (size: BathroomSize) => void;
+  setRoomWidth: (w: string) => void;
+  setRoomWidthIn: (w: string) => void;
+  setRoomLength: (l: string) => void;
+  setRoomLengthIn: (l: string) => void;
+  setRoomHeight: (h: string) => void;
+  setRoomHeightIn: (h: string) => void;
+  setShowerWidth: (w: string) => void;
+  setShowerWidthIn: (w: string) => void;
+  setShowerLength: (l: string) => void;
+  setShowerLengthIn: (l: string) => void;
+  setMeasurementUnit: (unit: "ft" | "m") => void;
   setCurrentStep: (step: number) => void;
   setPriceOverride: (override: PriceOverride) => void;
   removePriceOverride: (itemLabel: string) => void;
@@ -72,6 +94,17 @@ const initialState: BathroomWizardState = {
   budgetAmounts: { basic: null, mid: null, high: null },
   style: null,
   bathroomSize: "full-bath",
+  roomWidth: "",
+  roomWidthIn: "",
+  roomLength: "",
+  roomLengthIn: "",
+  roomHeight: "",
+  roomHeightIn: "",
+  showerWidth: "",
+  showerWidthIn: "",
+  showerLength: "",
+  showerLengthIn: "",
+  measurementUnit: "ft" as const,
   currentStep: 0,
   priceOverrides: [],
   moodboardPointedItems: {},
@@ -102,6 +135,17 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>()(
       })),
       setStyle: (style) => set({ style }),
       setBathroomSize: (bathroomSize) => set({ bathroomSize }),
+      setRoomWidth: (roomWidth) => set({ roomWidth }),
+      setRoomWidthIn: (roomWidthIn) => set({ roomWidthIn }),
+      setRoomLength: (roomLength) => set({ roomLength }),
+      setRoomLengthIn: (roomLengthIn) => set({ roomLengthIn }),
+      setRoomHeight: (roomHeight) => set({ roomHeight }),
+      setRoomHeightIn: (roomHeightIn) => set({ roomHeightIn }),
+      setShowerWidth: (showerWidth) => set({ showerWidth }),
+      setShowerWidthIn: (showerWidthIn) => set({ showerWidthIn }),
+      setShowerLength: (showerLength) => set({ showerLength }),
+      setShowerLengthIn: (showerLengthIn) => set({ showerLengthIn }),
+      setMeasurementUnit: (measurementUnit) => set({ measurementUnit }),
       setCurrentStep: (currentStep) => set({ currentStep }),
       setPriceOverride: (override) => set((state) => ({
         priceOverrides: [

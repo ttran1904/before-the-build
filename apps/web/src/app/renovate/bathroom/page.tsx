@@ -21,7 +21,7 @@ import {
   FaChevronDown, FaChevronUp, FaTableList, FaChartPie,
 } from "react-icons/fa6";
 import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
-import { BATHROOM_SIZES } from "@/lib/room-sizes/bathroom";
+import { BATHROOM_SIZES, type BathroomSize } from "@/lib/room-sizes/bathroom";
 import { computeBudgetGraph, type BudgetGraphResult } from "@/lib/budget-engine/budget-graph";
 import type { PointedItem, Product } from "@/lib/moodboard/types";
 import Link from "next/link";
@@ -196,16 +196,31 @@ function BathroomWizardPageContent() {
     allPointedFlat.filter((pi) => !pi.loading && !pi.matchedItemLabel && pi.selectedProductIdx !== null),
   [allPointedFlat]);
 
+  /* Compute actual room sqft from user dimensions (convert meters→ft if needed) */
+  const roomSqft = useMemo(() => {
+    if (store.measurementUnit === "ft") {
+      const wIn = (Number(store.roomWidth) || 0) * 12 + (Number(store.roomWidthIn) || 0);
+      const lIn = (Number(store.roomLength) || 0) * 12 + (Number(store.roomLengthIn) || 0);
+      if (!wIn || !lIn) return null;
+      return Math.round((wIn * lIn) / 144);
+    }
+    const w = Number(store.roomWidth);
+    const l = Number(store.roomLength);
+    if (!w || !l) return null;
+    return Math.round(w * l * 10.7639);
+  }, [store.roomWidth, store.roomWidthIn, store.roomLength, store.roomLengthIn, store.measurementUnit]);
+
   /* Budget — nice-to-haves only included when matched in moodboard */
   const budgetGraph: BudgetGraphResult = useMemo(() => computeBudgetGraph({
     roomSize: store.bathroomSize,
+    roomSqft,
     scope: store.scope,
     mustHaves: store.mustHaves,
     niceToHaves: store.niceToHaves.filter(nh => matchedLabels.has(nh)),
     includeNiceToHaves,
     customerBudget: store.budgetAmount,
     priceOverrides: store.priceOverrides,
-  }), [store.bathroomSize, store.scope, store.mustHaves, store.niceToHaves, store.budgetAmount, store.priceOverrides, includeNiceToHaves, matchedLabels]);
+  }), [store.bathroomSize, roomSqft, store.scope, store.mustHaves, store.niceToHaves, store.budgetAmount, store.priceOverrides, includeNiceToHaves, matchedLabels]);
 
   const currentHash = useMemo(() => wizardInputHash(store), [store.goals, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
 
@@ -248,10 +263,36 @@ function BathroomWizardPageContent() {
 
   const needsTimelineRefresh = currentHash !== timelineHashRef.current || timelineTasks.length === 0;
 
+  /* Budget sub-step 1 validation: all 3 questions required */
+  const budgetSubStep1Valid = useMemo(() => {
+    const hasType = !!store.bathroomSize;
+
+    // Dimensions: in ft mode, ft or in must be non-zero; in m mode, value must be non-zero
+    const dimVal = (main: string, inPart: string) =>
+      store.measurementUnit === "ft"
+        ? (Number(main) || 0) * 12 + (Number(inPart) || 0) > 0
+        : Number(main) > 0;
+
+    const hasWidth = dimVal(store.roomWidth, store.roomWidthIn);
+    const hasLength = dimVal(store.roomLength, store.roomLengthIn);
+    const hasHeight = dimVal(store.roomHeight, store.roomHeightIn);
+    const hasPhotos = store.mockupBathroomPhotos.length > 0;
+
+    // Shower/tub dimensions required for types that have them
+    const needsShower = store.bathroomSize === "three-quarter" || store.bathroomSize === "full-bath" || store.bathroomSize === "primary";
+    const hasShower = !needsShower || (dimVal(store.showerWidth, store.showerWidthIn) && dimVal(store.showerLength, store.showerLengthIn));
+
+    return hasType && hasWidth && hasLength && hasHeight && hasPhotos && hasShower;
+  }, [store.bathroomSize, store.roomWidth, store.roomWidthIn, store.roomLength, store.roomLengthIn, store.roomHeight, store.roomHeightIn, store.mockupBathroomPhotos.length, store.showerWidth, store.showerWidthIn, store.showerLength, store.showerLengthIn, store.measurementUnit]);
+
   const next = () => {
-    // Budget step has 2 sub-steps: budget amount (0) then room size (1)
+    // Budget step has 2 sub-steps: budget amount (0) then room details (1)
     if (currentStep === 2 && budgetSubStep === 0) {
       setBudgetSubStep(1);
+      return;
+    }
+    // Block advancing from budget sub-step 1 if required fields missing
+    if (currentStep === 2 && budgetSubStep === 1 && !budgetSubStep1Valid) {
       return;
     }
     const nextIdx = Math.min(currentStep + 1, STEPS.length - 1);
@@ -404,7 +445,8 @@ function BathroomWizardPageContent() {
             {currentStep < STEPS.length - 1 ? (
               <button
                 onClick={next}
-                className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
+                disabled={currentStep === 2 && budgetSubStep === 1 && !budgetSubStep1Valid}
+                className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next <FaArrowRight className="text-xs" />
               </button>
@@ -1028,7 +1070,202 @@ function PieChart({ segments, size = 180 }: { segments: { pct: number; color: st
 }
 
 function BudgetStep({ subStep }: { subStep: number }) {
-  const { budgetAmount, setBudgetAmount, bathroomSize, setBathroomSize } = useWizardStore();
+  const store = useWizardStore();
+  const { budgetAmount, setBudgetAmount, bathroomSize, setBathroomSize,
+    roomWidth, roomWidthIn, roomLength, roomLengthIn, roomHeight, roomHeightIn,
+    setRoomWidth, setRoomWidthIn, setRoomLength, setRoomLengthIn, setRoomHeight, setRoomHeightIn,
+    showerWidth, showerWidthIn, showerLength, showerLengthIn,
+    setShowerWidth, setShowerWidthIn, setShowerLength, setShowerLengthIn,
+    measurementUnit, setMeasurementUnit } = store;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDimensionChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9.]/g, "");
+    setter(raw);
+  };
+
+  /* Convert a ft + in pair to total inches */
+  const toInches = (ft: string, inches: string) =>
+    (Number(ft) || 0) * 12 + (Number(inches) || 0);
+
+  /* Convert a meter value to total inches */
+  const mToInches = (m: string) => (Number(m) || 0) / 0.0254;
+
+  /* Compute sq ft from the current inputs */
+  const computeSqFt = (main: string, mainIn: string, main2: string, main2In: string) => {
+    if (measurementUnit === "ft") {
+      const a = toInches(main, mainIn);
+      const b = toInches(main2, main2In);
+      if (!a || !b) return null;
+      return Math.round((a * b) / 144);
+    }
+    const a = Number(main) || 0;
+    const b = Number(main2) || 0;
+    if (!a || !b) return null;
+    return Math.round(a * b * 10.7639);
+  };
+
+  /* Compute display area in current unit */
+  const computeArea = (main: string, mainIn: string, main2: string, main2In: string) => {
+    if (measurementUnit === "ft") {
+      const a = toInches(main, mainIn);
+      const b = toInches(main2, main2In);
+      if (!a || !b) return null;
+      return `≈ ${Math.round((a * b) / 144)} sq ft`;
+    }
+    const a = Number(main) || 0;
+    const b = Number(main2) || 0;
+    if (!a || !b) return null;
+    return `≈ ${(a * b).toFixed(1)} m²`;
+  };
+
+  /* Toggle between ft and m with auto-conversion */
+  const handleUnitToggle = (newUnit: "ft" | "m") => {
+    if (newUnit === measurementUnit) return;
+
+    const convert = (main: string, inPart: string): { main: string; inPart: string } => {
+      if (!main && !inPart) return { main: "", inPart: "" };
+
+      if (measurementUnit === "ft") {
+        // ft+in → meters
+        const totalIn = toInches(main, inPart);
+        if (totalIn <= 0) return { main: "", inPart: "" };
+        const meters = totalIn * 0.0254;
+        return { main: meters % 1 === 0 ? meters.toString() : parseFloat(meters.toFixed(2)).toString(), inPart: "" };
+      } else {
+        // meters → ft+in
+        const meters = Number(main) || 0;
+        if (meters <= 0) return { main: "", inPart: "" };
+        const totalIn = meters / 0.0254;
+        const ft = Math.floor(totalIn / 12);
+        const inches = Math.round(totalIn % 12);
+        return { main: ft.toString(), inPart: inches > 0 ? inches.toString() : "" };
+      }
+    };
+
+    const w = convert(roomWidth, roomWidthIn);
+    const l = convert(roomLength, roomLengthIn);
+    const h = convert(roomHeight, roomHeightIn);
+    const sw = convert(showerWidth, showerWidthIn);
+    const sl = convert(showerLength, showerLengthIn);
+
+    setRoomWidth(w.main); setRoomWidthIn(w.inPart);
+    setRoomLength(l.main); setRoomLengthIn(l.inPart);
+    setRoomHeight(h.main); setRoomHeightIn(h.inPart);
+    setShowerWidth(sw.main); setShowerWidthIn(sw.inPart);
+    setShowerLength(sl.main); setShowerLengthIn(sl.inPart);
+    setMeasurementUnit(newUnit);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > 10 * 1024 * 1024) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          store.addMockupPhoto(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  /* Reusable dimension input — renders ft+in pair or single m input */
+  const DimensionInput = ({ label, value, valueIn, onChange, onChangeIn, placeholder }: {
+    label: string;
+    value: string;
+    valueIn: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChangeIn: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    placeholder?: string;
+  }) => (
+    <div>
+      <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-[#4a4a5a]">
+        <FaRuler className="text-xs text-[#2d5a3d]" />
+        {label} <span className="text-red-400">*</span>
+      </label>
+      {measurementUnit === "ft" ? (
+        <div className="flex gap-1.5">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder={placeholder || "0"}
+              value={value}
+              onChange={onChange}
+              className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white py-3 pl-4 pr-8 text-lg font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[#9a9aaa]">ft</span>
+          </div>
+          <div className="relative flex-1">
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0"
+              value={valueIn}
+              onChange={onChangeIn}
+              className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white py-3 pl-4 pr-8 text-lg font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[#9a9aaa]">in</span>
+          </div>
+        </div>
+      ) : (
+        <div className="relative">
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder={placeholder || "0"}
+            value={value}
+            onChange={onChange}
+            className="w-full rounded-xl border-2 border-[#e8e6e1] bg-white py-3 pl-4 pr-10 text-lg font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]"
+          />
+          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#9a9aaa]">m</span>
+        </div>
+      )}
+    </div>
+  );
+
+  /* Smaller dimension input for shower sub-question */
+  const SmallDimensionInput = ({ label, value, valueIn, onChange, onChangeIn }: {
+    label: string;
+    value: string;
+    valueIn: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChangeIn: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  }) => (
+    <div className="flex-1">
+      <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#4a4a5a]">
+        {label} <span className="text-red-400">*</span>
+      </label>
+      {measurementUnit === "ft" ? (
+        <div className="flex gap-1">
+          <div className="relative flex-1">
+            <input type="text" inputMode="decimal" placeholder="0" value={value} onChange={onChange}
+              className="w-full rounded-lg border-2 border-[#e8e6e1] bg-white py-2.5 pl-3 pr-7 text-base font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]" />
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[#9a9aaa]">ft</span>
+          </div>
+          <div className="relative flex-1">
+            <input type="text" inputMode="decimal" placeholder="0" value={valueIn} onChange={onChangeIn}
+              className="w-full rounded-lg border-2 border-[#e8e6e1] bg-white py-2.5 pl-3 pr-7 text-base font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]" />
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[#9a9aaa]">in</span>
+          </div>
+        </div>
+      ) : (
+        <div className="relative">
+          <input type="text" inputMode="decimal" placeholder="0" value={value} onChange={onChange}
+            className="w-full rounded-lg border-2 border-[#e8e6e1] bg-white py-2.5 pl-3 pr-8 text-base font-bold text-[#1a1a2e] outline-none transition focus:border-[#2d5a3d] focus:ring-1 focus:ring-[#2d5a3d]" />
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[#9a9aaa]">m</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const roomArea = computeArea(roomWidth, roomWidthIn, roomLength, roomLengthIn);
+  const showerArea = computeArea(showerWidth, showerWidthIn, showerLength, showerLengthIn);
 
   if (subStep === 0) {
     return (
@@ -1057,28 +1294,30 @@ function BudgetStep({ subStep }: { subStep: number }) {
   }
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">What is the room size?</h2>
+    <div className="space-y-10">
+      {/* ── Question 1: Bathroom Type ── */}
+      <div>
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">What is the bathroom type? <span className="text-red-400 text-lg">*</span></h2>
 
-      <div className="mt-5 grid grid-cols-2 gap-3">
-        {BATHROOM_SIZES.map((s) => {
-          const sizeIcon = {
-            "half-bath": <FaToilet className="text-lg" />,
-            "three-quarter": <FaShower className="text-lg" />,
-            "full-bath": <FaBath className="text-lg" />,
-            primary: <FaCrown className="text-lg" />,
-          }[s.id];
-          return (
-            <button
-              key={s.id}
-              onClick={() => setBathroomSize(s.id)}
-              className={`rounded-xl border-2 p-4 text-left transition ${
-                bathroomSize === s.id
-                  ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
-                  : "border-[#e8e6e1] hover:border-[#d5d3cd]"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2">
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          {BATHROOM_SIZES.map((s) => {
+            const sizeIcon = {
+              "half-bath": <FaToilet className="text-lg" />,
+              "three-quarter": <FaShower className="text-lg" />,
+              "full-bath": <FaBath className="text-lg" />,
+              primary: <FaCrown className="text-lg" />,
+            }[s.id];
+            const selected = bathroomSize === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setBathroomSize(selected ? "" as BathroomSize : s.id)}
+                className={`rounded-xl border-2 p-4 text-left transition ${
+                  selected
+                    ? "border-[#2d5a3d] bg-[#2d5a3d]/5"
+                    : "border-[#e8e6e1] hover:border-[#d5d3cd]"
+                }`}
+              >
                 <div className="flex items-center gap-3">
                   <span className="text-[#2d5a3d]">{sizeIcon}</span>
                   <div>
@@ -1086,14 +1325,124 @@ function BudgetStep({ subStep }: { subStep: number }) {
                     <div className="text-xs text-[#6a6a7a]">{s.desc}</div>
                   </div>
                 </div>
-                <div className="shrink-0 text-right font-medium text-[#2d5a3d]">
-                  <div className="text-sm">{s.sqft.replace(/ sqft$/, '')}</div>
-                  <div className="text-[10px] uppercase tracking-wide">sqft</div>
-                </div>
-              </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Question 2: Room Dimensions ── */}
+      <div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-[#1a1a2e]">What is the room size?</h2>
+          <div className="flex items-center rounded-lg border border-[#e8e6e1] bg-[#fafaf8] p-0.5">
+            <button
+              onClick={() => handleUnitToggle("ft")}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                measurementUnit === "ft"
+                  ? "bg-[#2d5a3d] text-white shadow-sm"
+                  : "text-[#6a6a7a] hover:text-[#1a1a2e]"
+              }`}
+            >
+              ft
             </button>
-          );
-        })}
+            <button
+              onClick={() => handleUnitToggle("m")}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                measurementUnit === "m"
+                  ? "bg-[#2d5a3d] text-white shadow-sm"
+                  : "text-[#6a6a7a] hover:text-[#1a1a2e]"
+              }`}
+            >
+              m
+            </button>
+          </div>
+        </div>
+        <p className="mt-1 text-sm text-[#6a6a7a]">Enter dimensions in {measurementUnit === "ft" ? "feet & inches" : "meters"}.</p>
+
+        <div className="mt-5 grid grid-cols-3 gap-4">
+          <DimensionInput label="Width" value={roomWidth} valueIn={roomWidthIn}
+            onChange={handleDimensionChange(setRoomWidth)} onChangeIn={handleDimensionChange(setRoomWidthIn)} />
+          <DimensionInput label="Length" value={roomLength} valueIn={roomLengthIn}
+            onChange={handleDimensionChange(setRoomLength)} onChangeIn={handleDimensionChange(setRoomLengthIn)} />
+          <DimensionInput label="Ceiling Height" value={roomHeight} valueIn={roomHeightIn}
+            onChange={handleDimensionChange(setRoomHeight)} onChangeIn={handleDimensionChange(setRoomHeightIn)}
+            placeholder={measurementUnit === "ft" ? "8" : "2.4"} />
+        </div>
+
+        {/* Computed area hint */}
+        {roomArea && (
+          <p className="mt-3 flex items-center gap-1.5 text-sm text-[#2d5a3d]">
+            <FaRulerCombined className="text-xs" />
+            {roomArea}
+          </p>
+        )}
+      </div>
+
+      {/* ── Sub-question: Shower / Tub area dimensions ── */}
+      {(bathroomSize === "three-quarter" || bathroomSize === "full-bath" || bathroomSize === "primary") && (
+        <div className="-mt-4 ml-5 rounded-xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
+          <h3 className="flex items-center gap-2 text-base font-semibold text-[#1a1a2e]">
+            {bathroomSize === "three-quarter" ? <FaShower className="text-sm text-[#2d5a3d]" /> : <FaBath className="text-sm text-[#2d5a3d]" />}
+            {bathroomSize === "three-quarter" ? "Shower area dimensions" : "Shower + tub area dimensions"}
+          </h3>
+          <div className="mt-3 flex items-end gap-3">
+            <SmallDimensionInput label="Width" value={showerWidth} valueIn={showerWidthIn}
+              onChange={handleDimensionChange(setShowerWidth)} onChangeIn={handleDimensionChange(setShowerWidthIn)} />
+            <span className="pb-3 text-sm font-medium text-[#9a9aaa]">×</span>
+            <SmallDimensionInput label="Length" value={showerLength} valueIn={showerLengthIn}
+              onChange={handleDimensionChange(setShowerLength)} onChangeIn={handleDimensionChange(setShowerLengthIn)} />
+            {showerArea && (
+              <span className="pb-3 flex items-center gap-1 text-sm font-medium text-[#2d5a3d] whitespace-nowrap">
+                = {showerArea.replace("≈ ", "")}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Question 3: Upload Bathroom Photos ── */}
+      <div>
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">Upload your bathroom photos</h2>
+        <p className="mt-1 text-sm text-[#6a6a7a]">Upload at least 1 angle of your current bathroom.</p>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleFileUpload}
+        />
+
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          {store.mockupBathroomPhotos.map((photo, i) => (
+            <div key={i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
+              <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
+              <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
+              <button
+                onClick={() => store.removeMockupPhoto(i)}
+                className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+              >
+                <FaXmark className="text-[10px]" />
+              </button>
+              <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                Angle {i + 1}
+              </span>
+            </div>
+          ))}
+
+          {/* Add photo button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+          >
+            <FaUpload className="text-lg text-[#9a9aaa]" />
+            <span className="text-[10px] font-medium text-[#6a6a7a]">
+              {store.mockupBathroomPhotos.length === 0 ? "Upload Photo" : "Add Another"}
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -2057,7 +2406,6 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
 /* ── Real Mockup Section ── */
 function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }) {
   const store = useWizardStore();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [excludedIndices, setExcludedIndices] = useState<Set<number>>(new Set());
 
@@ -2077,33 +2425,6 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
   };
 
   const includedProducts = selectedProducts.filter((_, i) => !excludedIndices.has(i));
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    setError(null);
-
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith("image/")) {
-        setError("Please upload image files only (JPG, PNG, WebP).");
-        return;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        setError("Image must be under 10 MB.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          store.addMockupPhoto(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Reset input so the same file can be re-selected
-    e.target.value = "";
-  };
 
   const handleGenerateMockup = async () => {
     if (store.mockupBathroomPhotos.length === 0) {
@@ -2155,60 +2476,40 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
     <div className="mt-6">
       <h2 className="text-2xl font-bold text-[#1a1a2e]">Real Mockup</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
-        Upload photos of your current bathroom, then generate a realistic AI mockup with your selected items.
+        Generate a realistic AI mockup with your selected items using the bathroom photos you uploaded in the Budget step.
       </p>
 
       {/* ── Input section: photos + items side by side ── */}
       <div className="mt-6 rounded-2xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
         <div className="grid gap-6 lg:grid-cols-[1fr_1px_1fr]">
-          {/* ── Left: Upload bathroom photos (larger) ── */}
+          {/* ── Left: Read-only bathroom photos ── */}
           <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
               <FaCamera className="text-xs text-[#2d5a3d]" />
               Your Bathroom Photos
             </h3>
             <p className="mt-1 text-xs text-[#9a9aaa]">
-              Upload at least 1 angle. Multiple angles give better results.
+              Uploaded in the Budget step. Go back to edit.
             </p>
 
-            {/* Upload area */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
-              {store.mockupBathroomPhotos.map((photo, i) => (
-                <div key={i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
-                  <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
-                  <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
-                  <button
-                    onClick={() => store.removeMockupPhoto(i)}
-                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
-                  >
-                    <FaXmark className="text-[10px]" />
-                  </button>
-                  <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
-                    Angle {i + 1}
-                  </span>
-                </div>
-              ))}
-
-              {/* Add photo button */}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
-              >
-                <FaUpload className="text-lg text-[#9a9aaa]" />
-                <span className="text-[10px] font-medium text-[#6a6a7a]">
-                  {store.mockupBathroomPhotos.length === 0 ? "Upload Photo" : "Add Another"}
-                </span>
-              </button>
-            </div>
+            {store.mockupBathroomPhotos.length === 0 ? (
+              <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] p-6 text-center">
+                <FaCamera className="text-xl text-[#d5d3cd]" />
+                <p className="text-xs text-[#9a9aaa]">No photos uploaded yet.</p>
+                <p className="text-[10px] text-[#c5c3bd]">Go back to the Budget step to upload bathroom photos.</p>
+              </div>
+            ) : (
+              <div className="mt-3 grid grid-cols-2 gap-2.5">
+                {store.mockupBathroomPhotos.map((photo, i) => (
+                  <div key={i} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
+                    <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
+                    <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                      Angle {i + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Vertical divider */}
