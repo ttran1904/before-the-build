@@ -1177,7 +1177,7 @@ function GoalStep({ subStep }: { subStep: number }) {
               onChange={handleFileUpload}
             />
 
-            <div className="mt-5 grid grid-cols-3 gap-3">
+            <div className="mt-5 grid grid-cols-2 gap-3">
               {store.mockupBathroomPhotos.map((photo, i) => (
                 <div key={i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
                   <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
