@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FaCompass, FaPenRuler, FaComments, FaBookOpen } from "react-icons/fa6";
+import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus } from "react-icons/fa6";
 import type { IconType } from "react-icons";
 
 export default function DashboardPage() {
@@ -14,56 +14,94 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Active Project */}
-      <div className="rounded-2xl border border-[#e8e6e1] bg-white p-6">
-        <h2 className="text-lg font-semibold text-[#1a1a2e]">
-          Current Project
-        </h2>
-        <p className="mt-2 text-sm text-[#6a6a7a]">
-          No active project yet. Start by creating one!
-        </p>
-        <Link
-          href="/dashboard/projects/new"
-          className="mt-4 inline-block rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-medium text-white hover:bg-[#234a31]"
-        >
-          + New Project
-        </Link>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <QuickAction
+          href="/dashboard/build-books"
+          icon={FaBookOpen}
+          label="Build Books"
+          description="View and edit all your build books"
+        />
+        <QuickAction
+          href="/dashboard/moodboards"
+          icon={FaTableCellsLarge}
+          label="Moodboards"
+          description="Browse and manage your saved moodboards"
+        />
+        <QuickAction
+          href="/explore"
+          icon={FaCompass}
+          label="Explore Ideas"
+          description="Discover styles and inspiration"
+        />
       </div>
 
-      {/* Quick Actions */}
+      {/* Recent Build Books */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold text-[#1a1a2e]">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <QuickAction href="/explore" icon={FaCompass} label="Explore Styles" />
-          <QuickAction href="/design" icon={FaPenRuler} label="Design Room" />
-          <QuickAction href="/chat" icon={FaComments} label="Ask AI" />
-          <QuickAction href="/build-book" icon={FaBookOpen} label="Build Book" />
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[#1a1a2e]">Recent Build Books</h2>
+          <Link href="/dashboard/build-books" className="text-sm font-medium text-[#2d5a3d] hover:underline">
+            View All →
+          </Link>
+        </div>
+        <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center">
+          <FaBookOpen className="mx-auto text-3xl text-[#d5d3cd]" />
+          <p className="mt-3 text-sm text-[#9a9aaa]">No build books yet.</p>
+          <Link
+            href="/explore"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-medium text-white hover:bg-[#234a31]"
+          >
+            <FaPlus className="text-xs" /> Start Your First Build Book
+          </Link>
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Moodboards */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold text-[#1a1a2e]">
-          Recent Activity
-        </h2>
-        <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center text-sm text-[#9a9aaa]">
-          Your recent activity will show up here.
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[#1a1a2e]">Recent Moodboards</h2>
+          <Link href="/dashboard/moodboards" className="text-sm font-medium text-[#2d5a3d] hover:underline">
+            View All →
+          </Link>
+        </div>
+        <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center">
+          <FaTableCellsLarge className="mx-auto text-3xl text-[#d5d3cd]" />
+          <p className="mt-3 text-sm text-[#9a9aaa]">No moodboards yet. Save inspiration to get started!</p>
+          <Link
+            href="/explore"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-medium text-white hover:bg-[#234a31]"
+          >
+            <FaCompass className="text-xs" /> Explore Ideas
+          </Link>
         </div>
       </div>
     </div>
   );
 }
 
-function QuickAction({ href, icon: Icon, label }: { href: string; icon: IconType; label: string }) {
+function QuickAction({
+  href,
+  icon: Icon,
+  label,
+  description,
+}: {
+  href: string;
+  icon: IconType;
+  label: string;
+  description: string;
+}) {
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-2 rounded-xl border border-[#e8e6e1] bg-white p-6 transition hover:border-[#d5d3cd] hover:shadow-sm"
+      className="flex items-start gap-4 rounded-xl border border-[#e8e6e1] bg-white p-5 transition hover:border-[#d5d3cd] hover:shadow-sm"
     >
-      <Icon className="text-2xl text-[#2d5a3d]" />
-      <span className="text-sm font-medium text-[#4a4a5a]">{label}</span>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#2d5a3d]/10">
+        <Icon className="text-lg text-[#2d5a3d]" />
+      </span>
+      <div>
+        <span className="text-sm font-semibold text-[#1a1a2e]">{label}</span>
+        <p className="mt-0.5 text-xs text-[#6a6a7a]">{description}</p>
+      </div>
     </Link>
   );
 }

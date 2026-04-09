@@ -129,12 +129,6 @@ export default function Home() {
             <Link href="/sign-in" className="rounded-full border border-[#d5d3cd] px-5 py-2 text-sm font-medium text-[#1a1a2e] transition hover:bg-[#f8f7f4]">
               Sign In
             </Link>
-            <Link
-              href="/dashboard"
-              className="rounded-full bg-[#2d5a3d] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#234a31]"
-            >
-              Get Started Free
-            </Link>
           </div>
         </div>
       </header>
@@ -157,16 +151,11 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
               <Link
-                href="/explore"
+                href="/sign-in?redirect=/explore"
                 className="rounded-full bg-[#2d5a3d] px-8 py-3.5 text-center text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31]"
               >
                 Start Your Renovation
               </Link>
-            </div>
-            <div className="mt-6 flex items-center gap-4 text-sm text-[#7a7a8a] sm:justify-center lg:justify-start">
-              <span className="flex items-center gap-1.5">✓ Free to start</span>
-              <span className="flex items-center gap-1.5">✓ AI-powered</span>
-              <span className="flex items-center gap-1.5">✓ No credit card</span>
             </div>
           </div>
           {/* Hero mock — design visualization */}
@@ -744,10 +733,10 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
-              href="/dashboard"
+              href="/sign-in?redirect=/explore"
               className="rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-[#2d5a3d] transition hover:bg-zinc-100"
             >
-              Get Started Free
+              Start Your Renovation
             </Link>
             <Link
               href="/explore"

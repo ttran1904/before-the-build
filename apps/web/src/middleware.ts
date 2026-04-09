@@ -31,12 +31,13 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Protected routes — redirect to sign-in if not authenticated
-  const protectedPaths = ["/dashboard", "/design", "/chat", "/build-book", "/renovate"];
+  const protectedPaths = ["/dashboard", "/design", "/chat", "/build-book", "/renovate", "/explore"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";
+    url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
