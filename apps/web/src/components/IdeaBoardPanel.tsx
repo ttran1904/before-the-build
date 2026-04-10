@@ -5,7 +5,7 @@ import Image from "next/image";
 import {
   FaXmark, FaTrash, FaArrowRight, FaHeart,
   FaChevronLeft, FaPen, FaFolderOpen, FaCircle, FaRegCircle,
-  FaEye,
+  FaEye, FaPinterest,
 } from "react-icons/fa6";
 import { useIdeaBoardStore } from "@/lib/store";
 import Link from "next/link";
@@ -140,6 +140,11 @@ export default function IdeaBoardPanel({ open, onClose }: IdeaBoardPanelProps) {
             <span className="rounded-full bg-[#2d5a3d]/10 px-2 py-0.5 text-xs font-semibold text-[#2d5a3d]">
               {view === "collections" ? boards.length : activeBoardItems.length}
             </span>
+            {view === "board" && activeBoard?.source === "pinterest" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#E60023]/10 px-2 py-0.5 text-xs font-semibold text-[#E60023]">
+                <FaPinterest className="text-[10px]" /> Pinterest
+              </span>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -286,6 +291,13 @@ export default function IdeaBoardPanel({ open, onClose }: IdeaBoardPanelProps) {
                           <FaTrash className="text-[10px]" />
                         </button>
                       </div>
+
+                      {/* Pinterest badge */}
+                      {board.source === "pinterest" && (
+                        <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm group-hover:hidden">
+                          <FaPinterest className="text-xs text-[#E60023]" />
+                        </div>
+                      )}
                     </div>
                   );
                 })}

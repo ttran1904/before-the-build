@@ -68,7 +68,7 @@ export default function IdeaBoardsPage() {
     setImportingBoardId(pBoard.id);
     try {
       // Create a local board
-      const localBoardId = createBoard(pBoard.name);
+      const localBoardId = createBoard(pBoard.name, "pinterest");
       // Add each pin as an item
       for (const pin of pBoard.pins) {
         if (pin.imageUrl) {
@@ -162,6 +162,11 @@ export default function IdeaBoardsPage() {
                       ) : (
                         <div className="flex h-full items-center justify-center">
                           <FaTableCellsLarge className="text-3xl text-[#d5d3cd]" />
+                        </div>
+                      )}
+                      {board.source === "pinterest" && (
+                        <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm">
+                          <FaPinterest className="text-sm text-[#E60023]" />
                         </div>
                       )}
                     </div>

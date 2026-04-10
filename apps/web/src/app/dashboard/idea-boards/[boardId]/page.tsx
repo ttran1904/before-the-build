@@ -3,7 +3,7 @@
 import { use } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FaTableCellsLarge, FaTrashCan } from "react-icons/fa6";
+import { FaTableCellsLarge, FaTrashCan, FaPinterest } from "react-icons/fa6";
 import { useIdeaBoardStore } from "@/lib/store";
 
 export default function BoardDetailPage({
@@ -34,7 +34,14 @@ export default function BoardDetailPage({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#1a1a2e]">{board.name}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-[#1a1a2e]">{board.name}</h1>
+          {board.source === "pinterest" && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E60023]/10 px-3 py-1 text-xs font-semibold text-[#E60023]">
+              <FaPinterest className="text-sm" /> From Pinterest
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-[#6a6a7a]">
           {boardItems.length} idea{boardItems.length !== 1 ? "s" : ""}
         </p>
