@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck } from "react-icons/fa6";
-import { useMoodboardStore } from "@/lib/store";
+import { FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck } from "react-icons/fa6";
+import { useIdeaBoardStore } from "@/lib/store";
 
 interface PinterestPin {
   id: string;
@@ -20,12 +20,12 @@ interface PinterestBoard {
   pins: PinterestPin[];
 }
 
-export default function MoodboardsPage() {
-  const boards = useMoodboardStore((s) => s.boards);
-  const items = useMoodboardStore((s) => s.items);
-  const getBoardItems = useMoodboardStore((s) => s.getBoardItems);
-  const createBoard = useMoodboardStore((s) => s.createBoard);
-  const saveItemToBoard = useMoodboardStore((s) => s.saveItemToBoard);
+export default function IdeaBoardsPage() {
+  const boards = useIdeaBoardStore((s) => s.boards);
+  const items = useIdeaBoardStore((s) => s.items);
+  const getBoardItems = useIdeaBoardStore((s) => s.getBoardItems);
+  const createBoard = useIdeaBoardStore((s) => s.createBoard);
+  const saveItemToBoard = useIdeaBoardStore((s) => s.saveItemToBoard);
   const unsortedItems = items.filter((i) => i.boardIds.length === 0);
   const hasData = boards.length > 0 || items.length > 0;
 
@@ -111,12 +111,21 @@ export default function MoodboardsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {pinterestConnected && (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-[#2d5a3d]">
+              <FaCircleCheck className="text-sm" /> Pinterest Connected
+            </span>
+          )}
           <button
             onClick={handleOpenPinterest}
-            className="inline-flex items-center gap-2 rounded-lg border border-[#e8e6e1] bg-white px-4 py-2.5 text-sm font-semibold text-[#E60023] transition hover:bg-[#fef2f2]"
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+              pinterestConnected
+                ? "border border-[#E60023]/20 bg-white text-[#E60023] hover:bg-[#fef2f2]"
+                : "bg-[#E60023] text-white hover:bg-[#ad081b]"
+            }`}
           >
             <FaPinterest className="text-base" />
-            {pinterestConnected ? "Import from Pinterest" : "Connect Pinterest"}
+            {pinterestConnected ? "Import Boards" : "Connect Pinterest"}
           </button>
           <Link
             href="/explore"
@@ -137,7 +146,7 @@ export default function MoodboardsPage() {
                 return (
                   <Link
                     key={board.id}
-                    href={`/dashboard/moodboards/${board.id}`}
+                    href={`/dashboard/idea-boards/${board.id}`}
                     className="group"
                   >
                     <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#f0ede8]">

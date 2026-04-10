@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { useWizardStore, useMoodboardStore } from "@/lib/store";
+import { useWizardStore, useIdeaBoardStore } from "@/lib/store";
 import {
   saveWizardState,
   loadWizardState,
-  saveMoodboards,
-  loadMoodboards,
+  saveIdeaBoards,
+  loadIdeaBoards,
   saveBuildBook,
 } from "@/lib/supabase-sync";
 
@@ -24,7 +24,7 @@ export function useSupabaseSync() {
   const { user, loading: authLoading } = useAuth();
   const hasLoadedRef = useRef(false);
   const wizardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const moodboardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ideaBoardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Load from Supabase on login ──
   useEffect(() => {
@@ -43,15 +43,15 @@ export function useSupabaseSync() {
         }
       }
 
-      // Load moodboards
-      const remoteMoodboards = await loadMoodboards();
-      if (remoteMoodboards) {
-        const localMoodboard = useMoodboardStore.getState();
-        const localIsEmpty = localMoodboard.boards.length === 0;
-        if (localIsEmpty && remoteMoodboards.boards.length > 0) {
-          useMoodboardStore.setState({
-            boards: remoteMoodboards.boards,
-            items: remoteMoodboards.items,
+      // Load idea boards
+      const remoteIdeaBoards = await loadIdeaBoards();
+      if (remoteIdeaBoards) {
+        const localIdeaBoard = useIdeaBoardStore.getState();
+        const localIsEmpty = localIdeaBoard.boards.length === 0;
+        if (localIsEmpty && remoteIdeaBoards.boards.length > 0) {
+          useIdeaBoardStore.setState({
+            boards: remoteIdeaBoards.boards,
+            items: remoteIdeaBoards.items,
           });
         }
       }
@@ -75,13 +75,13 @@ export function useSupabaseSync() {
     }, DEBOUNCE_MS);
   }, [user]);
 
-  // ── Debounced save: moodboard store ──
-  const debouncedSaveMoodboard = useCallback(() => {
+  // ── Debounced save: idea board store ──
+  const debouncedSaveIdeaBoard = useCallback(() => {
     if (!user) return;
-    if (moodboardTimerRef.current) clearTimeout(moodboardTimerRef.current);
-    moodboardTimerRef.current = setTimeout(() => {
-      const { boards, items } = useMoodboardStore.getState();
-      saveMoodboards(boards, items).catch(console.error);
+    if (ideaBoardTimerRef.current) clearTimeout(ideaBoardTimerRef.current);
+    ideaBoardTimerRef.current = setTimeout(() => {
+      const { boards, items } = useIdeaBoardStore.getState();
+      saveIdeaBoards(boards, items).catch(console.error);
     }, DEBOUNCE_MS);
   }, [user]);
 
@@ -90,15 +90,15 @@ export function useSupabaseSync() {
     if (!user) return;
 
     const unsubWizard = useWizardStore.subscribe(debouncedSaveWizard);
-    const unsubMoodboard = useMoodboardStore.subscribe(debouncedSaveMoodboard);
+    const unsubIdeaBoard = useIdeaBoardStore.subscribe(debouncedSaveIdeaBoard);
 
     return () => {
       unsubWizard();
-      unsubMoodboard();
+      unsubIdeaBoard();
       if (wizardTimerRef.current) clearTimeout(wizardTimerRef.current);
-      if (moodboardTimerRef.current) clearTimeout(moodboardTimerRef.current);
+      if (ideaBoardTimerRef.current) clearTimeout(ideaBoardTimerRef.current);
     };
-  }, [user, debouncedSaveWizard, debouncedSaveMoodboard]);
+  }, [user, debouncedSaveWizard, debouncedSaveIdeaBoard]);
 }
 
 /**

@@ -213,7 +213,7 @@ export default function Home() {
             <div>
               <h2 className="text-3xl font-bold text-[#1a1a2e]">Trending Designs</h2>
               <p className="mt-2 text-[#6a6a7a]">
-                Explore curated home styles and save your favorites to mood boards
+                Explore curated home styles and save your favorites to idea boards
               </p>
             </div>
             <Link href="/explore" className="hidden text-sm font-semibold text-[#2d5a3d] hover:underline md:block">
@@ -270,7 +270,7 @@ export default function Home() {
                 step: "02",
                 icon: <FaPalette className="text-xl text-[#3d7a4d]" />,
                 title: "Explore & Design",
-                desc: "Browse trending styles, save to mood boards, and design rooms in interactive 2D & 3D views.",
+                desc: "Browse trending styles, save to idea boards, and design rooms in interactive 2D & 3D views.",
                 color: "#bde0c0",
               },
               {

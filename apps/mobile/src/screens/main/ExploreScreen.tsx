@@ -63,20 +63,20 @@ export function ExploreScreen() {
 
       {/* Inspiration Grid */}
       <View style={styles.gridContainer}>
-        {/* TODO: Fetch from mood board / search API */}
+        {/* TODO: Fetch from idea board / search API */}
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>🔍</Text>
           <Text style={styles.emptyTitle}>Discover Ideas</Text>
           <Text style={styles.emptyText}>
             Search across Pinterest, Instagram, Etsy, and more to build your
-            mood board and find the perfect aesthetic for your space.
+            idea board and find the perfect aesthetic for your space.
           </Text>
         </View>
       </View>
 
-      {/* Save to Mood Board FAB */}
+      {/* Save to Idea Board FAB */}
       <TouchableOpacity style={styles.fab}>
-        <Text style={styles.fabText}>+ Mood Board</Text>
+        <Text style={styles.fabText}>+ Idea Board</Text>
       </TouchableOpacity>
     </View>
   );

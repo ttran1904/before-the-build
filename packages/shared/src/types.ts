@@ -136,7 +136,7 @@ export interface AnchorPoint {
   label?: string;
 }
 
-// ---- Inspiration & Mood Board ----
+// ---- Inspiration & Idea Boards ----
 
 export interface InspirationItem {
   id: string;
@@ -149,7 +149,7 @@ export interface InspirationItem {
   createdAt: string;
 }
 
-export interface MoodBoard {
+export interface IdeaBoard {
   id: string;
   projectId: string;
   name: string;

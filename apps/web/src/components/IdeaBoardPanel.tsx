@@ -7,17 +7,17 @@ import {
   FaChevronLeft, FaPen, FaFolderOpen, FaCircle, FaRegCircle,
   FaEye,
 } from "react-icons/fa6";
-import { useMoodboardStore } from "@/lib/store";
+import { useIdeaBoardStore } from "@/lib/store";
 import Link from "next/link";
 
-interface MoodboardPanelProps {
+interface IdeaBoardPanelProps {
   open: boolean;
   onClose: () => void;
 }
 
 type PanelView = "collections" | "board";
 
-export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
+export default function IdeaBoardPanel({ open, onClose }: IdeaBoardPanelProps) {
   const {
     items,
     boards,
@@ -26,7 +26,7 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
     renameBoard,
     removeItemFromBoard,
     getBoardItems,
-  } = useMoodboardStore();
+  } = useIdeaBoardStore();
 
   const [view, setView] = useState<PanelView>("collections");
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);

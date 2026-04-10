@@ -4,7 +4,7 @@ import { use } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { FaTableCellsLarge, FaTrashCan } from "react-icons/fa6";
-import { useMoodboardStore } from "@/lib/store";
+import { useIdeaBoardStore } from "@/lib/store";
 
 export default function BoardDetailPage({
   params,
@@ -12,9 +12,9 @@ export default function BoardDetailPage({
   params: Promise<{ boardId: string }>;
 }) {
   const { boardId } = use(params);
-  const boards = useMoodboardStore((s) => s.boards);
-  const getBoardItems = useMoodboardStore((s) => s.getBoardItems);
-  const removeItemFromBoard = useMoodboardStore((s) => s.removeItemFromBoard);
+  const boards = useIdeaBoardStore((s) => s.boards);
+  const getBoardItems = useIdeaBoardStore((s) => s.getBoardItems);
+  const removeItemFromBoard = useIdeaBoardStore((s) => s.removeItemFromBoard);
 
   const board = boards.find((b) => b.id === boardId);
   const boardItems = getBoardItems(boardId);

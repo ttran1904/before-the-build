@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   if (!code || !state || state !== savedState) {
     return NextResponse.redirect(
-      new URL("/dashboard/moodboards?pinterest=error&reason=invalid_state", req.nextUrl.origin)
+      new URL("/dashboard/idea-boards?pinterest=error&reason=invalid_state", req.nextUrl.origin)
     );
   }
 
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   if (!appId || !appSecret) {
     return NextResponse.redirect(
-      new URL("/dashboard/moodboards?pinterest=error&reason=not_configured", req.nextUrl.origin)
+      new URL("/dashboard/idea-boards?pinterest=error&reason=not_configured", req.nextUrl.origin)
     );
   }
 
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       const err = await tokenRes.text();
       console.error("Pinterest token exchange failed:", err);
       return NextResponse.redirect(
-        new URL("/dashboard/moodboards?pinterest=error&reason=token_failed", req.nextUrl.origin)
+        new URL("/dashboard/idea-boards?pinterest=error&reason=token_failed", req.nextUrl.origin)
       );
     }
 
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
 
     // Store tokens in secure HTTP-only cookies
     const res = NextResponse.redirect(
-      new URL("/dashboard/moodboards?pinterest=connected", req.nextUrl.origin)
+      new URL("/dashboard/idea-boards?pinterest=connected", req.nextUrl.origin)
     );
 
     res.cookies.set("pinterest_access_token", tokenData.access_token, {
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("Pinterest OAuth error:", err);
     return NextResponse.redirect(
-      new URL("/dashboard/moodboards?pinterest=error&reason=exception", req.nextUrl.origin)
+      new URL("/dashboard/idea-boards?pinterest=error&reason=exception", req.nextUrl.origin)
     );
   }
 }

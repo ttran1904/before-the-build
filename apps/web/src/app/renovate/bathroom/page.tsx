@@ -20,7 +20,7 @@ import {
   FaCamera, FaUpload, FaPhotoFilm, FaFilePdf,
   FaChevronDown, FaChevronUp, FaTableList, FaChartPie,
 } from "react-icons/fa6";
-import { useWizardStore, useMoodboardStore, type BathroomScope, type BudgetTier, type MoodboardItem } from "@/lib/store";
+import { useWizardStore, useIdeaBoardStore, type BathroomScope, type BudgetTier, type IdeaBoardItem } from "@/lib/store";
 import { BATHROOM_SIZES, type BathroomSize } from "@/lib/room-sizes/bathroom";
 import { computeBudgetGraph, type BudgetGraphResult } from "@/lib/budget-engine/budget-graph";
 import { ftInToMStr, mStrToFtIn, displayArea } from "@/lib/units";
@@ -1448,7 +1448,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
   dragPositions: Record<number, { x: number; y: number }>;
   setDragPositions: React.Dispatch<React.SetStateAction<Record<number, { x: number; y: number }>>>;
 }) {
-  const { items, removeItem } = useMoodboardStore();
+  const { items, removeItem } = useIdeaBoardStore();
   const { mustHaves, niceToHaves, setPriceOverride, removePriceOverride } = useWizardStore();
   const [selectingImageId, setSelectingImageId] = useState<string | null>(null);
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);

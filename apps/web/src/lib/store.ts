@@ -206,9 +206,9 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>()(
   ),
 );
 
-/* ── Moodboard State (Multi-Board) ── */
+/* ── Idea Board State (Multi-Board) ── */
 
-export interface MoodboardItem {
+export interface IdeaBoardItem {
   id: string;
   imageUrl: string;
   sourceUrl?: string;
@@ -219,31 +219,31 @@ export interface MoodboardItem {
   boardIds: string[];
 }
 
-export interface MoodboardBoard {
+export interface IdeaBoard {
   id: string;
   name: string;
   createdAt: number;
 }
 
-interface MoodboardState {
-  items: MoodboardItem[];
-  boards: MoodboardBoard[];
-  addItem: (item: MoodboardItem) => void;
+interface IdeaBoardState {
+  items: IdeaBoardItem[];
+  boards: IdeaBoard[];
+  addItem: (item: IdeaBoardItem) => void;
   removeItem: (id: string) => void;
-  toggleItem: (item: MoodboardItem) => void;
+  toggleItem: (item: IdeaBoardItem) => void;
   createBoard: (name: string) => string;
   removeBoard: (boardId: string) => void;
   renameBoard: (boardId: string, name: string) => void;
-  saveItemToBoard: (item: Omit<MoodboardItem, "boardIds" | "saved">, boardId: string) => void;
+  saveItemToBoard: (item: Omit<IdeaBoardItem, "boardIds" | "saved">, boardId: string) => void;
   removeItemFromBoard: (itemId: string, boardId: string) => void;
   getItemBoards: (itemId: string) => string[];
-  getBoardItems: (boardId: string) => MoodboardItem[];
+  getBoardItems: (boardId: string) => IdeaBoardItem[];
   getSuggestedBoardNames: (tags: string[]) => string[];
 }
 
 let boardCounter = 0;
 
-export const useMoodboardStore = create<MoodboardState>()(
+export const useIdeaBoardStore = create<IdeaBoardState>()(
   persist(
     (set, get) => ({
       items: [],
@@ -263,7 +263,7 @@ export const useMoodboardStore = create<MoodboardState>()(
 
   createBoard: (name: string) => {
     const id = `board_${Date.now()}_${++boardCounter}`;
-    const board: MoodboardBoard = { id, name, createdAt: Date.now() };
+    const board: IdeaBoard = { id, name, createdAt: Date.now() };
     set({ boards: [...get().boards, board] });
     return id;
   },

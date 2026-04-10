@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest } from "react-icons/fa6";
-import { useMoodboardStore } from "@/lib/store";
+import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight } from "react-icons/fa6";
+import { useIdeaBoardStore } from "@/lib/store";
 import { loadBuildBooks } from "@/lib/supabase-sync";
 
 interface BuildBookEntry {
@@ -17,9 +17,11 @@ interface BuildBookEntry {
 }
 
 export default function DashboardPage() {
-  const boards = useMoodboardStore((s) => s.boards);
-  const items = useMoodboardStore((s) => s.items);
-  const getBoardItems = useMoodboardStore((s) => s.getBoardItems);
+  const boards = useIdeaBoardStore((s) => s.boards);
+  const items = useIdeaBoardStore((s) => s.items);
+  const getBoardItems = useIdeaBoardStore((s) => s.getBoardItems);
+  const createBoard = useIdeaBoardStore((s) => s.createBoard);
+  const saveItemToBoard = useIdeaBoardStore((s) => s.saveItemToBoard);
 
   // Build books from Supabase
   const [buildBooks, setBuildBooks] = useState<BuildBookEntry[]>([]);
@@ -43,11 +45,69 @@ export default function DashboardPage() {
 
   // Pinterest connection check
   const [pinterestConnected, setPinterestConnected] = useState<boolean | null>(null);
+  const [pinterestBoards, setPinterestBoards] = useState<{ id: string; name: string; pinCount: number; pins: { id: string; title: string; imageUrl: string; sourceUrl: string }[] }[]>([]);
+  const [pinterestLoading, setPinterestLoading] = useState(false);
+  const [importingBoardId, setImportingBoardId] = useState<string | null>(null);
+  const [importedBoardIds, setImportedBoardIds] = useState<Set<string>>(new Set());
+  const [showPinterestModal, setShowPinterestModal] = useState(false);
+
   useEffect(() => {
     fetch("/api/pinterest/status").then((r) => r.json()).then((d) => {
       setPinterestConnected(d.connected);
     }).catch(() => setPinterestConnected(false));
   }, []);
+
+  const fetchPinterestBoards = useCallback(async () => {
+    setPinterestLoading(true);
+    try {
+      const res = await fetch("/api/pinterest/boards");
+      const data = await res.json();
+      if (data.connected) {
+        setPinterestConnected(true);
+        setPinterestBoards(data.boards || []);
+      } else if (data.expired) {
+        setPinterestConnected(false);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setPinterestLoading(false);
+    }
+  }, []);
+
+  const handleImportBoard = async (pBoard: typeof pinterestBoards[0]) => {
+    setImportingBoardId(pBoard.id);
+    try {
+      const localBoardId = createBoard(pBoard.name);
+      for (const pin of pBoard.pins) {
+        if (pin.imageUrl) {
+          saveItemToBoard(
+            {
+              id: `pinterest_${pin.id}`,
+              imageUrl: pin.imageUrl,
+              sourceUrl: pin.sourceUrl || "",
+              source: "pinterest",
+              tags: ["pinterest", pBoard.name.toLowerCase()],
+              title: pin.title,
+            },
+            localBoardId,
+          );
+        }
+      }
+      setImportedBoardIds((prev) => new Set(prev).add(pBoard.id));
+    } finally {
+      setImportingBoardId(null);
+    }
+  };
+
+  const handleOpenPinterest = async () => {
+    if (pinterestConnected) {
+      setShowPinterestModal(true);
+      await fetchPinterestBoards();
+    } else {
+      window.location.href = "/api/pinterest/auth";
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -67,10 +127,13 @@ export default function DashboardPage() {
 
       {/* Build Books */}
       <div>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center gap-3">
           <h2 className="text-lg font-semibold text-[#1a1a2e]">Build Books</h2>
-          <Link href="/dashboard/build-books" className="text-sm font-medium text-[#2d5a3d] hover:underline">
-            View All →
+          <Link
+            href="/dashboard/build-books"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#f0ede8] px-3 py-1 text-xs font-medium text-[#6a6a7a] transition hover:bg-[#e8e6e1] hover:text-[#1a1a2e]"
+          >
+            See all <FaArrowRight className="text-[8px]" />
           </Link>
         </div>
         {buildBooksLoaded && buildBooks.length > 0 ? (
@@ -129,34 +192,29 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Pinterest Connect Banner */}
-      {pinterestConnected === false && (
-        <div className="flex items-center gap-4 rounded-xl border border-[#e8e6e1] bg-white p-5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#E60023]/10">
-            <FaPinterest className="text-xl text-[#E60023]" />
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-[#1a1a2e]">Import ideas from Pinterest</p>
-            <p className="mt-0.5 text-sm text-[#6a6a7a]">
-              Connect your Pinterest account to bring in your saved boards and pins.
-            </p>
-          </div>
-          <a
-            href="/api/pinterest/auth"
-            className="inline-flex items-center gap-2 rounded-lg bg-[#E60023] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#ad081b]"
-          >
-            <FaPinterest className="text-sm" /> Connect Pinterest
-          </a>
-        </div>
-      )}
-
       {/* Idea Boards */}
       <div>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center gap-3">
           <h2 className="text-lg font-semibold text-[#1a1a2e]">Idea Boards</h2>
-          <Link href="/dashboard/moodboards" className="text-sm font-medium text-[#2d5a3d] hover:underline">
-            View All →
+          <Link
+            href="/dashboard/idea-boards"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#f0ede8] px-3 py-1 text-xs font-medium text-[#6a6a7a] transition hover:bg-[#e8e6e1] hover:text-[#1a1a2e]"
+          >
+            See all <FaArrowRight className="text-[8px]" />
           </Link>
+          {pinterestConnected !== null && (
+            <button
+              onClick={handleOpenPinterest}
+              className={`ml-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                pinterestConnected
+                  ? "bg-[#E60023]/5 text-[#E60023] hover:bg-[#E60023]/10"
+                  : "bg-[#E60023] text-white hover:bg-[#ad081b]"
+              }`}
+            >
+              <FaPinterest className="text-[10px]" />
+              {pinterestConnected ? "Import Boards" : "Connect Pinterest"}
+            </button>
+          )}
         </div>
 
         {hasAnyBoardData ? (
@@ -169,7 +227,7 @@ export default function DashboardPage() {
                   return (
                     <Link
                       key={board.id}
-                      href={`/dashboard/moodboards/${board.id}`}
+                      href={`/dashboard/idea-boards/${board.id}`}
                       className="group"
                     >
                       <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#f0ede8]">
@@ -241,6 +299,104 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Pinterest Import Modal */}
+      {showPinterestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-[#1a1a2e]">
+                <FaPinterest className="text-[#E60023]" />
+                Import from Pinterest
+              </h2>
+              <button
+                onClick={() => setShowPinterestModal(false)}
+                className="rounded-lg p-1.5 text-[#9a9aaa] transition hover:bg-[#f0ede8] hover:text-[#1a1a2e]"
+              >
+                ✕
+              </button>
+            </div>
+
+            {pinterestLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <FaSpinner className="animate-spin text-2xl text-[#2d5a3d]" />
+                <span className="ml-3 text-sm text-[#6a6a7a]">Loading your Pinterest boards…</span>
+              </div>
+            ) : pinterestBoards.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-[#6a6a7a]">No boards found on your Pinterest account.</p>
+              </div>
+            ) : (
+              <div className="max-h-[400px] space-y-3 overflow-y-auto">
+                {pinterestBoards.map((pBoard) => {
+                  const isImported = importedBoardIds.has(pBoard.id);
+                  const isImporting = importingBoardId === pBoard.id;
+                  const firstPin = pBoard.pins[0];
+                  return (
+                    <div
+                      key={pBoard.id}
+                      className="flex items-center gap-4 rounded-xl border border-[#e8e6e1] p-3 transition hover:bg-[#f8f7f4]"
+                    >
+                      {firstPin?.imageUrl ? (
+                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
+                          <Image
+                            src={firstPin.imageUrl}
+                            alt={pBoard.name}
+                            fill
+                            className="object-cover"
+                            sizes="56px"
+                            unoptimized
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#f0ede8]">
+                          <FaPinterest className="text-[#d5d3cd]" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-[#1a1a2e]">
+                          {pBoard.name}
+                        </p>
+                        <p className="text-xs text-[#9a9aaa]">
+                          {pBoard.pinCount} pin{pBoard.pinCount !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleImportBoard(pBoard)}
+                        disabled={isImported || isImporting}
+                        className={`shrink-0 rounded-lg px-4 py-2 text-xs font-semibold transition ${
+                          isImported
+                            ? "bg-[#2d5a3d]/10 text-[#2d5a3d]"
+                            : isImporting
+                            ? "bg-[#f0ede8] text-[#9a9aaa]"
+                            : "bg-[#2d5a3d] text-white hover:bg-[#234a31]"
+                        }`}
+                      >
+                        {isImported ? (
+                          <span className="flex items-center gap-1"><FaCheck className="text-[10px]" /> Imported</span>
+                        ) : isImporting ? (
+                          <span className="flex items-center gap-1"><FaSpinner className="animate-spin text-[10px]" /> Importing…</span>
+                        ) : (
+                          "Import"
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setShowPinterestModal(false)}
+                className="rounded-lg bg-[#f0ede8] px-4 py-2 text-sm font-medium text-[#4a4a5a] transition hover:bg-[#e8e6e1]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import Masonry from "react-masonry-css";
 import { FaHeart, FaRegHeart, FaMagnifyingGlass } from "react-icons/fa6";
-import { useMoodboardStore } from "@/lib/store";
+import { useIdeaBoardStore } from "@/lib/store";
 import SaveToBoardModal from "@/components/SaveToBoardModal";
 
 interface GalleryImage {
@@ -22,7 +22,7 @@ interface MasonryGalleryProps {
 }
 
 export default function MasonryGallery({ images, loading }: MasonryGalleryProps) {
-  const { items: savedItems } = useMoodboardStore();
+  const { items: savedItems } = useIdeaBoardStore();
   const [savingImage, setSavingImage] = useState<GalleryImage | null>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());

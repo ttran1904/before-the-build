@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { FaXmark, FaPlus, FaMagnifyingGlass, FaCheck } from "react-icons/fa6";
-import { useMoodboardStore } from "@/lib/store";
+import { useIdeaBoardStore } from "@/lib/store";
 
 interface SaveToBoardModalProps {
   open: boolean;
@@ -33,7 +33,7 @@ export default function SaveToBoardModal({
     saveItemToBoard,
     removeItemFromBoard,
     getSuggestedBoardNames,
-  } = useMoodboardStore();
+  } = useIdeaBoardStore();
 
   const [search, setSearch] = useState("");
   const [creatingNew, setCreatingNew] = useState(false);

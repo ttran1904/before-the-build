@@ -9,10 +9,10 @@ import {
 } from "react-icons/fa6";
 import RoomCategoryBar from "@/components/RoomCategoryBar";
 import MasonryGallery from "@/components/MasonryGallery";
-import MoodboardPanel from "@/components/MoodboardPanel";
+import IdeaBoardPanel from "@/components/IdeaBoardPanel";
 import ExploreFilterPanel from "@/components/ExploreFilterPanel";
 import CatalogueView from "@/components/CatalogueView";
-import { useMoodboardStore } from "@/lib/store";
+import { useIdeaBoardStore } from "@/lib/store";
 
 interface GalleryImage {
   id: string;
@@ -42,9 +42,9 @@ function ExplorePageContent() {
   const [activeSearch, setActiveSearch] = useState("");
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [moodboardOpen, setMoodboardOpen] = useState(false);
+  const [ideaBoardOpen, setIdeaBoardOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"inspiration" | "catalogue">("inspiration");
-  const moodboardCount = useMoodboardStore((s) => s.items.length);
+  const ideaBoardCount = useIdeaBoardStore((s) => s.items.length);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const runSearch = useCallback(async (style: string, color: string, size: string, query: string) => {
@@ -106,7 +106,7 @@ function ExplorePageContent() {
               Back to Moodboard
             </Link>
             <span className="ml-4 text-sm text-[#4a4a5a]">
-              Save images to your moodboard, then return to continue your renovation.
+              Save images to your idea boards, then return to continue your renovation.
             </span>
           </div>
         </div>
@@ -162,14 +162,14 @@ function ExplorePageContent() {
           </div>
 
           <button
-            onClick={() => setMoodboardOpen(true)}
+            onClick={() => setIdeaBoardOpen(true)}
             className="relative flex items-center gap-2 rounded-full border border-[#2d5a3d] bg-[#2d5a3d] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234a31]"
           >
             <FaClipboardList className="text-white" />
             Idea Boards
-            {moodboardCount > 0 && (
+            {ideaBoardCount > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#2d5a3d]">
-                {moodboardCount}
+                {ideaBoardCount}
               </span>
             )}
           </button>
@@ -247,8 +247,8 @@ function ExplorePageContent() {
         </div>
       )}
 
-      {/* Moodboard Panel */}
-      <MoodboardPanel open={moodboardOpen} onClose={() => setMoodboardOpen(false)} />
+      {/* Idea Board Panel */}
+      <IdeaBoardPanel open={ideaBoardOpen} onClose={() => setIdeaBoardOpen(false)} />
     </div>
   );
 }

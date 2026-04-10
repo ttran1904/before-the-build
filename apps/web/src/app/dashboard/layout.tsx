@@ -23,7 +23,7 @@ export default function DashboardLayout({
           <NavItem href="/dashboard" label="Home" icon={FaHouse} />
           <NavItem href="/explore" label="Explore" icon={FaCompass} />
           <NavItem href="/dashboard/build-books" label="Build Books" icon={FaBookOpen} />
-          <NavItem href="/dashboard/moodboards" label="Idea Boards" icon={FaTableCellsLarge} />
+          <NavItem href="/dashboard/idea-boards" label="Idea Boards" icon={FaTableCellsLarge} />
         </nav>
 
         <div className="mt-auto space-y-1">

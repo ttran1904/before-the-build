@@ -1,6 +1,6 @@
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import type { BathroomWizardState } from "@/lib/store";
-import type { MoodboardItem, MoodboardBoard } from "@/lib/store";
+import type { IdeaBoardItem, IdeaBoard } from "@/lib/store";
 
 const supabase = createSupabaseBrowserClient();
 
@@ -203,13 +203,13 @@ export async function loadWizardState(): Promise<Partial<BathroomWizardState> | 
 }
 
 /* ================================================================
-   MOODBOARDS + INSPIRATION ITEMS  (idea boards)
+   IDEA BOARDS + INSPIRATION ITEMS
    ================================================================ */
 
-/** Save all moodboards & items to Supabase */
-export async function saveMoodboards(
-  boards: MoodboardBoard[],
-  items: MoodboardItem[],
+/** Save all idea boards & items to Supabase */
+export async function saveIdeaBoards(
+  boards: IdeaBoard[],
+  items: IdeaBoardItem[],
 ): Promise<boolean> {
   const {
     data: { user },
@@ -290,10 +290,10 @@ export async function saveMoodboards(
   return true;
 }
 
-/** Load moodboards & items from Supabase */
-export async function loadMoodboards(): Promise<{
-  boards: MoodboardBoard[];
-  items: MoodboardItem[];
+/** Load idea boards & items from Supabase */
+export async function loadIdeaBoards(): Promise<{
+  boards: IdeaBoard[];
+  items: IdeaBoardItem[];
 } | null> {
   const {
     data: { user },
@@ -308,11 +308,11 @@ export async function loadMoodboards(): Promise<{
     .order("created_at", { ascending: false });
 
   if (boardError) {
-    console.error("Failed to load moodboards:", boardError);
+    console.error("Failed to load idea boards:", boardError);
     return null;
   }
 
-  const boards: MoodboardBoard[] = (dbBoards || []).map((b) => ({
+  const boards: IdeaBoard[] = (dbBoards || []).map((b) => ({
     id: b.id,
     name: b.name,
     createdAt: new Date(b.created_at).getTime(),
@@ -355,7 +355,7 @@ export async function loadMoodboards(): Promise<{
     }
   }
 
-  const items: MoodboardItem[] = Array.from(itemMap.entries()).map(
+  const items: IdeaBoardItem[] = Array.from(itemMap.entries()).map(
     ([imageUrl, data]) => ({
       id: `img_${imageUrl.split("/").pop() || Date.now()}`,
       imageUrl: data.imageUrl,
