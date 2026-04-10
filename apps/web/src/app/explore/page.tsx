@@ -124,11 +124,14 @@ function ExplorePageContent() {
 
           {/* Center: Nav + Tab Toggle */}
           <div className="hidden items-center gap-6 md:flex">
+            <Link href="/dashboard" className="text-sm font-medium text-[#4a4a5a] transition hover:text-[#1a1a2e]">
+              Dashboard
+            </Link>
             <Link href="/explore" className="text-sm font-semibold text-[#2d5a3d]">
               Explore
             </Link>
-            <Link href="/dashboard" className="text-sm font-medium text-[#4a4a5a] transition hover:text-[#1a1a2e]">
-              Dashboard
+            <Link href="/dashboard/build-books" className="text-sm font-medium text-[#4a4a5a] transition hover:text-[#1a1a2e]">
+              Build Book
             </Link>
             <span className="mx-1 h-5 w-px bg-[#e8e6e1]" />
             {/* Inspiration / Store Catalogue toggle */}
@@ -163,7 +166,7 @@ function ExplorePageContent() {
             className="relative flex items-center gap-2 rounded-full border border-[#2d5a3d] bg-[#2d5a3d] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234a31]"
           >
             <FaClipboardList className="text-white" />
-            My Build Plan
+            Idea Boards
             {moodboardCount > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#2d5a3d]">
                 {moodboardCount}

@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  FaArrowLeft, FaFilePdf, FaPrint, FaSpinner,
+  FaArrowLeft, FaFilePdf, FaPrint, FaSpinner, FaPen,
   FaImages, FaCartShopping, FaPhotoFilm, FaTableList,
   FaChartPie, FaArrowUpRightFromSquare, FaCircleExclamation,
 } from "react-icons/fa6";
 import { useWizardStore } from "@/lib/store";
 import { computeBudgetGraph } from "@/lib/budget-engine/budget-graph";
+import { saveBuildBook, saveWizardState } from "@/lib/supabase-sync";
 import type { PointedItem, Product } from "@/lib/moodboard/types";
 
 /* ── Helpers ── */
@@ -26,6 +27,13 @@ export default function BuildBookPage() {
   const wizard = useWizardStore();
   const bookRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+
+  // Save build book + wizard state to Supabase when viewing
+  useEffect(() => {
+    saveBuildBook().catch(console.error);
+    saveWizardState(wizard).catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ── Collect all selected products from moodboard state ── */
   const selectedProducts: Product[] = useMemo(() => {
@@ -137,10 +145,16 @@ export default function BuildBookPage() {
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-[#e8e6e1] bg-white/90 backdrop-blur-sm print:hidden">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Link href="/renovate/bathroom" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
-            <FaArrowLeft className="text-xs" /> Back to Project
+          <Link href="/dashboard" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
+            <FaArrowLeft className="text-xs" /> Back to Dashboard
           </Link>
           <div className="flex gap-2">
+            <Link
+              href="/renovate/bathroom"
+              className="flex items-center gap-2 rounded-lg border border-[#2d5a3d] px-4 py-2 text-sm font-medium text-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+            >
+              <FaPen className="text-xs" /> Edit Project
+            </Link>
             <button
               onClick={() => window.print()}
               className="flex items-center gap-2 rounded-lg border border-[#e8e6e1] px-4 py-2 text-sm text-[#4a4a5a] hover:bg-[#f3f2ef]"

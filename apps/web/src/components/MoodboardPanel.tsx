@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
   FaXmark, FaTrash, FaArrowRight, FaHeart,
-  FaChevronLeft, FaPen, FaLayerGroup, FaFolderOpen,
+  FaChevronLeft, FaPen, FaFolderOpen, FaCircle, FaRegCircle,
+  FaEye,
 } from "react-icons/fa6";
 import { useMoodboardStore } from "@/lib/store";
 import Link from "next/link";
@@ -31,9 +32,29 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [selectedBoardIds, setSelectedBoardIds] = useState<Set<string>>(new Set());
+
+  // Default-select all boards when panel opens or boards change
+  useEffect(() => {
+    if (open) {
+      setSelectedBoardIds(new Set(boards.map((b) => b.id)));
+    }
+  }, [open, boards]);
 
   const activeBoard = boards.find((b) => b.id === activeBoardId);
   const activeBoardItems = activeBoardId ? getBoardItems(activeBoardId) : [];
+
+  const toggleBoardSelection = (boardId: string) => {
+    setSelectedBoardIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(boardId)) {
+        next.delete(boardId);
+      } else {
+        next.add(boardId);
+      }
+      return next;
+    });
+  };
 
   const openBoard = (boardId: string) => {
     setActiveBoardId(boardId);
@@ -58,15 +79,11 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
     setEditName("");
   };
 
-  // Get cover image (first item) for a board
-  const getBoardCover = (boardId: string): string | null => {
-    const boardItem = items.find((i) => i.boardIds.includes(boardId));
-    return boardItem?.imageUrl || null;
-  };
-
   const getBoardItemCount = (boardId: string): number => {
     return items.filter((i) => i.boardIds.includes(boardId)).length;
   };
+
+  const selectedCount = selectedBoardIds.size;
 
   return (
     <>
@@ -95,12 +112,31 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
                 <FaChevronLeft className="text-xs text-[#4a4a5a]" />
               </button>
             )}
-            <FaLayerGroup className="text-[#2d5a3d]" />
-            <h2 className="text-lg font-bold text-[#1a1a2e]">
-              {view === "collections"
-                ? "My Collections"
-                : activeBoard?.name || "Board"}
-            </h2>
+            {view === "collections" ? (
+              <h2 className="text-lg font-bold text-[#1a1a2e]">My Collections</h2>
+            ) : editingBoardId === activeBoardId ? (
+              <input
+                autoFocus
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={confirmRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") confirmRename();
+                  if (e.key === "Escape") setEditingBoardId(null);
+                }}
+                className="rounded border border-[#2d5a3d] px-2 py-0.5 text-lg font-bold text-[#1a1a2e] outline-none"
+              />
+            ) : (
+              <button
+                onClick={() => activeBoardId && startRename(activeBoardId, activeBoard?.name || "")}
+                className="group/name flex items-center gap-1.5"
+              >
+                <h2 className="text-lg font-bold text-[#1a1a2e]">
+                  {activeBoard?.name || "Board"}
+                </h2>
+                <FaPen className="text-[10px] text-[#9a9aaa] opacity-0 transition group-hover/name:opacity-100" />
+              </button>
+            )}
             <span className="rounded-full bg-[#2d5a3d]/10 px-2 py-0.5 text-xs font-semibold text-[#2d5a3d]">
               {view === "collections" ? boards.length : activeBoardItems.length}
             </span>
@@ -131,24 +167,34 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
             ) : (
               <div className="space-y-3">
                 {boards.map((board) => {
-                  const cover = getBoardCover(board.id);
                   const count = getBoardItemCount(board.id);
                   const boardItems = items.filter((i) =>
                     i.boardIds.includes(board.id)
                   );
-                  // Show up to 4 thumbnail previews
                   const previews = boardItems.slice(0, 4);
+                  const isSelected = selectedBoardIds.has(board.id);
 
                   return (
                     <div
                       key={board.id}
-                      className="group relative overflow-hidden rounded-2xl border border-[#e8e6e1] transition hover:border-[#2d5a3d]/30 hover:shadow-md"
+                      onClick={() => toggleBoardSelection(board.id)}
+                      className={`group relative cursor-pointer overflow-hidden rounded-2xl border transition hover:shadow-md ${
+                        isSelected
+                          ? "border-[#2d5a3d] shadow-sm"
+                          : "border-[#e8e6e1] hover:border-[#2d5a3d]/30"
+                      }`}
                     >
+                      {/* Selection circle */}
+                      <div className="absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-md backdrop-blur-sm">
+                        {isSelected ? (
+                          <FaCircle className="text-sm text-[#2d5a3d]" />
+                        ) : (
+                          <FaRegCircle className="text-sm text-[#9a9aaa]" />
+                        )}
+                      </div>
+
                       {/* Board cover mosaic */}
-                      <button
-                        onClick={() => openBoard(board.id)}
-                        className="w-full text-left"
-                      >
+                      <div className="w-full text-left">
                         <div className="grid h-36 grid-cols-2 gap-0.5 overflow-hidden bg-[#f3f2ef]">
                           {previews.length > 0 ? (
                             previews.map((item, i) => (
@@ -198,27 +244,37 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
                                 className="rounded border border-[#2d5a3d] px-2 py-0.5 text-sm font-semibold text-[#1a1a2e] outline-none"
                               />
                             ) : (
-                              <h3 className="text-sm font-bold text-[#1a1a2e]">
-                                {board.name}
-                              </h3>
+                              <span
+                                className="group/name inline-flex cursor-text items-center gap-1.5"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startRename(board.id, board.name);
+                                }}
+                              >
+                                <h3 className="text-sm font-bold text-[#1a1a2e]">
+                                  {board.name}
+                                </h3>
+                                <FaPen className="text-[9px] text-[#9a9aaa] opacity-0 transition group-hover/name:opacity-100" />
+                              </span>
                             )}
                             <p className="text-xs text-[#9a9aaa]">
                               {count} {count === 1 ? "pin" : "pins"}
                             </p>
                           </div>
                         </div>
-                      </button>
+                      </div>
 
                       {/* Hover actions */}
                       <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            startRename(board.id, board.name);
+                            openBoard(board.id);
                           }}
                           className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-md backdrop-blur-sm hover:bg-white"
+                          title="View ideas"
                         >
-                          <FaPen className="text-[10px] text-[#4a4a5a]" />
+                          <FaEye className="text-[10px] text-[#4a4a5a]" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -274,11 +330,6 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
                         <FaTrash className="text-[10px]" />
                       </button>
                     </div>
-                    {item.title && (
-                      <p className="mt-1 truncate text-xs text-[#4a4a5a]">
-                        {item.title}
-                      </p>
-                    )}
                   </div>
                 ))}
               </div>
@@ -287,13 +338,18 @@ export default function MoodboardPanel({ open, onClose }: MoodboardPanelProps) {
         </div>
 
         {/* Footer CTA */}
-        {items.length > 0 && (
+        {boards.length > 0 && (
           <div className="border-t border-[#e8e6e1] p-4">
+            {view === "collections" && selectedCount > 0 && (
+              <p className="mb-2 text-center text-xs text-[#6a6a7a]">
+                {selectedCount} board{selectedCount !== 1 ? "s" : ""} selected
+              </p>
+            )}
             <Link
               href="/renovate/bathroom"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d5a3d] py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
             >
-              Plan Your Renovation
+              Create a Build Book
               <FaArrowRight className="text-xs" />
             </Link>
           </div>

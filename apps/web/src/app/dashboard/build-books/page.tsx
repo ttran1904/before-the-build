@@ -12,7 +12,7 @@ export default function BuildBooksPage() {
           </p>
         </div>
         <Link
-          href="/explore"
+          href="/renovate/bathroom"
           className="inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
         >
           <FaPlus className="text-xs" /> New Build Book
@@ -28,7 +28,7 @@ export default function BuildBooksPage() {
           and product selections. Start by exploring ideas and creating your first one!
         </p>
         <Link
-          href="/explore"
+          href="/renovate/bathroom"
           className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
         >
           <FaPlus className="text-xs" /> Create Your First Build Book

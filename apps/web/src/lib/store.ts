@@ -201,7 +201,7 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>()(
     }),
     {
       name: "btb-wizard-store",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
     },
   ),
 );
@@ -364,7 +364,7 @@ export const useMoodboardStore = create<MoodboardState>()(
     }),
     {
       name: "btb-moodboard-store",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
     },
   ),
 );

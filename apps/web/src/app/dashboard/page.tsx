@@ -5,11 +5,32 @@ import Link from "next/link";
 import Image from "next/image";
 import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest } from "react-icons/fa6";
 import { useMoodboardStore } from "@/lib/store";
+import { loadBuildBooks } from "@/lib/supabase-sync";
+
+interface BuildBookEntry {
+  id: string;
+  projectId: string;
+  name: string;
+  updatedAt: string;
+  totalCost: number;
+  mockupImage?: string;
+}
 
 export default function DashboardPage() {
   const boards = useMoodboardStore((s) => s.boards);
   const items = useMoodboardStore((s) => s.items);
   const getBoardItems = useMoodboardStore((s) => s.getBoardItems);
+
+  // Build books from Supabase
+  const [buildBooks, setBuildBooks] = useState<BuildBookEntry[]>([]);
+  const [buildBooksLoaded, setBuildBooksLoaded] = useState(false);
+
+  useEffect(() => {
+    loadBuildBooks().then((books) => {
+      setBuildBooks(books);
+      setBuildBooksLoaded(true);
+    }).catch(() => setBuildBooksLoaded(true));
+  }, []);
 
   // Boards sorted by newest first
   const sortedBoards = [...boards]
@@ -52,16 +73,60 @@ export default function DashboardPage() {
             View All →
           </Link>
         </div>
-        <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center">
-          <FaBookOpen className="mx-auto text-3xl text-[#d5d3cd]" />
-          <p className="mt-3 text-sm text-[#9a9aaa]">No build books yet.</p>
-          <Link
-            href="/explore"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-medium text-white hover:bg-[#234a31]"
-          >
-            <FaPlus className="text-xs" /> Start Your First Build Book
-          </Link>
-        </div>
+        {buildBooksLoaded && buildBooks.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {buildBooks.map((bb) => (
+              <Link
+                key={bb.id}
+                href="/build-book"
+                className="group overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#d5d3cd] hover:shadow-md"
+              >
+                {bb.mockupImage ? (
+                  <div className="relative h-40 w-full overflow-hidden bg-[#f0ede8]">
+                    <Image
+                      src={bb.mockupImage}
+                      alt={bb.name}
+                      fill
+                      className="object-cover"
+                      sizes="400px"
+                      unoptimized
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-40 w-full items-center justify-center bg-[#f0ede8]">
+                    <FaBookOpen className="text-3xl text-[#d5d3cd]" />
+                  </div>
+                )}
+                <div className="p-3.5">
+                  <p className="font-semibold text-[#1a1a2e] group-hover:text-[#2d5a3d]">
+                    {bb.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-[#9a9aaa]">
+                    Updated {new Date(bb.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </Link>
+            ))}
+            <Link
+              href="/renovate/bathroom"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-8 text-center transition hover:border-[#2d5a3d]/30 hover:shadow-sm"
+            >
+              <FaPlus className="text-lg text-[#9a9aaa]" />
+              <span className="text-sm font-medium text-[#6a6a7a]">New Build Book</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center">
+            <FaBookOpen className="mx-auto text-3xl text-[#d5d3cd]" />
+            <p className="mt-3 text-sm text-[#9a9aaa]">No build books yet.</p>
+            <Link
+              href="/renovate/bathroom"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-medium text-white hover:bg-[#234a31]"
+            >
+              <FaPlus className="text-xs" /> Start Your First Build Book
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Pinterest Connect Banner */}

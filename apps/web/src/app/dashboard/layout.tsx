@@ -21,7 +21,7 @@ export default function DashboardLayout({
 
         <nav className="flex flex-col gap-0.5">
           <NavItem href="/dashboard" label="Home" icon={FaHouse} />
-          <NavItem href="/explore" label="Explore Ideas" icon={FaCompass} />
+          <NavItem href="/explore" label="Explore" icon={FaCompass} />
           <NavItem href="/dashboard/build-books" label="Build Books" icon={FaBookOpen} />
           <NavItem href="/dashboard/moodboards" label="Idea Boards" icon={FaTableCellsLarge} />
         </nav>
