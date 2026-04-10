@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight } from "react-icons/fa6";
+import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen } from "react-icons/fa6";
 import { useIdeaBoardStore } from "@/lib/store";
 import { loadBuildBooks } from "@/lib/supabase-sync";
 
@@ -23,6 +23,27 @@ export default function DashboardPage() {
   const getBoardItems = useIdeaBoardStore((s) => s.getBoardItems);
   const createBoard = useIdeaBoardStore((s) => s.createBoard);
   const saveItemToBoard = useIdeaBoardStore((s) => s.saveItemToBoard);
+  const removeBoard = useIdeaBoardStore((s) => s.removeBoard);
+  const renameBoard = useIdeaBoardStore((s) => s.renameBoard);
+
+  // Inline rename state
+  const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+
+  const startRename = (boardId: string, currentName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingBoardId(boardId);
+    setEditName(currentName);
+  };
+
+  const confirmRename = () => {
+    if (editingBoardId && editName.trim()) {
+      renameBoard(editingBoardId, editName.trim());
+    }
+    setEditingBoardId(null);
+    setEditName("");
+  };
 
   // Build books from Supabase
   const [buildBooks, setBuildBooks] = useState<BuildBookEntry[]>([]);
@@ -226,39 +247,73 @@ export default function DashboardPage() {
                   const boardItems = getBoardItems(board.id);
                   const thumb = boardItems[0];
                   return (
-                    <Link
-                      key={board.id}
-                      href={`/dashboard/idea-boards/${board.id}`}
-                      className="group"
-                    >
-                      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#f0ede8]">
-                        {thumb ? (
-                          <Image
-                            src={thumb.imageUrl}
-                            alt={board.name}
-                            fill
-                            className="object-cover transition group-hover:scale-105"
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center">
-                            <FaTableCellsLarge className="text-3xl text-[#d5d3cd]" />
-                          </div>
-                        )}
+                    <div key={board.id} className="group relative">
+                      <Link
+                        href={`/dashboard/idea-boards/${board.id}`}
+                      >
+                        <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#f0ede8]">
+                          {thumb ? (
+                            <Image
+                              src={thumb.imageUrl}
+                              alt={board.name}
+                              fill
+                              className="object-cover transition group-hover:scale-105"
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center">
+                              <FaTableCellsLarge className="text-3xl text-[#d5d3cd]" />
+                            </div>
+                          )}
+                        {/* Pinterest badge */}
                         {board.source === "pinterest" && (
-                          <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm">
-                            <FaPinterest className="text-sm text-[#E60023]" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="mt-2 text-sm font-semibold text-[#1a1a2e] group-hover:text-[#2d5a3d]">
-                        {board.name}
-                      </p>
+                          <div className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm">
+                              <FaPinterest className="text-sm text-[#E60023]" />
+                            </div>
+                          )}
+                          {/* Delete button on hover */}
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              removeBoard(board.id);
+                            }}
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition hover:bg-red-600 group-hover:opacity-100"
+                            title="Delete board"
+                          >
+                            <FaTrashCan className="text-[10px]" />
+                          </button>
+                        </div>
+                      </Link>
+                      {/* Board name with inline rename */}
+                      {editingBoardId === board.id ? (
+                        <input
+                          autoFocus
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onBlur={confirmRename}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") confirmRename();
+                            if (e.key === "Escape") setEditingBoardId(null);
+                          }}
+                          className="mt-2 w-full rounded border border-[#2d5a3d] px-1.5 py-0.5 text-sm font-semibold text-[#1a1a2e] outline-none"
+                        />
+                      ) : (
+                        <button
+                          onClick={(e) => startRename(board.id, board.name, e)}
+                          className="group/name mt-2 flex w-full items-center gap-1 text-left"
+                        >
+                          <p className="text-sm font-semibold text-[#1a1a2e] group-hover/name:text-[#2d5a3d]">
+                            {board.name}
+                          </p>
+                          <FaPen className="shrink-0 text-[9px] text-[#9a9aaa] opacity-0 transition group-hover/name:opacity-100" />
+                        </button>
+                      )}
                       <p className="text-xs text-[#9a9aaa]">
                         {boardItems.length} idea{boardItems.length !== 1 ? "s" : ""}
                       </p>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>

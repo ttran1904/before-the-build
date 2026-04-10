@@ -294,7 +294,7 @@ export default function IdeaBoardPanel({ open, onClose }: IdeaBoardPanelProps) {
 
                       {/* Pinterest badge */}
                       {board.source === "pinterest" && (
-                        <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm group-hover:hidden">
+                        <div className="absolute left-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm">
                           <FaPinterest className="text-xs text-[#E60023]" />
                         </div>
                       )}

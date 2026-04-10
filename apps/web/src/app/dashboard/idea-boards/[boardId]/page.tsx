@@ -1,9 +1,10 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { FaTableCellsLarge, FaTrashCan, FaPinterest } from "react-icons/fa6";
+import { FaTableCellsLarge, FaTrashCan, FaPinterest, FaPen } from "react-icons/fa6";
 import { useIdeaBoardStore } from "@/lib/store";
 
 export default function BoardDetailPage({
@@ -12,12 +13,38 @@ export default function BoardDetailPage({
   params: Promise<{ boardId: string }>;
 }) {
   const { boardId } = use(params);
+  const router = useRouter();
   const boards = useIdeaBoardStore((s) => s.boards);
   const getBoardItems = useIdeaBoardStore((s) => s.getBoardItems);
   const removeItemFromBoard = useIdeaBoardStore((s) => s.removeItemFromBoard);
+  const removeBoard = useIdeaBoardStore((s) => s.removeBoard);
+  const renameBoard = useIdeaBoardStore((s) => s.renameBoard);
 
   const board = boards.find((b) => b.id === boardId);
   const boardItems = getBoardItems(boardId);
+
+  // Inline rename state
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+
+  const startRename = () => {
+    if (!board) return;
+    setEditing(true);
+    setEditName(board.name);
+  };
+
+  const confirmRename = () => {
+    if (editName.trim() && board) {
+      renameBoard(board.id, editName.trim());
+    }
+    setEditing(false);
+    setEditName("");
+  };
+
+  const handleDeleteBoard = () => {
+    removeBoard(boardId);
+    router.push("/dashboard");
+  };
 
   if (!board) {
     return (
@@ -33,18 +60,47 @@ export default function BoardDetailPage({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-[#1a1a2e]">{board.name}</h1>
-          {board.source === "pinterest" && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E60023]/10 px-3 py-1 text-xs font-semibold text-[#E60023]">
-              <FaPinterest className="text-sm" /> From Pinterest
-            </span>
-          )}
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            {editing ? (
+              <input
+                autoFocus
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={confirmRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") confirmRename();
+                  if (e.key === "Escape") setEditing(false);
+                }}
+                className="rounded border border-[#2d5a3d] px-2 py-0.5 text-2xl font-bold text-[#1a1a2e] outline-none"
+              />
+            ) : (
+              <button
+                onClick={startRename}
+                className="group/name flex items-center gap-2"
+              >
+                <h1 className="text-2xl font-bold text-[#1a1a2e]">{board.name}</h1>
+                <FaPen className="text-xs text-[#9a9aaa] opacity-0 transition group-hover/name:opacity-100" />
+              </button>
+            )}
+            {board.source === "pinterest" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E60023]/10 px-3 py-1 text-xs font-semibold text-[#E60023]">
+                <FaPinterest className="text-sm" /> From Pinterest
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-[#6a6a7a]">
+            {boardItems.length} idea{boardItems.length !== 1 ? "s" : ""}
+          </p>
         </div>
-        <p className="mt-1 text-sm text-[#6a6a7a]">
-          {boardItems.length} idea{boardItems.length !== 1 ? "s" : ""}
-        </p>
+        <button
+          onClick={handleDeleteBoard}
+          className="flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:border-red-300"
+          title="Delete board"
+        >
+          <FaTrashCan className="text-xs" /> Delete Board
+        </button>
       </div>
 
       {/* Image collage grid */}
