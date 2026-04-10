@@ -1,5 +1,5 @@
 import type { BudgetEstimateInput, BudgetEstimateResult, BreakdownLineItem } from "../types";
-import type { RoomType } from "../prompts";
+import type { BudgetRoomType } from "../prompts";
 import { getBudgetPrompt } from "../prompts";
 
 /**
@@ -8,7 +8,7 @@ import { getBudgetPrompt } from "../prompts";
  */
 export async function estimateBudget(
   input: BudgetEstimateInput,
-  roomType: RoomType,
+  roomType: BudgetRoomType,
   anthropicKey: string,
 ): Promise<BudgetEstimateResult> {
   const prompt = getBudgetPrompt(roomType, input);
