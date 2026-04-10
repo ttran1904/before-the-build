@@ -1,10 +1,12 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { MainTabs } from "./MainTabs";
 import { OnboardingNavigator } from "./OnboardingNavigator";
+import { BathroomWizardNavigator } from "./BathroomWizardNavigator";
 
 export type RootStackParamList = {
   Onboarding: undefined;
   Main: undefined;
+  BathroomWizard: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -20,6 +22,7 @@ export function RootNavigator() {
     >
       <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
       <Stack.Screen name="Main" component={MainTabs} />
+      <Stack.Screen name="BathroomWizard" component={BathroomWizardNavigator} />
     </Stack.Navigator>
   );
 }

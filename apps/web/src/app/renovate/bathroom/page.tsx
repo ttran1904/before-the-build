@@ -22,10 +22,7 @@ import {
   FaHouse, FaBookOpen,
 } from "react-icons/fa6";
 import { useWizardStore, useIdeaBoardStore, type BathroomScope, type BudgetTier, type IdeaBoardItem } from "@/lib/store";
-import { BATHROOM_SIZES, type BathroomSize } from "@/lib/room-sizes/bathroom";
-import { computeBudgetGraph, type BudgetGraphResult } from "@/lib/budget-engine/budget-graph";
-import { ftInToMStr, mStrToFtIn, displayArea } from "@/lib/units";
-import type { PointedItem, Product } from "@/lib/moodboard/types";
+import { BATHROOM_SIZES, type BathroomSize, computeBudgetGraph, type BudgetGraphResult, ftInToMStr, mStrToFtIn, displayArea, type PointedItem, type Product } from "@before-the-build/shared";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
 import CatalogueView from "@/components/CatalogueView";

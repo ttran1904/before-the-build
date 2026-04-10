@@ -1,0 +1,37 @@
+export interface CropBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface Product {
+  title: string;
+  price: string;
+  source: string;
+  url: string;
+  thumbnail: string;
+  images: string[];
+  specs: Record<string, string>;
+}
+
+export interface PointedItem {
+  id: string;
+  cropBox: CropBox;
+  label: string;
+  loading: boolean;
+  products: Product[];
+  selectedProductIdx: number | null;
+  /** Matched must-have or nice-to-have label for budget updates */
+  matchedItemLabel?: string;
+}
+
+export interface IdentificationResult {
+  label: string;
+  searchTerms: string;
+}
+
+export interface IdentifyAndSearchResult {
+  label: string;
+  products: Product[];
+}

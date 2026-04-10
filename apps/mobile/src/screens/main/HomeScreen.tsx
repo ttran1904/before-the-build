@@ -7,6 +7,9 @@ import {
   Dimensions,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../navigation/RootNavigator";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -176,6 +179,8 @@ function GanttRow({
 }
 
 export function HomeScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* ━━━ Hero Greeting ━━━ */}
@@ -190,8 +195,11 @@ export function HomeScreen() {
           contractor-ready build books.
         </Text>
         <View style={styles.heroActions}>
-          <TouchableOpacity style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>Start Your Project</Text>
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={() => navigation.navigate("BathroomWizard")}
+          >
+            <Text style={styles.primaryBtnText}>Start Bathroom Renovation</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.secondaryBtn}>
             <Text style={styles.secondaryBtnText}>Explore</Text>

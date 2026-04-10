@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { FaCheck, FaStar, FaArrowUpRightFromSquare } from "react-icons/fa6";
 import type { HDCollection } from "@/lib/catalogue/home-depot-collections";
-import type { Product as MoodboardProduct } from "@/lib/moodboard/types";
+import type { Product as MoodboardProduct } from "@before-the-build/shared";
 
 interface Product {
   id: string;

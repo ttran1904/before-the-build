@@ -458,6 +458,7 @@ export async function loadBuildBooks(): Promise<
     totalCost: number;
     currentStep: number;
     mockupImage?: string;
+    moodboardThumbnails: string[];
   }>
 > {
   const {
@@ -492,6 +493,25 @@ export async function loadBuildBooks(): Promise<
     const wa = rooms?.[0]?.wizard_answers as Record<string, unknown> | undefined;
     const mockupImages = (wa?.mockup_generated_images as string[]) || [];
 
+    // Extract product thumbnails from moodboard items
+    const moodboardThumbnails: string[] = [];
+    const pointedItems = wa?.moodboard_pointed_items as Record<string, { products?: { thumbnail?: string }[] }[]> | undefined;
+    if (pointedItems) {
+      for (const items of Object.values(pointedItems)) {
+        for (const item of items) {
+          const thumb = item.products?.[0]?.thumbnail;
+          if (thumb) { moodboardThumbnails.push(thumb); break; }
+        }
+        if (moodboardThumbnails.length > 0) break;
+      }
+    }
+    const manualProducts = wa?.moodboard_manual_products as { thumbnail?: string }[] | undefined;
+    if (manualProducts && moodboardThumbnails.length === 0) {
+      for (const p of manualProducts) {
+        if (p.thumbnail) { moodboardThumbnails.push(p.thumbnail); break; }
+      }
+    }
+
     const currentStep = (wa?.current_step as number) || 0;
 
     results.push({
@@ -502,6 +522,7 @@ export async function loadBuildBooks(): Promise<
       totalCost: bb.total_estimated_cost || 0,
       currentStep,
       mockupImage: mockupImages[0],
+      moodboardThumbnails,
     });
   }
 

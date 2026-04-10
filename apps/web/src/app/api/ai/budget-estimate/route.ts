@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { estimateBudget, estimateBudgetFallback } from "@/lib/budget-engine";
-import type { BudgetEstimateInput } from "@/lib/budget-engine";
-import type { RoomType } from "@/lib/budget-engine/prompts";
+import { estimateBudget, estimateBudgetFallback } from "@before-the-build/shared";
+import type { BudgetEstimateInput, RoomType } from "@before-the-build/shared";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();

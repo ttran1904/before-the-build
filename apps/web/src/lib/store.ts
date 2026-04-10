@@ -1,9 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { DesignStyle, ProjectGoal } from "@before-the-build/shared";
-import type { BathroomSize } from "@/lib/room-sizes/bathroom";
-import type { PriceOverride } from "@/lib/budget-engine/budget-graph";
-import type { PointedItem, Product } from "@/lib/moodboard/types";
+import type { DesignStyle, ProjectGoal, BathroomSize, PriceOverride, PointedItem, Product } from "@before-the-build/shared";
 
 /* ── Bathroom Wizard State ── */
 

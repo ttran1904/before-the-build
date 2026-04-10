@@ -6,7 +6,7 @@ import CollectionGrid from "@/components/CollectionGrid";
 import CollectionDetail from "@/components/CollectionDetail";
 import AirtableMaterialsGrid from "@/components/AirtableMaterialsGrid";
 import type { HDCollection } from "@/lib/catalogue/home-depot-collections";
-import type { Product } from "@/lib/moodboard/types";
+import type { Product } from "@before-the-build/shared";
 
 type CatalogueSource = "home_depot" | "designer";
 

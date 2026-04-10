@@ -9,9 +9,9 @@ import {
   FaChartPie, FaArrowUpRightFromSquare, FaCircleExclamation,
 } from "react-icons/fa6";
 import { useWizardStore } from "@/lib/store";
-import { computeBudgetGraph } from "@/lib/budget-engine/budget-graph";
+import { computeBudgetGraph } from "@before-the-build/shared";
 import { saveBuildBook, saveWizardState } from "@/lib/supabase-sync";
-import type { PointedItem, Product } from "@/lib/moodboard/types";
+import type { PointedItem, Product } from "@before-the-build/shared";
 
 /* ── Helpers ── */
 

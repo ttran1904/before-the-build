@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen } from "react-icons/fa6";
-import { useIdeaBoardStore } from "@/lib/store";
+import { useIdeaBoardStore, useWizardStore } from "@/lib/store";
 import { loadBuildBooks } from "@/lib/supabase-sync";
 
 interface BuildBookEntry {
@@ -15,6 +15,7 @@ interface BuildBookEntry {
   totalCost: number;
   currentStep: number;
   mockupImage?: string;
+  moodboardThumbnails: string[];
 }
 
 export default function DashboardPage() {
@@ -25,6 +26,9 @@ export default function DashboardPage() {
   const saveItemToBoard = useIdeaBoardStore((s) => s.saveItemToBoard);
   const removeBoard = useIdeaBoardStore((s) => s.removeBoard);
   const renameBoard = useIdeaBoardStore((s) => s.renameBoard);
+
+  // Uploaded bathroom photos from wizard store (base64, client-only)
+  const uploadedPhotos = useWizardStore((s) => s.mockupBathroomPhotos);
 
   // Inline rename state
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
@@ -160,16 +164,66 @@ export default function DashboardPage() {
         </div>
         {buildBooksLoaded && buildBooks.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {buildBooks.map((bb) => (
+            {buildBooks.map((bb) => {
+              // Build collage images: Render > uploaded original > Moodboard
+              // If render exists, exclude moodboard
+              const renderImg = bb.mockupImage;
+              const uploadedImg = uploadedPhotos[0];
+              const moodboardImg = bb.moodboardThumbnails[0];
+              const collageImages: string[] = [];
+              if (renderImg) collageImages.push(renderImg);
+              if (uploadedImg) collageImages.push(uploadedImg);
+              if (!renderImg && moodboardImg) collageImages.push(moodboardImg);
+
+              return (
               <Link
                 key={bb.id}
                 href="/build-book"
                 className="group overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#d5d3cd] hover:shadow-md"
               >
-                {bb.mockupImage ? (
-                  <div className="relative h-40 w-full overflow-hidden bg-[#f0ede8]">
+                {collageImages.length >= 2 ? (
+                  <div className="flex h-52 w-full gap-0.5 overflow-hidden bg-[#f0ede8]">
+                    {/* Largest image (Render if available, else first) */}
+                    <div className="relative h-full flex-[3] overflow-hidden">
+                      <Image
+                        src={collageImages[0]}
+                        alt={bb.name}
+                        fill
+                        className="object-cover"
+                        sizes="300px"
+                        unoptimized
+                      />
+                    </div>
+                    {/* Smaller image(s) stacked on the right */}
+                    <div className="flex flex-[2] flex-col gap-0.5">
+                      <div className="relative min-h-0 flex-1 overflow-hidden">
+                        <Image
+                          src={collageImages[1]}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="200px"
+                          unoptimized
+                        />
+                      </div>
+                      {collageImages[2] && (
+                        <div className="relative min-h-0 flex-1 overflow-hidden">
+                          <Image
+                            src={collageImages[2]}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            sizes="200px"
+                            unoptimized
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : collageImages.length === 1 ? (
+                  <div className="relative h-52 w-full overflow-hidden bg-[#f0ede8]">
                     <Image
-                      src={bb.mockupImage}
+                      src={collageImages[0]}
                       alt={bb.name}
                       fill
                       className="object-cover"
@@ -178,7 +232,7 @@ export default function DashboardPage() {
                     />
                   </div>
                 ) : (
-                  <div className="flex h-40 w-full items-center justify-center bg-[#f0ede8]">
+                  <div className="flex h-52 w-full items-center justify-center bg-[#f0ede8]">
                     <FaBookOpen className="text-3xl text-[#d5d3cd]" />
                   </div>
                 )}
@@ -191,7 +245,8 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </Link>
-            ))}
+              );
+            })}
             <Link
               href="/renovate/bathroom"
               className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-8 text-center transition hover:border-[#2d5a3d]/30 hover:shadow-sm"
