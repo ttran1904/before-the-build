@@ -413,6 +413,41 @@ export async function saveBuildBook(): Promise<string | null> {
   return buildBookId;
 }
 
+/** Delete a build book and its associated project */
+export async function deleteBuildBook(buildBookId: string): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  // Get the project_id first to delete the whole project
+  const { data: bb } = await supabase
+    .from("build_books")
+    .select("project_id")
+    .eq("id", buildBookId)
+    .single();
+
+  if (!bb) return false;
+
+  // Verify user owns the project
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", bb.project_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!project) return false;
+
+  // Delete the project (cascades to rooms, build_books, etc.)
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", bb.project_id);
+
+  return !error;
+}
+
 /** Load list of build books for dashboard display */
 export async function loadBuildBooks(): Promise<
   Array<{
@@ -421,6 +456,7 @@ export async function loadBuildBooks(): Promise<
     name: string;
     updatedAt: string;
     totalCost: number;
+    currentStep: number;
     mockupImage?: string;
   }>
 > {
@@ -456,12 +492,15 @@ export async function loadBuildBooks(): Promise<
     const wa = rooms?.[0]?.wizard_answers as Record<string, unknown> | undefined;
     const mockupImages = (wa?.mockup_generated_images as string[]) || [];
 
+    const currentStep = (wa?.current_step as number) || 0;
+
     results.push({
       id: bb.id,
       projectId: bb.project_id,
       name: bb.scope_description || "Bathroom Renovation",
       updatedAt: bb.updated_at,
       totalCost: bb.total_estimated_cost || 0,
+      currentStep,
       mockupImage: mockupImages[0],
     });
   }

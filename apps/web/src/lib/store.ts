@@ -223,6 +223,7 @@ export interface IdeaBoard {
   id: string;
   name: string;
   createdAt: number;
+  source?: string;
 }
 
 interface IdeaBoardState {
@@ -231,7 +232,7 @@ interface IdeaBoardState {
   addItem: (item: IdeaBoardItem) => void;
   removeItem: (id: string) => void;
   toggleItem: (item: IdeaBoardItem) => void;
-  createBoard: (name: string) => string;
+  createBoard: (name: string, source?: string) => string;
   removeBoard: (boardId: string) => void;
   renameBoard: (boardId: string, name: string) => void;
   saveItemToBoard: (item: Omit<IdeaBoardItem, "boardIds" | "saved">, boardId: string) => void;
@@ -261,9 +262,9 @@ export const useIdeaBoardStore = create<IdeaBoardState>()(
     }
   },
 
-  createBoard: (name: string) => {
+  createBoard: (name: string, source?: string) => {
     const id = `board_${Date.now()}_${++boardCounter}`;
-    const board: IdeaBoard = { id, name, createdAt: Date.now() };
+    const board: IdeaBoard = { id, name, createdAt: Date.now(), ...(source ? { source } : {}) };
     set({ boards: [...get().boards, board] });
     return id;
   },

@@ -19,6 +19,7 @@ import {
   FaToilet, FaShower, FaBath, FaCrown,
   FaCamera, FaUpload, FaPhotoFilm, FaFilePdf,
   FaChevronDown, FaChevronUp, FaTableList, FaChartPie,
+  FaHouse, FaBookOpen,
 } from "react-icons/fa6";
 import { useWizardStore, useIdeaBoardStore, type BathroomScope, type BudgetTier, type IdeaBoardItem } from "@/lib/store";
 import { BATHROOM_SIZES, type BathroomSize } from "@/lib/room-sizes/bathroom";
@@ -28,6 +29,7 @@ import type { PointedItem, Product } from "@/lib/moodboard/types";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
 import CatalogueView from "@/components/CatalogueView";
+import { saveBuildBook } from "@/lib/supabase-sync";
 
 /* ── Slot-machine animated number ──
  * Rules:
@@ -95,9 +97,9 @@ function SlotDigit({ char, delay, animate }: { char: string; delay: number; anim
 
 /* ── Step definitions ── */
 const STEPS = [
-  { id: "goal", label: "Goal", icon: FaBullseye },
-  { id: "must-haves", label: "Must-Haves", icon: FaClipboardList },
-  { id: "budget", label: "Budget", icon: FaCoins },
+  { id: "goal", label: "Goal", icon: FaBullseye, section: "planning" },
+  { id: "must-haves", label: "Must-Haves", icon: FaClipboardList, section: "planning" },
+  { id: "budget", label: "Budget", icon: FaCoins, section: "planning" },
   { id: "items-pictures", label: "From Pictures", icon: FaCrosshairs, section: "items-materials" },
   { id: "catalogue", label: "From Catalogue", icon: FaSwatchbook, section: "items-materials" },
   { id: "moodboard", label: "Moodboard", icon: FaImages, section: "visualize" },
@@ -108,6 +110,7 @@ const STEPS = [
 ];
 
 const SECTION_HEADERS: Record<string, { label: string; icon: typeof FaBullseye }> = {
+  planning: { label: "Goal", icon: FaBullseye },
   "items-materials": { label: "Items & Materials", icon: FaCartShopping },
   visualize: { label: "Visualize", icon: FaPaintbrush },
 };
@@ -176,6 +179,14 @@ function BathroomWizardPageContent() {
 
   /* Goal sub-step: 0 = goals+scope, 1 = bathroom type + room size + photos */
   const [goalSubStep, setGoalSubStep] = useState(0);
+
+  /* Auto-create build book on first visit */
+  const buildBookCreatedRef = useRef(false);
+  useEffect(() => {
+    if (buildBookCreatedRef.current) return;
+    buildBookCreatedRef.current = true;
+    saveBuildBook().catch(() => {});
+  }, []);
 
   /* Budget Builder — deterministic graph engine */
   const [budgetBuilderOpen, setBudgetBuilderOpen] = useState(false);
@@ -387,10 +398,13 @@ function BathroomWizardPageContent() {
           })}
         </nav>
 
-        {/* Back to explore link */}
-        <div className="px-6 py-4">
-          <Link href="/explore" className="flex items-center gap-2 text-xs text-white/50 transition hover:text-white/80">
-            <FaArrowLeft className="text-[10px]" /> Back to Explore
+        {/* Navigation links */}
+        <div className="px-4 py-4 space-y-1 border-t border-white/10">
+          <Link href="/dashboard" className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white/90">
+            <FaHouse className="text-[10px]" /> Dashboard
+          </Link>
+          <Link href="/explore" className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white/90">
+            <FaCompass className="text-[10px]" /> Explore
           </Link>
         </div>
       </aside>
@@ -411,7 +425,17 @@ function BathroomWizardPageContent() {
       <main className="flex-1 flex flex-col overflow-y-auto">
         {/* Budget Estimator – sticky top bar */}
         <div className="sticky top-0 z-30 border-b border-[#e8e6e1] bg-white/95 backdrop-blur-sm">
-          <div className="mx-auto flex items-center px-8 py-2.5">
+          <div className="mx-auto flex items-center justify-between px-8 py-2.5">
+            <div className="flex items-center gap-4">
+              {/* Breadcrumb */}
+              <nav className="flex items-center gap-1.5 text-xs text-[#9a9aaa]">
+                <Link href="/dashboard" className="transition hover:text-[#2d5a3d]">Dashboard</Link>
+                <span>/</span>
+                <Link href="/dashboard/build-books" className="transition hover:text-[#2d5a3d]">Build Books</Link>
+                <span>/</span>
+                <span className="font-medium text-[#4a4a5a]">Bathroom</span>
+              </nav>
+            </div>
             <button
               onClick={() => setBudgetBuilderOpen((v) => !v)}
               className="group flex items-center gap-3 rounded-lg border border-[#d5d3cd] bg-white px-4 py-2 shadow-sm transition hover:border-[#d4a24c] hover:shadow-md"
