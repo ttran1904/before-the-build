@@ -3,7 +3,7 @@
 import { use } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FaArrowLeft, FaTableCellsLarge } from "react-icons/fa6";
+import { FaTableCellsLarge, FaTrashCan } from "react-icons/fa6";
 import { useMoodboardStore } from "@/lib/store";
 
 export default function BoardDetailPage({
@@ -14,6 +14,7 @@ export default function BoardDetailPage({
   const { boardId } = use(params);
   const boards = useMoodboardStore((s) => s.boards);
   const getBoardItems = useMoodboardStore((s) => s.getBoardItems);
+  const removeItemFromBoard = useMoodboardStore((s) => s.removeItemFromBoard);
 
   const board = boards.find((b) => b.id === boardId);
   const boardItems = getBoardItems(boardId);
@@ -21,12 +22,6 @@ export default function BoardDetailPage({
   if (!board) {
     return (
       <div className="space-y-4">
-        <Link
-          href="/dashboard/moodboards"
-          className="inline-flex items-center gap-2 text-sm font-medium text-[#2d5a3d] hover:underline"
-        >
-          <FaArrowLeft className="text-xs" /> Back to Idea Boards
-        </Link>
         <div className="rounded-xl border border-[#e8e6e1] bg-white p-12 text-center">
           <FaTableCellsLarge className="mx-auto text-3xl text-[#d5d3cd]" />
           <p className="mt-3 text-sm text-[#9a9aaa]">Board not found.</p>
@@ -39,13 +34,7 @@ export default function BoardDetailPage({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <Link
-          href="/dashboard/moodboards"
-          className="inline-flex items-center gap-2 text-sm font-medium text-[#2d5a3d] hover:underline"
-        >
-          <FaArrowLeft className="text-xs" /> Back to Idea Boards
-        </Link>
-        <h1 className="mt-3 text-2xl font-bold text-[#1a1a2e]">{board.name}</h1>
+        <h1 className="text-2xl font-bold text-[#1a1a2e]">{board.name}</h1>
         <p className="mt-1 text-sm text-[#6a6a7a]">
           {boardItems.length} idea{boardItems.length !== 1 ? "s" : ""}
         </p>
@@ -57,7 +46,7 @@ export default function BoardDetailPage({
           {boardItems.map((item) => (
             <div
               key={item.id}
-              className="mb-3 break-inside-avoid overflow-hidden rounded-xl border border-[#e8e6e1] bg-white"
+              className="group relative mb-3 break-inside-avoid overflow-hidden rounded-xl border border-[#e8e6e1] bg-white"
             >
               <div className="relative aspect-[3/4] w-full">
                 <Image
@@ -69,6 +58,13 @@ export default function BoardDetailPage({
                   unoptimized
                 />
               </div>
+              <button
+                onClick={() => removeItemFromBoard(item.id, boardId)}
+                className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition hover:bg-red-600 group-hover:opacity-100"
+                title="Remove from board"
+              >
+                <FaTrashCan className="text-xs" />
+              </button>
             </div>
           ))}
         </div>

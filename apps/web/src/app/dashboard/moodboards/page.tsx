@@ -130,25 +130,38 @@ export default function MoodboardsPage() {
       {hasData ? (
         <div className="space-y-6">
           {sortedBoards.length > 0 && (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {sortedBoards.map((board) => {
                 const boardItems = getBoardItems(board.id);
-                const preview = boardItems.slice(0, 3);
+                const thumb = boardItems[0];
                 return (
                   <Link
                     key={board.id}
                     href={`/dashboard/moodboards/${board.id}`}
-                    className="group overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#d5d3cd] hover:shadow-md"
+                    className="group"
                   >
-                    <BoardCollage images={preview} />
-                    <div className="p-4">
-                      <p className="font-semibold text-[#1a1a2e] group-hover:text-[#2d5a3d]">
-                        {board.name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-[#9a9aaa]">
-                        {boardItems.length} idea{boardItems.length !== 1 ? "s" : ""}
-                      </p>
+                    <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#f0ede8]">
+                      {thumb ? (
+                        <Image
+                          src={thumb.imageUrl}
+                          alt={board.name}
+                          fill
+                          className="object-cover transition group-hover:scale-105"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <FaTableCellsLarge className="text-3xl text-[#d5d3cd]" />
+                        </div>
+                      )}
                     </div>
+                    <p className="mt-2 text-sm font-semibold text-[#1a1a2e] group-hover:text-[#2d5a3d]">
+                      {board.name}
+                    </p>
+                    <p className="text-xs text-[#9a9aaa]">
+                      {boardItems.length} idea{boardItems.length !== 1 ? "s" : ""}
+                    </p>
                   </Link>
                 );
               })}
@@ -296,44 +309,4 @@ export default function MoodboardsPage() {
   );
 }
 
-/* Pinterest-style 3-image collage */
-function BoardCollage({ images }: { images: { id: string; imageUrl: string; title?: string }[] }) {
-  if (images.length === 0) {
-    return (
-      <div className="flex h-48 items-center justify-center bg-[#f0ede8]">
-        <FaTableCellsLarge className="text-3xl text-[#d5d3cd]" />
-      </div>
-    );
-  }
-  if (images.length === 1) {
-    return (
-      <div className="relative h-48 bg-[#f0ede8]">
-        <Image src={images[0].imageUrl} alt={images[0].title || ""} fill className="object-cover" sizes="360px" unoptimized />
-      </div>
-    );
-  }
-  if (images.length === 2) {
-    return (
-      <div className="grid h-48 grid-cols-2 gap-0.5 bg-[#f0ede8]">
-        {images.map((img) => (
-          <div key={img.id} className="relative overflow-hidden">
-            <Image src={img.imageUrl} alt={img.title || ""} fill className="object-cover" sizes="180px" unoptimized />
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return (
-    <div className="grid h-48 grid-cols-[1.2fr_1fr] gap-0.5 bg-[#f0ede8]">
-      <div className="relative row-span-2 overflow-hidden">
-        <Image src={images[0].imageUrl} alt={images[0].title || ""} fill className="object-cover" sizes="220px" unoptimized />
-      </div>
-      <div className="relative overflow-hidden">
-        <Image src={images[1].imageUrl} alt={images[1].title || ""} fill className="object-cover" sizes="140px" unoptimized />
-      </div>
-      <div className="relative overflow-hidden">
-        <Image src={images[2].imageUrl} alt={images[2].title || ""} fill className="object-cover" sizes="140px" unoptimized />
-      </div>
-    </div>
-  );
-}
+
