@@ -11,7 +11,7 @@ import {
 import { useWizardStore } from "@/lib/store";
 import { computeBudgetGraph } from "@before-the-build/shared";
 import { saveBuildBook, saveWizardState } from "@/lib/supabase-sync";
-import type { PointedItem, Product } from "@before-the-build/shared";
+import type { Product } from "@before-the-build/shared";
 
 /* ── Helpers ── */
 
@@ -36,25 +36,45 @@ export default function BuildBookPage() {
   }, []);
 
   /* ── Collect all selected products from moodboard state ── */
-  const selectedProducts: Product[] = useMemo(() => {
-    const fromPointed = Object.values(wizard.moodboardPointedItems).flatMap((items: PointedItem[]) =>
-      items
-        .filter((p) => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
-        .map((p) => p.products[p.selectedProductIdx!]),
-    );
-    return [...fromPointed, ...wizard.moodboardManualProducts];
-  }, [wizard.moodboardPointedItems, wizard.moodboardManualProducts]);
+  const allPointedFlat = useMemo(() => Object.values(wizard.moodboardPointedItems).flat(), [wizard.moodboardPointedItems]);
 
-  /* ── Build the budget graph ── */
+  const selectedProducts: Product[] = useMemo(() => {
+    const fromPointed = allPointedFlat
+      .filter((p) => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
+      .map((p) => p.products[p.selectedProductIdx!]);
+    return [...fromPointed, ...wizard.moodboardManualProducts];
+  }, [allPointedFlat, wizard.moodboardManualProducts]);
+
+  /* ── Matched labels: nice-to-haves only count if matched in moodboard ── */
+  const matchedLabels = useMemo(() => {
+    const set = new Set<string>();
+    for (const pi of allPointedFlat) {
+      if (pi.matchedItemLabel && pi.selectedProductIdx !== null) {
+        set.add(pi.matchedItemLabel);
+      }
+    }
+    return set;
+  }, [allPointedFlat]);
+
+  /* ── Compute actual room sqft from dimensions ── */
+  const roomSqft = useMemo(() => {
+    const wIn = (Number(wizard.roomWidth) || 0) * 12 + (Number(wizard.roomWidthIn) || 0);
+    const lIn = (Number(wizard.roomLength) || 0) * 12 + (Number(wizard.roomLengthIn) || 0);
+    if (!wIn || !lIn) return null;
+    return Math.round((wIn * lIn) / 144);
+  }, [wizard.roomWidth, wizard.roomWidthIn, wizard.roomLength, wizard.roomLengthIn]);
+
+  /* ── Build the budget graph (matches wizard computation exactly) ── */
   const budgetGraph = useMemo(() => computeBudgetGraph({
     roomSize: wizard.bathroomSize,
+    roomSqft,
     scope: wizard.scope,
     mustHaves: wizard.mustHaves,
-    niceToHaves: wizard.niceToHaves,
+    niceToHaves: wizard.niceToHaves.filter(nh => matchedLabels.has(nh)),
     includeNiceToHaves: true,
     customerBudget: wizard.budgetAmount,
     priceOverrides: wizard.priceOverrides,
-  }), [wizard]);
+  }), [wizard.bathroomSize, roomSqft, wizard.scope, wizard.mustHaves, wizard.niceToHaves, wizard.budgetAmount, wizard.priceOverrides, matchedLabels]);
 
   /* ── Moodboard drag positions for canvas ── */
   const getDefaultPosition = (idx: number, total: number, cw: number, ch: number) => {
@@ -149,12 +169,6 @@ export default function BuildBookPage() {
             <FaArrowLeft className="text-xs" /> Back to Dashboard
           </Link>
           <div className="flex gap-2">
-            <Link
-              href="/renovate/bathroom"
-              className="flex items-center gap-2 rounded-lg border border-[#2d5a3d] px-4 py-2 text-sm font-medium text-[#2d5a3d] hover:bg-[#2d5a3d]/5"
-            >
-              <FaPen className="text-xs" /> Edit Project
-            </Link>
             <button
               onClick={() => window.print()}
               className="flex items-center gap-2 rounded-lg border border-[#e8e6e1] px-4 py-2 text-sm text-[#4a4a5a] hover:bg-[#f3f2ef]"
@@ -185,6 +199,12 @@ export default function BuildBookPage() {
           <p className="mt-2 text-sm text-[#6a6a7a]">
             Bathroom Renovation • {wizard.style ? `${wizard.style.charAt(0).toUpperCase()}${wizard.style.slice(1)} Style` : "Design"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </p>
+          <Link
+            href="/renovate/bathroom"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#d4a24c] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c4922c] transition print:hidden"
+          >
+            <FaPen className="text-xs" /> Modify Project &amp; Update Build Book
+          </Link>
         </div>
 
         {/* ─── 1. MOODBOARD ─── */}
