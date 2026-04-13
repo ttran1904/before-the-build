@@ -51,6 +51,8 @@ export interface BathroomWizardState {
   showerLengthM: string;
   measurementUnit: "ft" | "m";
   currentStep: number;
+  // Highest step ever visited (enables sidebar nav to completed steps)
+  highestStep: number;
   // Price overrides from moodboard selections
   priceOverrides: PriceOverride[];
   // Moodboard discovery state (persisted across navigation / hot reloads)
@@ -87,6 +89,7 @@ interface WizardActions {
   /** Batch-set any combination of dimension + unit fields in a single re-render */
   setDimensions: (dims: Partial<DimensionFields>) => void;
   setCurrentStep: (step: number) => void;
+  setHighestStep: (step: number) => void;
   setPriceOverride: (override: PriceOverride) => void;
   removePriceOverride: (itemLabel: string) => void;
   setMoodboardPointedItems: (updater: Record<string, PointedItem[]> | ((prev: Record<string, PointedItem[]>) => Record<string, PointedItem[]>)) => void;
@@ -126,6 +129,7 @@ const initialState: BathroomWizardState = {
   showerLengthM: "",
   measurementUnit: "ft" as const,
   currentStep: 0,
+  highestStep: 0,
   priceOverrides: [],
   moodboardPointedItems: {},
   moodboardManualProducts: [],
@@ -168,6 +172,7 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>()(
       setMeasurementUnit: (measurementUnit) => set({ measurementUnit }),
       setDimensions: (dims) => set(dims),
       setCurrentStep: (currentStep) => set({ currentStep }),
+      setHighestStep: (step) => set((state) => ({ highestStep: Math.max(state.highestStep, step) })),
       setPriceOverride: (override) => set((state) => ({
         priceOverrides: [
           ...state.priceOverrides.filter((o) => o.itemLabel !== override.itemLabel),

@@ -148,11 +148,22 @@ function BathroomWizardPageContent() {
       const idx = STEPS.findIndex(s => s.id === stepParam);
       if (idx >= 0) return idx;
     }
-    return 0;
+    return store.currentStep;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [currentStep, setCurrentStep] = useState(initialStep);
-  const [highestStep, setHighestStep] = useState(initialStep);
+  const highestStep = store.highestStep;
+  const setHighestStep = store.setHighestStep;
+
+  // Sync initial step into store's highestStep on mount
+  useEffect(() => {
+    setHighestStep(initialStep);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist currentStep to store whenever it changes
+  useEffect(() => {
+    store.setCurrentStep(currentStep);
+  }, [currentStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* AI data for Timeline step */
   const [timelineTasks, setTimelineTasks] = useState<TimelineTask[]>([]);
@@ -304,7 +315,7 @@ function BathroomWizardPageContent() {
     if (STEPS[nextIdx]?.id === "contractor") { /* contractor step */ }
     if (currentStep === 0) setGoalSubStep(0);
     setCurrentStep(nextIdx);
-    setHighestStep((h) => Math.max(h, nextIdx));
+    setHighestStep(nextIdx);
   };
   const back = () => {
     if (currentStep === 0 && goalSubStep === 1) {
@@ -422,17 +433,7 @@ function BathroomWizardPageContent() {
       <main className="flex-1 flex flex-col overflow-y-auto">
         {/* Budget Estimator – sticky top bar */}
         <div className="sticky top-0 z-30 border-b border-[#e8e6e1] bg-white/95 backdrop-blur-sm">
-          <div className="mx-auto flex items-center justify-between px-8 py-2.5">
-            <div className="flex items-center gap-4">
-              {/* Breadcrumb */}
-              <nav className="flex items-center gap-1.5 text-xs text-[#9a9aaa]">
-                <Link href="/dashboard" className="transition hover:text-[#2d5a3d]">Dashboard</Link>
-                <span>/</span>
-                <Link href="/dashboard/build-books" className="transition hover:text-[#2d5a3d]">Build Books</Link>
-                <span>/</span>
-                <span className="font-medium text-[#4a4a5a]">Bathroom</span>
-              </nav>
-            </div>
+          <div className="mx-auto flex items-center justify-start px-8 py-2.5">
             <button
               onClick={() => setBudgetBuilderOpen((v) => !v)}
               className="group flex items-center gap-3 rounded-lg border border-[#d5d3cd] bg-white px-4 py-2 shadow-sm transition hover:border-[#d4a24c] hover:shadow-md"
@@ -1420,18 +1421,12 @@ function PieChart({ segments, size = 180 }: { segments: { pct: number; color: st
 }
 
 function BudgetStep() {
-  const { budgetAmount, setBudgetAmount, bathroomSize } = useWizardStore();
-  const sizeInfo = BATHROOM_SIZES.find(s => s.id === bathroomSize);
+  const { budgetAmount, setBudgetAmount } = useWizardStore();
 
   return (
     <div className="mx-auto max-w-lg text-center">
       <FaSackDollar className="mx-auto text-4xl text-[#d4a24c]" />
-      <h2 className="mt-4 text-2xl font-bold text-[#1a1a2e]">What&apos;s your ideal budget?</h2>
-      <p className="mt-2 text-sm text-[#6a6a7a]">
-        {sizeInfo
-          ? `For your ${sizeInfo.label.toLowerCase()} renovation — enter what you'd like to spend.`
-          : "Enter what you'd like to spend on this renovation."}
-      </p>
+      <h2 className="mt-4 text-2xl font-bold text-[#1a1a2e]">What&apos;s your budget?</h2>
 
       <div className="mt-8 flex justify-center">
         <div className="relative w-72">
