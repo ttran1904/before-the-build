@@ -147,23 +147,39 @@ export default function CollectionDetail({ collection, selectedProducts = [], on
                 )}
 
                 {/* Image */}
-                <div className="relative h-44 w-full bg-[#f9f8f6]">
+                <div className="relative h-48 w-full bg-[#f9f8f6]">
                   {p.image && (
                     <Image
                       src={p.image}
                       alt={p.title}
                       fill
-                      className="object-contain p-2"
+                      className="object-contain"
                       unoptimized
                     />
                   )}
 
-                  {/* Selection tick */}
-                  {isSelected && (
-                    <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2d5a3d] shadow">
-                      <FaCheck className="text-[10px] text-white" />
-                    </div>
-                  )}
+                  {/* Selection indicator */}
+                  <div className="absolute right-2 top-2">
+                    {isSelected ? (
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2d5a3d] shadow">
+                        <FaCheck className="text-[10px] text-white" />
+                      </div>
+                    ) : (
+                      <div className="h-6 w-6 rounded-full border-2 border-[#c5c3be] bg-white shadow-sm" />
+                    )}
+                  </div>
+
+                  {/* External link */}
+                  <a
+                    href={p.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute right-2 bottom-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/80 text-[#9a9aaa] shadow-sm transition hover:bg-white hover:text-[#4a4a5a]"
+                    title="View on store"
+                  >
+                    <FaArrowUpRightFromSquare className="text-[9px]" />
+                  </a>
                 </div>
 
                 {/* Info */}
@@ -173,30 +189,20 @@ export default function CollectionDetail({ collection, selectedProducts = [], on
                   </h4>
 
                   {p.brand && (
-                    <p className="mt-0.5 text-[10px] text-[#9a9aaa]">by {p.brand}</p>
+                    <span className="mt-1 inline-block rounded bg-[#f3f2ef] px-2 py-0.5 text-[10px] font-medium text-[#6a6a7a]">{p.brand}</span>
                   )}
 
                   {p.rating != null && p.rating > 0 && (
                     <div className="mt-1 flex items-center gap-1 text-xs text-[#f59e0b]">
                       <FaStar />
                       <span className="text-[#4a4a5a]">
-                        {p.rating} {p.reviews ? `(${p.reviews.toLocaleString()})` : ""}
+                        {p.rating.toFixed(1)} {p.reviews ? `(${p.reviews.toLocaleString()})` : ""}
                       </span>
                     </div>
                   )}
 
-                  <div className="mt-1.5 flex items-center justify-between">
+                  <div className="mt-1.5">
                     <span className="text-sm font-bold text-[#1a1a2e]">{p.price}</span>
-                    <a
-                      href={p.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-[#9a9aaa] transition hover:text-[#4a4a5a]"
-                      title="View on store"
-                    >
-                      <FaArrowUpRightFromSquare className="text-[10px]" />
-                    </a>
                   </div>
                 </div>
               </div>
