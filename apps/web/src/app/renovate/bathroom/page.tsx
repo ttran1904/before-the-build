@@ -1931,7 +1931,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
       {/* ── SECTION: Look for Items from Pictures ── */}
       {view === "items-pictures" && (
         <div>
-          <div className="flex items-start justify-between">
+          <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a2e]">Items from Pictures</h2>
               <p className="mt-2 text-sm text-[#6a6a7a]">
@@ -1941,9 +1941,9 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
             {items.length > 0 && (
               <Link
                 href="/explore?from=moodboard"
-                className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#234a31]"
+                className="flex shrink-0 items-center gap-2 rounded-lg bg-[#2d5a3d] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
               >
-                <FaPlus className="text-[10px]" /> Add Pictures
+                <FaCompass className="text-xs" /> Explore Ideas
               </Link>
             )}
           </div>
