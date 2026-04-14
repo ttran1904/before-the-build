@@ -2095,8 +2095,8 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                                 </div>
 
                                 {!pi.loading && pi.products.length > 0 && (
-                                  <div className="mt-3 grid grid-cols-2 gap-2">
-                                    {pi.products.slice(0, 4).map((p, i) => {
+                                  <div className="mt-3 grid grid-cols-3 gap-2">
+                                    {pi.products.slice(0, 9).map((p, i) => {
                                       const isSelected = pi.selectedProductIdx === i;
                                       return (
                                         <div

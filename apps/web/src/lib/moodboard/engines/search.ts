@@ -8,7 +8,7 @@ import type { Product } from "../types";
 export async function searchProducts(
   query: string,
   serpApiKey: string,
-  limit: number = 4,
+  limit: number = 9,
 ): Promise<Product[]> {
   const res = await fetch(
     `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(query)}&api_key=${serpApiKey}&num=${limit}`
