@@ -204,6 +204,11 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>()(
     {
       name: "btb-wizard-store",
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => {
+        // Exclude large/transient fields from localStorage to avoid QuotaExceededError
+        const { mockupBathroomPhotos, mockupGeneratedImages, mockupLoading, ...rest } = state;
+        return rest;
+      },
     },
   ),
 );

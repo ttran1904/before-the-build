@@ -17,7 +17,7 @@ import {
   FaLink, FaCircleExclamation, FaXmark, FaChevronLeft, FaChevronRight, FaCircleInfo,
   FaDollarSign, FaSackDollar, FaGem,
   FaToilet, FaShower, FaBath, FaCrown,
-  FaCamera, FaUpload, FaPhotoFilm, FaFilePdf,
+  FaCamera, FaUpload, FaPhotoFilm, FaFilePdf, FaDownload,
   FaChevronDown, FaChevronUp, FaTableList, FaChartPie,
   FaHouse, FaBookOpen,
 } from "react-icons/fa6";
@@ -1979,7 +1979,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
 
                     <div className="flex min-h-[500px]">
                       {/* LEFT: Image + Point-out button */}
-                      <div className="flex w-1/2 flex-col items-center border-r border-[#e8e6e1] p-4">
+                      <div className="flex w-1/3 flex-col items-center border-r border-[#e8e6e1] p-4">
                         <div
                           className={`relative select-none overflow-hidden rounded-xl ${isSelecting ? "cursor-crosshair ring-2 ring-[#2d5a3d] ring-offset-2" : ""}`}
                           onMouseDown={(e) => handleMouseDown(e, item.id)}
@@ -2047,7 +2047,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                       </div>
 
                       {/* RIGHT: Found items & products */}
-                      <div className="flex w-1/2 flex-col p-4">
+                      <div className="flex w-2/3 flex-col p-4">
                         <h4 className="mb-3 text-sm font-semibold text-[#1a1a2e]">
                           Items to Buy
                           {pointed.length > 0 && (
@@ -2444,6 +2444,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
     store.setMockupLoading(true);
     setError(null);
     store.setMockupGeneratedImages([]);
+    let gotImages = false;
 
     try {
       const res = await fetch("/api/ai/generate-mockup", {
@@ -2463,13 +2464,14 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
       // Store images if any were returned, even on partial failure
       if (data.images && data.images.length > 0) {
         store.setMockupGeneratedImages(data.images);
+        gotImages = true;
       }
       // Only show error if NO images came back
-      if ((!data.images || data.images.length === 0) && (!res.ok || data.error)) {
+      if (!gotImages && (!res.ok || data.error)) {
         setError(data.error || "Failed to generate mockup. Please try again.");
       }
     } catch {
-      if (store.mockupGeneratedImages.length === 0) {
+      if (!gotImages) {
         setError("Failed to generate mockup. Please try again.");
       }
     } finally {
@@ -2486,7 +2488,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
 
       {/* ── Input section: photos + items side by side ── */}
       <div className="mt-6 rounded-2xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
-        <div className="grid gap-6 lg:grid-cols-[1fr_1px_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_1px_2fr]">
           {/* ── Left: Read-only bathroom photos ── */}
           <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
@@ -2504,7 +2506,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
                 <p className="text-[10px] text-[#c5c3bd]">Go back to the Budget step to upload bathroom photos.</p>
               </div>
             ) : (
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
+              <div className="mt-3 grid grid-cols-1 gap-2.5">
                 {store.mockupBathroomPhotos.map((photo, i) => (
                   <div key={i} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
                     <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
@@ -2540,7 +2542,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
                 <p className="text-[10px] text-[#c5c3bd]">Go to Items &amp; Materials to select products.</p>
               </div>
             ) : (
-              <div className="mt-3 grid grid-cols-2 gap-2.5 max-h-[400px] overflow-y-auto pr-1">
+              <div className="mt-3 grid grid-cols-3 gap-2.5 max-h-[400px] overflow-y-auto pr-1">
                 {selectedProducts.map((p, i) => {
                   const included = !excludedIndices.has(i);
                   return (
@@ -2636,7 +2638,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
                     download={`bathroom-mockup-angle-${i + 1}.png`}
                     className="flex items-center gap-1.5 rounded-lg border border-[#d5d3cd] px-3 py-1 text-xs font-medium text-[#4a4a5a] transition hover:bg-[#f8f7f4]"
                   >
-                    <FaArrowUpRightFromSquare className="text-[9px]" /> Download
+                    <FaDownload className="text-[9px]" /> Download
                   </a>
                 </div>
               </div>
