@@ -101,8 +101,6 @@ const STEPS = [
   { id: "catalogue", label: "From Catalogue", icon: FaSwatchbook, section: "items-materials" },
   { id: "moodboard", label: "Moodboard", icon: FaImages, section: "visualize" },
   { id: "mockup", label: "Real Mockup", icon: FaCamera, section: "visualize" },
-  { id: "timeline", label: "Timeline", icon: FaCalendarDays },
-  { id: "contractor", label: "Contractor", icon: FaHelmetSafety },
   { id: "summary", label: "Build Book", icon: FaListCheck },
 ];
 
@@ -311,8 +309,6 @@ function BathroomWizardPageContent() {
       return;
     }
     const nextIdx = Math.min(currentStep + 1, STEPS.length - 1);
-    if (STEPS[nextIdx]?.id === "timeline" && needsTimelineRefresh) fetchTimeline();
-    if (STEPS[nextIdx]?.id === "contractor") { /* contractor step */ }
     if (currentStep === 0) setGoalSubStep(0);
     setCurrentStep(nextIdx);
     setHighestStep(nextIdx);
@@ -369,7 +365,6 @@ function BathroomWizardPageContent() {
                 <button
                   onClick={() => {
                     if (visited && !active) {
-                      if (STEPS[i]?.id === "timeline" && needsTimelineRefresh) fetchTimeline();
                       setCurrentStep(i);
                       if (i === 0) setGoalSubStep(0);
                     }
@@ -448,7 +443,7 @@ function BathroomWizardPageContent() {
             </button>
           </div>
         </div>
-        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${currentStep === 8 ? "max-w-5xl" : [3, 4, 5, 6].includes(currentStep) ? "max-w-[1400px]" : currentStep === 1 || currentStep === 7 ? "max-w-6xl" : "max-w-3xl"} w-full ${[3, 4, 5, 6].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[200px]" : ""}`}>
+        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${[3, 4, 5, 6].includes(currentStep) ? "max-w-[1400px]" : currentStep === 1 ? "max-w-6xl" : "max-w-3xl"} w-full ${[3, 4, 5, 6].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[200px]" : ""}`}>
           {currentStep === 0 && <GoalStep subStep={goalSubStep} />}
           {currentStep > 0 && (
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
@@ -458,9 +453,7 @@ function BathroomWizardPageContent() {
             {currentStep === 4 && <MoodboardStep view="catalogue" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
             {currentStep === 5 && <MoodboardStep view="moodboard" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
             {currentStep === 6 && <MoodboardStep view="mockup" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 7 && <TimelineStep tasks={timelineTasks} loading={timelineLoading} />}
-            {currentStep === 8 && <ContractorStep thumbtack={thumbtackResults} google={googleResults} loading={contractorLoading} zip={contractorZip} onZipChange={setContractorZip} onSearch={fetchContractors} />}
-            {currentStep === 9 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} pointedItems={moodboardPointedItems} manualProducts={moodboardManualProducts} dragPositions={moodboardDragPositions} thumbtackResults={thumbtackResults} googleResults={googleResults} />}
+            {currentStep === 7 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} pointedItems={moodboardPointedItems} manualProducts={moodboardManualProducts} dragPositions={moodboardDragPositions} thumbtackResults={thumbtackResults} googleResults={googleResults} />}
           </div>
           )}
 

@@ -7,6 +7,7 @@ import {
   FaArrowLeft, FaFilePdf, FaPrint, FaSpinner, FaPen,
   FaImages, FaCartShopping, FaPhotoFilm, FaTableList,
   FaChartPie, FaArrowUpRightFromSquare, FaCircleExclamation,
+  FaCalendarDays, FaHelmetSafety, FaCube,
 } from "react-icons/fa6";
 import { useWizardStore } from "@/lib/store";
 import { computeBudgetGraph } from "@before-the-build/shared";
@@ -121,33 +122,55 @@ export default function BuildBookPage() {
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
 
+      // Hide print:hidden elements for the export
+      const printHiddenEls = bookRef.current.querySelectorAll(".print\\:hidden");
+      printHiddenEls.forEach((el) => (el as HTMLElement).style.display = "none");
+
       const canvas = await html2canvas(bookRef.current, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: "#f8f7f4",
+        logging: false,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          // Ensure all images are loaded in the clone
+          const imgs = clonedDoc.querySelectorAll("img");
+          imgs.forEach((img) => {
+            img.crossOrigin = "anonymous";
+          });
+        },
       });
+
+      // Restore hidden elements
+      printHiddenEls.forEach((el) => (el as HTMLElement).style.display = "");
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       let heightLeft = pdfHeight;
       let position = 0;
 
       pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pdf.internal.pageSize.getHeight();
+      heightLeft -= pageHeight;
 
       while (heightLeft > 0) {
-        position -= pdf.internal.pageSize.getHeight();
+        position -= pageHeight;
         pdf.addPage();
         pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
+        heightLeft -= pageHeight;
       }
 
-      pdf.save("build-book.pdf");
+      const projectName = wizard.style
+        ? `build-book-${wizard.style}`
+        : "build-book";
+      pdf.save(`${projectName}.pdf`);
     } catch (e) {
       console.error("PDF export failed:", e);
+      alert("PDF export failed. Some images may not be accessible for export. Please try printing instead.");
     }
     setExporting(false);
   };
@@ -165,9 +188,18 @@ export default function BuildBookPage() {
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-[#e8e6e1] bg-white/90 backdrop-blur-sm print:hidden">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Link href="/dashboard" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
-            <FaArrowLeft className="text-xs" /> Back to Dashboard
-          </Link>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2d5a3d]">
+                <FaCube className="text-sm text-white" />
+              </div>
+              <span className="text-sm font-bold text-[#1a1a2e]">Before The Build</span>
+            </div>
+            <span className="h-5 w-px bg-[#e8e6e1]" />
+            <Link href="/dashboard" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
+              <FaArrowLeft className="text-xs" /> Back to Dashboard
+            </Link>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => window.print()}
@@ -194,8 +226,7 @@ export default function BuildBookPage() {
       <div ref={bookRef} className="mx-auto max-w-5xl px-6 py-10">
         {/* Title page */}
         <div className="mb-10 text-center">
-          <p className="text-xs font-medium uppercase tracking-widest text-[#2d5a3d]">Before The Build</p>
-          <h1 className="mt-2 text-4xl font-bold text-[#1a1a2e]">Build Book</h1>
+          <h1 className="text-4xl font-bold text-[#1a1a2e]">Build Book</h1>
           <p className="mt-2 text-sm text-[#6a6a7a]">
             Bathroom Renovation • {wizard.style ? `${wizard.style.charAt(0).toUpperCase()}${wizard.style.slice(1)} Style` : "Design"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </p>
@@ -203,11 +234,32 @@ export default function BuildBookPage() {
             href="/renovate/bathroom"
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#d4a24c] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c4922c] transition print:hidden"
           >
-            <FaPen className="text-xs" /> Modify Project &amp; Update Build Book
+            <FaPen className="text-xs" /> Edit Project
           </Link>
         </div>
 
-        {/* ─── 1. MOODBOARD ─── */}
+        {/* ─── 1. 2D RENDERING (Real Mockup) ─── */}
+        {wizard.mockupGeneratedImages.length > 0 && (
+          <Section icon={<FaPhotoFilm />} title="2D Rendering">
+            <p className="mb-4 text-sm text-[#6a6a7a]">
+              AI-generated renovation previews based on your bathroom photos and selected products.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {wizard.mockupGeneratedImages.map((imgUrl, i) => (
+                <div key={i} className="overflow-hidden rounded-xl border border-[#e8e6e1] bg-white shadow-sm">
+                  <div className="relative aspect-[3/2] w-full">
+                    <Image src={imgUrl} alt={`Mockup angle ${i + 1}`} fill className="object-cover" sizes="600px" unoptimized />
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-xs font-medium text-[#2d5a3d]">Angle {i + 1}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* ─── 2. MOODBOARD ─── */}
         <Section icon={<FaImages />} title="Moodboard">
           {selectedProducts.length === 0 ? (
             <p className="text-sm text-[#9a9aaa]">No items selected yet. Go to Items &amp; Materials to build your moodboard.</p>
@@ -244,27 +296,6 @@ export default function BuildBookPage() {
             </div>
           )}
         </Section>
-
-        {/* ─── 2. REAL MOCKUP RENDERINGS ─── */}
-        {wizard.mockupGeneratedImages.length > 0 && (
-          <Section icon={<FaPhotoFilm />} title="Real Mockup Renderings">
-            <p className="mb-4 text-sm text-[#6a6a7a]">
-              AI-generated renovation previews based on your bathroom photos and selected products.
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {wizard.mockupGeneratedImages.map((imgUrl, i) => (
-                <div key={i} className="overflow-hidden rounded-xl border border-[#e8e6e1] bg-white shadow-sm">
-                  <div className="relative aspect-[3/2] w-full">
-                    <Image src={imgUrl} alt={`Mockup angle ${i + 1}`} fill className="object-cover" sizes="600px" unoptimized />
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-xs font-medium text-[#2d5a3d]">Angle {i + 1}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
 
         {/* ─── 3. PRODUCT SELECTIONS ─── */}
         {selectedProducts.length > 0 && (
@@ -354,8 +385,8 @@ export default function BuildBookPage() {
           </Section>
         )}
 
-        {/* ─── 5. BUDGET ESTIMATOR BREAKDOWN ─── */}
-        <Section icon={<FaChartPie />} title="Budget Estimator Breakdown">
+        {/* ─── 5. COST ESTIMATOR ─── */}
+        <Section icon={<FaChartPie />} title="Cost Estimator">
           {/* Total estimate card */}
           <div className="mb-6 flex items-stretch gap-4">
             <div className="flex-1 rounded-xl border border-[#2d5a3d]/20 bg-[#2d5a3d]/5 p-4">
@@ -474,6 +505,44 @@ export default function BuildBookPage() {
               </div>
             </div>
           )}
+        </Section>
+
+        {/* ─── 6. TIMELINE ─── */}
+        <Section icon={<FaCalendarDays />} title="Timeline">
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#2d5a3d]/10">
+              <FaCalendarDays className="text-2xl text-[#2d5a3d]" />
+            </div>
+            <h3 className="text-lg font-semibold text-[#1a1a2e]">Plan Your Renovation Timeline</h3>
+            <p className="mt-2 max-w-md text-sm text-[#6a6a7a]">
+              Generate an AI-powered project timeline with phases, tasks, and milestones tailored to your renovation scope.
+            </p>
+            <Link
+              href="/renovate/bathroom/timeline"
+              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#234a31] transition print:hidden"
+            >
+              <FaCalendarDays className="text-xs" /> Open Timeline Planner
+            </Link>
+          </div>
+        </Section>
+
+        {/* ─── 7. CONTRACTOR ─── */}
+        <Section icon={<FaHelmetSafety />} title="Find a Contractor">
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#d4a24c]/10">
+              <FaHelmetSafety className="text-2xl text-[#d4a24c]" />
+            </div>
+            <h3 className="text-lg font-semibold text-[#1a1a2e]">Find Contractors Near You</h3>
+            <p className="mt-2 max-w-md text-sm text-[#6a6a7a]">
+              Search for vetted, top-rated contractors in your area who specialize in bathroom renovations.
+            </p>
+            <Link
+              href="/renovate/bathroom?step=contractor-search"
+              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#d4a24c] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c4922c] transition print:hidden"
+            >
+              <FaHelmetSafety className="text-xs" /> Search Contractors
+            </Link>
+          </div>
         </Section>
 
         {/* Footer */}
