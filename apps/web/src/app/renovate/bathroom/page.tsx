@@ -203,6 +203,8 @@ function BathroomWizardPageContent() {
   const [budgetBuilderOpen, setBudgetBuilderOpen] = useState(false);
   const [includeNiceToHaves, setIncludeNiceToHaves] = useState(true);
   const [shoppingCartOpen, setShoppingCartOpen] = useState(false);
+  const [cartDetailProduct, setCartDetailProduct] = useState<Product | null>(null);
+  const [cartDetailImageIdx, setCartDetailImageIdx] = useState(0);
 
   /* All selected products across all 3 sources */
   const allSelectedFromPointed = useMemo(() =>
@@ -640,6 +642,7 @@ function BathroomWizardPageContent() {
                       {allSelectedFromPointed.map((entry) => {
                         const unitPrice = entry.product.price ? parseFloat(entry.product.price.replace(/[^0-9.]/g, "")) : null;
                         const qty = getCartQty("ideas", entry.pointedId);
+                        const tileDims = parseTileDimensions(entry.product.specs, entry.product.title);
                         return (
                           <div key={entry.pointedId} className="rounded-xl border border-[#e8e6e1] bg-white p-3">
                             {/* Top row: image | name | price */}
@@ -651,6 +654,7 @@ function BathroomWizardPageContent() {
                               )}
                               <div className="min-w-0 flex-1">
                                 <p className="line-clamp-2 text-sm font-medium leading-snug text-[#1a1a2e]">{entry.product.title}</p>
+                                {tileDims && <p className="mt-0.5 text-[11px] text-[#6a6a7a]">Tile size: {tileDims.label}</p>}
                               </div>
                               {entry.product.price && (
                                 <span className="shrink-0 text-base font-bold text-[#1a1a2e]">{entry.product.price}</span>
@@ -687,6 +691,13 @@ function BathroomWizardPageContent() {
                                     <FaPlus className="text-[10px]" />
                                   </button>
                                 </div>
+                                <button
+                                  onClick={() => { setCartDetailProduct(entry.product); setCartDetailImageIdx(0); }}
+                                  className="ml-1 flex h-8 w-8 items-center justify-center rounded-lg border border-[#e8e6e1] text-[#2d5a3d] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+                                  title="View details"
+                                >
+                                  <FaCircleInfo className="text-xs" />
+                                </button>
                               </div>
                               {unitPrice !== null && !isNaN(unitPrice) && qty > 1 && (
                                 <span className="text-sm font-semibold text-[#2d5a3d]">${(unitPrice * qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -709,6 +720,7 @@ function BathroomWizardPageContent() {
                       {catalogueProducts.map((p, i) => {
                         const unitPrice = p.price ? parseFloat(p.price.replace(/[^0-9.]/g, "")) : null;
                         const qty = getCartQty("catalogue", String(i));
+                        const catTileDims = parseTileDimensions(p.specs, p.title);
                         return (
                           <div key={i} className="rounded-xl border border-[#e8e6e1] bg-white p-3">
                             <div className="flex items-start gap-3">
@@ -719,6 +731,7 @@ function BathroomWizardPageContent() {
                               )}
                               <div className="min-w-0 flex-1">
                                 <p className="line-clamp-2 text-sm font-medium leading-snug text-[#1a1a2e]">{p.title}</p>
+                                {catTileDims && <p className="mt-0.5 text-[11px] text-[#6a6a7a]">Tile size: {catTileDims.label}</p>}
                               </div>
                               {p.price && <span className="shrink-0 text-base font-bold text-[#1a1a2e]">{p.price}</span>}
                             </div>
@@ -747,6 +760,13 @@ function BathroomWizardPageContent() {
                                     <FaPlus className="text-[10px]" />
                                   </button>
                                 </div>
+                                <button
+                                  onClick={() => { setCartDetailProduct(p); setCartDetailImageIdx(0); }}
+                                  className="ml-1 flex h-8 w-8 items-center justify-center rounded-lg border border-[#e8e6e1] text-[#2d5a3d] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+                                  title="View details"
+                                >
+                                  <FaCircleInfo className="text-xs" />
+                                </button>
                               </div>
                               {unitPrice !== null && !isNaN(unitPrice) && qty > 1 && (
                                 <span className="text-sm font-semibold text-[#2d5a3d]">${(unitPrice * qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -769,6 +789,7 @@ function BathroomWizardPageContent() {
                       {shoppingProducts.map((p, i) => {
                         const unitPrice = p.price ? parseFloat(p.price.replace(/[^0-9.]/g, "")) : null;
                         const qty = getCartQty("shopping", String(i));
+                        const shopTileDims = parseTileDimensions(p.specs, p.title);
                         return (
                           <div key={i} className="rounded-xl border border-[#e8e6e1] bg-white p-3">
                             <div className="flex items-start gap-3">
@@ -779,6 +800,7 @@ function BathroomWizardPageContent() {
                               )}
                               <div className="min-w-0 flex-1">
                                 <p className="line-clamp-2 text-sm font-medium leading-snug text-[#1a1a2e]">{p.title}</p>
+                                {shopTileDims && <p className="mt-0.5 text-[11px] text-[#6a6a7a]">Tile size: {shopTileDims.label}</p>}
                               </div>
                               {p.price && <span className="shrink-0 text-base font-bold text-[#1a1a2e]">{p.price}</span>}
                             </div>
@@ -807,6 +829,13 @@ function BathroomWizardPageContent() {
                                     <FaPlus className="text-[10px]" />
                                   </button>
                                 </div>
+                                <button
+                                  onClick={() => { setCartDetailProduct(p); setCartDetailImageIdx(0); }}
+                                  className="ml-1 flex h-8 w-8 items-center justify-center rounded-lg border border-[#e8e6e1] text-[#2d5a3d] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+                                  title="View details"
+                                >
+                                  <FaCircleInfo className="text-xs" />
+                                </button>
                               </div>
                               {unitPrice !== null && !isNaN(unitPrice) && qty > 1 && (
                                 <span className="text-sm font-semibold text-[#2d5a3d]">${(unitPrice * qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -832,6 +861,122 @@ function BathroomWizardPageContent() {
             </div>
           </div>
         )}
+
+        {/* Cart Product Detail Modal */}
+        {cartDetailProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setCartDetailProduct(null)}>
+            <div className="relative mx-4 flex w-full max-w-3xl max-h-[90vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setCartDetailProduct(null)}
+                className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#4a4a5a] shadow-md transition hover:bg-[#f8f7f4] hover:text-[#1a1a2e]"
+              >
+                <FaXmark className="text-sm" />
+              </button>
+              <div className="flex flex-col overflow-y-auto md:flex-row">
+                {/* Left: Image gallery */}
+                <div className="relative flex w-full flex-col bg-[#f8f7f4] md:w-1/2">
+                  <div className="relative aspect-square w-full overflow-hidden">
+                    {((cartDetailProduct.images ?? []).length > 0 ? cartDetailProduct.images : [cartDetailProduct.thumbnail]).filter(Boolean).map((img, i) => (
+                      <Image
+                        key={i}
+                        src={img}
+                        alt={`${cartDetailProduct.title} - view ${i + 1}`}
+                        fill
+                        className={`object-contain transition-opacity duration-200 ${i === cartDetailImageIdx ? "opacity-100" : "opacity-0"}`}
+                        sizes="400px"
+                        unoptimized
+                      />
+                    ))}
+                    {((cartDetailProduct.images ?? []).length > 1) && (
+                      <>
+                        <button
+                          onClick={() => setCartDetailImageIdx((prev) => (prev - 1 + (cartDetailProduct.images ?? []).length) % (cartDetailProduct.images ?? []).length)}
+                          className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#4a4a5a] shadow transition hover:bg-white"
+                        >
+                          <FaChevronLeft className="text-xs" />
+                        </button>
+                        <button
+                          onClick={() => setCartDetailImageIdx((prev) => (prev + 1) % (cartDetailProduct.images ?? []).length)}
+                          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#4a4a5a] shadow transition hover:bg-white"
+                        >
+                          <FaChevronRight className="text-xs" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {(cartDetailProduct.images ?? []).length > 1 && (
+                    <div className="flex gap-1.5 overflow-x-auto p-3">
+                      {(cartDetailProduct.images ?? []).map((img, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCartDetailImageIdx(i)}
+                          className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                            i === cartDetailImageIdx ? "border-[#2d5a3d]" : "border-transparent hover:border-[#d5d3cd]"
+                          }`}
+                        >
+                          <Image src={img} alt={`View ${i + 1}`} fill className="object-cover" sizes="56px" unoptimized />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Right: Product info + specs */}
+                <div className="flex w-full flex-col p-6 md:w-1/2">
+                  <h3 className="text-lg font-bold text-[#1a1a2e] leading-snug">{cartDetailProduct.title}</h3>
+                  <div className="mt-2 flex items-center gap-3">
+                    {cartDetailProduct.price && (
+                      <span className="text-xl font-bold text-[#2d5a3d]">{cartDetailProduct.price}</span>
+                    )}
+                    <span className="rounded-full bg-[#f8f7f4] px-2.5 py-0.5 text-xs text-[#6a6a7a]">{cartDetailProduct.source}</span>
+                  </div>
+
+                  {/* Tile dimensions highlight */}
+                  {(() => {
+                    const dims = parseTileDimensions(cartDetailProduct.specs, cartDetailProduct.title);
+                    return dims ? (
+                      <div className="mt-3 flex items-center gap-2 rounded-lg bg-[#2d5a3d]/5 px-3 py-2">
+                        <FaRuler className="text-xs text-[#2d5a3d]" />
+                        <span className="text-sm font-medium text-[#2d5a3d]">Tile size: {dims.label}</span>
+                      </div>
+                    ) : null;
+                  })()}
+
+                  {/* Specifications */}
+                  {Object.keys(cartDetailProduct.specs ?? {}).length > 0 && (
+                    <div className="mt-5">
+                      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#9a9aaa]">Specifications</h4>
+                      <div className="divide-y divide-[#f0eeea]">
+                        {Object.entries(cartDetailProduct.specs ?? {}).slice(0, 16).map(([key, value]) => (
+                          <div key={key} className="flex justify-between gap-4 py-2">
+                            <span className="text-xs text-[#6a6a7a]">{key}</span>
+                            <span className="text-right text-xs font-medium text-[#1a1a2e]">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {Object.keys(cartDetailProduct.specs ?? {}).length === 0 && (
+                    <div className="mt-5 rounded-xl bg-[#f8f7f4] p-4 text-center">
+                      <p className="text-xs text-[#9a9aaa]">Detailed specifications not available. Visit the product page for more info.</p>
+                    </div>
+                  )}
+                  <div className="mt-auto pt-5">
+                    <a
+                      href={cartDetailProduct.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#2d5a3d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#234a31]"
+                    >
+                      <FaArrowUpRightFromSquare className="text-xs" />
+                      View on {cartDetailProduct.source || "Store"}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${[4, 5, 6, 7, 8].includes(currentStep) ? "max-w-[1400px]" : currentStep === 2 ? "max-w-6xl" : "max-w-3xl"} w-full ${[4, 5, 6, 7, 8].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[170px]" : ""}`}>
           {currentStep === 0 && <GoalStep />}
           {currentStep === 1 && <BathroomInfoStep />}
@@ -2176,7 +2321,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
 
         // Smart tile calculation: compute quantity from room dimensions + tile size
         if (TILE_LABELS.has(overrideLabel)) {
-          const tileDims = parseTileDimensions(product.specs) ?? (FLOOR_TILE_LABELS.has(overrideLabel) ? DEFAULT_FLOOR_TILE : DEFAULT_WALL_TILE);
+          const tileDims = parseTileDimensions(product.specs, product.title) ?? (FLOOR_TILE_LABELS.has(overrideLabel) ? DEFAULT_FLOOR_TILE : DEFAULT_WALL_TILE);
           const isFloor = FLOOR_TILE_LABELS.has(overrideLabel);
 
           let tileInfo: TileInfo | undefined;

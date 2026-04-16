@@ -34,13 +34,16 @@ export interface TileDimensions {
  * Parse tile dimensions from product specs.
  * Looks for keys like "Size", "Tile Size", "Dimensions", "Product Dimensions", etc.
  * Handles formats like: "12 x 24 in", "12" x 24"", "30.5cm x 61cm", "12x24", "305mm × 610mm"
+ *
+ * Also accepts an optional product title as a last-resort fallback for dimension extraction.
  */
-export function parseTileDimensions(specs: Record<string, string>): TileDimensions | null {
+export function parseTileDimensions(specs: Record<string, string>, title?: string): TileDimensions | null {
   // Keys that typically hold tile size info (case-insensitive search)
   const sizeKeys = [
     "size", "tile size", "dimensions", "product dimensions", "nominal size",
     "actual size", "tile dimensions", "format", "piece size",
     "nominal product length x width", "length x width",
+    "size (from title)",
   ];
 
   let sizeValue: string | null = null;
@@ -60,6 +63,26 @@ export function parseTileDimensions(specs: Record<string, string>): TileDimensio
       if (/\d+\s*["″]?\s*[x×X]\s*\d+/.test(val) || /\d+\s*(?:in|inch|cm|mm)\s*[x×X]/i.test(val)) {
         sizeValue = val;
         break;
+      }
+    }
+  }
+
+  // Last resort: parse dimensions from the product title
+  if (!sizeValue && title) {
+    const titlePatterns = [
+      /(\d+(?:\.\d+)?)\s*(?:-?\s*in\.?|")\s*[x×X]\s*(\d+(?:\.\d+)?)\s*(?:-?\s*in\.?|")/i,
+      /(\d+(?:\.\d+)?)\s*(?:cm|mm)\s*[x×X]\s*(\d+(?:\.\d+)?)\s*(?:cm|mm)/i,
+      /\b(\d+(?:\.\d+)?)\s*[x×X]\s*(\d+(?:\.\d+)?)\b/,
+    ];
+    for (const p of titlePatterns) {
+      const m = title.match(p);
+      if (m) {
+        const a = parseFloat(m[1]);
+        const b = parseFloat(m[2]);
+        if (a >= 1 && a <= 48 && b >= 1 && b <= 48) {
+          sizeValue = m[0];
+          break;
+        }
       }
     }
   }
