@@ -2267,15 +2267,26 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                                                   <FaCheck className="text-[8px] text-white" />
                                                 </div>
                                               )}
+                                              {/* External link icon — bottom-right of image */}
+                                              <a
+                                                href={p.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-md bg-white/80 text-[#9a9aaa] shadow-sm backdrop-blur-sm transition hover:bg-white hover:text-[#2d5a3d]"
+                                                title="Open product page"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <FaArrowUpRightFromSquare className="text-[9px]" />
+                                              </a>
                                             </div>
                                           )}
 
                                           {/* Product info */}
                                           <div className="p-2">
                                             <p className="line-clamp-2 text-[11px] leading-tight font-medium text-[#1a1a2e]">{p.title}</p>
-                                            <div className="mt-1 flex items-center gap-1.5">
-                                              <span className="text-[10px] text-[#6a6a7a]">{p.source}</span>
-                                              {p.price && <span className="text-xs font-bold text-[#2d5a3d]">{p.price}</span>}
+                                            <div className="mt-1.5 flex flex-col gap-1">
+                                              <span className="inline-flex self-start rounded-md bg-[#eeedea] px-1.5 py-0.5 text-[10px] font-medium text-[#6a6a7a]">{p.source}</span>
+                                              {p.price && <span className="text-sm font-bold text-[#2d5a3d]">{p.price}</span>}
                                             </div>
 
                                             {/* Action buttons row */}
@@ -2300,17 +2311,6 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                                               >
                                                 <FaCircleInfo className="text-xs" />
                                               </button>
-
-                                              {/* External link button */}
-                                              <a
-                                                href={p.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#d5d3cd] text-[#6a6a7a] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
-                                                title="Open product page"
-                                              >
-                                                <FaArrowUpRightFromSquare className="text-[10px]" />
-                                              </a>
                                             </div>
                                           </div>
                                         </div>
