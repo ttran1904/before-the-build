@@ -107,7 +107,6 @@ const STEPS = [
 
 const SECTION_HEADERS: Record<string, { label: string; icon: typeof FaBullseye }> = {
   goal: { label: "Goal", icon: FaBullseye },
-  planning: { label: "Planning", icon: FaClipboardList },
   "items-materials": { label: "Items & Materials", icon: FaCartShopping },
   visualize: { label: "Visualize", icon: FaPaintbrush },
 };
