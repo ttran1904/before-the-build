@@ -276,7 +276,8 @@ function BathroomWizardPageContent() {
 
   const needsTimelineRefresh = currentHash !== timelineHashRef.current || timelineTasks.length === 0;
 
-  /* Goal sub-step 1 validation: bathroom type + dimensions + photos required */
+  /* Goal sub-step 1 validation: bathroom type + dimensions + photos required.
+     Also re-used by isStepComplete for sidebar checkmarks. */
   const goalSubStep1Valid = useMemo(() => {
     const hasType = !!store.bathroomSize;
 
@@ -297,6 +298,18 @@ function BathroomWizardPageContent() {
 
     return hasType && hasWidth && hasLength && hasHeight && hasPhotos && hasShower;
   }, [store.bathroomSize, store.roomWidth, store.roomWidthIn, store.roomLength, store.roomLengthIn, store.roomHeight, store.roomHeightIn, store.mockupBathroomPhotos.length, store.showerWidth, store.showerWidthIn, store.showerLength, store.showerLengthIn, store.measurementUnit]);
+
+  /* Determine whether a step is "complete" based on whether the user has
+     advanced past it AND its required data is still present. Steps without
+     required fields are considered complete once the user has moved past them. */
+  const isStepComplete = useCallback((stepIndex: number): boolean => {
+    // Can only be complete if we've ever advanced past this step
+    if (stepIndex >= highestStep) return false;
+    // Step 0 (Goal) requires dimensions, bathroom type, and photos
+    if (stepIndex === 0) return goalSubStep1Valid;
+    // All other steps have no required fields — complete once visited past
+    return true;
+  }, [highestStep, goalSubStep1Valid]);
 
   const next = () => {
     // Goal step has 2 sub-steps: goals+scope (0) then room details (1)
@@ -342,7 +355,7 @@ function BathroomWizardPageContent() {
         {/* Step list */}
         <nav className="mt-3 flex-1 space-y-0.5 px-3 overflow-y-auto">
           {STEPS.map((step, i) => {
-            const done = i < currentStep;
+            const done = i !== currentStep && isStepComplete(i);
             const visited = i <= highestStep;
             const active = i === currentStep;
             const isSubStep = "section" in step;
@@ -2493,9 +2506,6 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
   return (
     <div className="mt-6">
       <h2 className="text-2xl font-bold text-[#1a1a2e]">Real Mockup</h2>
-      <p className="mt-2 text-sm text-[#6a6a7a]">
-        Generate a realistic AI mockup with your selected items using your bathroom photos.
-      </p>
 
       <input
         ref={mockupFileInputRef}
