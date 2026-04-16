@@ -212,7 +212,7 @@ function BathroomWizardPageContent() {
   }, [allPointedFlat]);
 
   const unmatchedItems = useMemo(() =>
-    allPointedFlat.filter((pi) => !pi.loading && !pi.matchedItemLabel && pi.selectedProductIdx !== null),
+    allPointedFlat.filter((pi) => !pi.loading && !pi.matchedItemLabel && pi.label !== "Unknown item" && pi.label !== "Could not identify" && pi.label !== "Identifying..."),
   [allPointedFlat]);
 
   /* Compute actual room sqft — ft+in values are always pre-computed regardless of unit mode */
@@ -319,6 +319,10 @@ function BathroomWizardPageContent() {
     }
     // Block advancing from goal sub-step 1 if required fields missing
     if (currentStep === 0 && goalSubStep === 1 && !goalSubStep1Valid) {
+      return;
+    }
+    // Block advancing from must-haves step if nothing selected
+    if (currentStep === 1 && store.mustHaves.length === 0 && store.niceToHaves.length === 0) {
       return;
     }
     const nextIdx = Math.min(currentStep + 1, STEPS.length - 1);
@@ -456,7 +460,7 @@ function BathroomWizardPageContent() {
             </button>
           </div>
         </div>
-        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${[3, 4, 5, 6].includes(currentStep) ? "max-w-[1400px]" : currentStep === 1 ? "max-w-6xl" : "max-w-3xl"} w-full ${[3, 4, 5, 6].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[200px]" : ""}`}>
+        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${[3, 4, 5, 6].includes(currentStep) ? "max-w-[1400px]" : currentStep === 1 ? "max-w-6xl" : "max-w-3xl"} w-full ${[3, 4, 5, 6].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[170px]" : ""}`}>
           {currentStep === 0 && <GoalStep subStep={goalSubStep} />}
           {currentStep > 0 && (
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
@@ -482,7 +486,7 @@ function BathroomWizardPageContent() {
             {currentStep < STEPS.length - 1 ? (
               <button
                 onClick={next}
-                disabled={currentStep === 0 && goalSubStep === 1 && !goalSubStep1Valid}
+                disabled={(currentStep === 0 && goalSubStep === 1 && !goalSubStep1Valid) || (currentStep === 1 && store.mustHaves.length === 0 && store.niceToHaves.length === 0)}
                 className="flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next <FaArrowRight className="text-xs" />
@@ -510,9 +514,8 @@ function BathroomWizardPageContent() {
               <div className="px-5 pt-5 pb-3">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-[#1a1a2e]">
                   <FaClipboardList className="text-xs text-[#2d5a3d]" />
-                  Your Items
+                  Checklist
                 </h3>
-                <p className="mt-0.5 text-xs text-[#9a9aaa]">Find products for each item</p>
               </div>
 
             <div className="px-5 pb-5 space-y-5">
@@ -2505,7 +2508,26 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
 
   return (
     <div className="mt-6">
-      <h2 className="text-2xl font-bold text-[#1a1a2e]">Real Mockup</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-[#1a1a2e]">Real Mockup</h2>
+        <button
+          onClick={handleGenerateMockup}
+          disabled={store.mockupLoading || store.mockupBathroomPhotos.length === 0 || includedProducts.length === 0}
+          className="flex items-center gap-2 rounded-xl bg-[#2d5a3d] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {store.mockupLoading ? (
+            <>
+              <FaSpinner className="animate-spin text-sm" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <FaWandMagicSparkles className="text-sm" />
+              Generate Mockup
+            </>
+          )}
+        </button>
+      </div>
 
       <input
         ref={mockupFileInputRef}
@@ -2516,140 +2538,129 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
         onChange={handleMockupFileUpload}
       />
 
-      {/* ── Input section: photos + items side by side ── */}
+      {/* ── Bathroom Photos ── */}
       <div className="mt-6 rounded-2xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
-        <div className="grid gap-6 lg:grid-cols-[1fr_1px_2fr]">
-          {/* ── Left: Bathroom photos with upload/remove ── */}
-          <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
-              <FaCamera className="text-xs text-[#2d5a3d]" />
-              Your Bathroom Photos
-            </h3>
-            <p className="mt-1 text-xs text-[#9a9aaa]">
-              Upload at least 1 angle of your current bathroom.
-            </p>
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+          <FaCamera className="text-xs text-[#2d5a3d]" />
+          Your Bathroom Photos
+        </h3>
+        <p className="mt-1 text-xs text-[#9a9aaa]">
+          Upload at least 1 angle of your current bathroom.
+        </p>
 
-            <div className="mt-3 grid grid-cols-1 gap-2.5">
-              {store.mockupBathroomPhotos.map((photo, i) => (
-                <div key={i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
-                  <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
-                  <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
-                  <button
-                    onClick={() => store.removeMockupPhoto(i)}
-                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
-                  >
-                    <FaXmark className="text-[10px]" />
-                  </button>
-                  <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
-                    Angle {i + 1}
-                  </span>
-                </div>
-              ))}
-
+        <div className="mt-3 grid grid-cols-3 gap-2.5">
+          {store.mockupBathroomPhotos.map((photo, i) => (
+            <div key={i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
+              <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
+              <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
               <button
-                onClick={() => mockupFileInputRef.current?.click()}
-                className="flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+                onClick={() => store.removeMockupPhoto(i)}
+                className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
               >
-                <FaUpload className="text-lg text-[#9a9aaa]" />
-                <span className="text-[10px] font-medium text-[#6a6a7a]">
-                  {store.mockupBathroomPhotos.length === 0 ? "Upload Photo" : "Add Another"}
-                </span>
+                <FaXmark className="text-[10px]" />
               </button>
-            </div>
-          </div>
-
-          {/* Vertical divider */}
-          <div className="hidden bg-[#e8e6e1] lg:block" />
-
-          {/* ── Right: Items with toggle checkboxes ── */}
-          <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
-              <FaCartShopping className="text-xs text-[#2d5a3d]" />
-              Items to Include
-              <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">
-                {includedProducts.length}/{selectedProducts.length}
+              <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                Angle {i + 1}
               </span>
-            </h3>
-            <p className="mt-1 text-xs text-[#9a9aaa]">
-              Toggle items on or off for this mockup.
-            </p>
+            </div>
+          ))}
 
-            {selectedProducts.length === 0 ? (
-              <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] p-6 text-center">
-                <FaCartShopping className="text-xl text-[#d5d3cd]" />
-                <p className="text-xs text-[#9a9aaa]">No items selected yet.</p>
-                <p className="text-[10px] text-[#c5c3bd]">Go to Items &amp; Materials to select products.</p>
-              </div>
-            ) : (
-              <div className="mt-3 grid grid-cols-3 gap-2.5 max-h-[400px] overflow-y-auto pr-1">
-                {selectedProducts.map((p, i) => {
-                  const included = !excludedIndices.has(i);
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => toggleItem(i)}
-                      className={`group relative flex flex-col overflow-hidden rounded-xl border transition ${
-                        included
-                          ? "border-[#2d5a3d] bg-white shadow-sm"
-                          : "border-[#e8e6e1] bg-[#f5f4f1] opacity-60"
-                      }`}
-                    >
-                      {/* Checkbox indicator */}
-                      <div className={`absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full text-[9px] shadow ${
-                        included ? "bg-[#2d5a3d] text-white" : "border border-[#c5c3bd] bg-white text-transparent"
-                      }`}>
-                        <FaCheck />
-                      </div>
-                      {p.thumbnail && (
-                        <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
-                          <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="200px" unoptimized />
-                        </div>
-                      )}
-                      <div className="p-2 text-left">
-                        <p className="line-clamp-2 text-[11px] font-medium leading-tight text-[#1a1a2e]">{p.title}</p>
-                        {p.price && <p className="mt-0.5 text-[10px] font-semibold text-[#2d5a3d]">{p.price}</p>}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Error message */}
-        {error && (
-          <div className="mt-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
-            <FaCircleExclamation className="shrink-0 text-xs" />
-            {error}
-          </div>
-        )}
-
-        {/* Generate button */}
-        <div className="mt-5 flex justify-center">
           <button
-            onClick={handleGenerateMockup}
-            disabled={store.mockupLoading || store.mockupBathroomPhotos.length === 0 || includedProducts.length === 0}
-            className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => mockupFileInputRef.current?.click()}
+            className="flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
           >
-            {store.mockupLoading ? (
-              <>
-                <FaSpinner className="animate-spin text-sm" />
-                Generating Mockup...
-              </>
-            ) : (
-              <>
-                <FaWandMagicSparkles className="text-sm" />
-                Generate Mockup
-                <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                  {store.mockupBathroomPhotos.length} photo{store.mockupBathroomPhotos.length !== 1 ? "s" : ""} + {includedProducts.length} item{includedProducts.length !== 1 ? "s" : ""}
-                </span>
-              </>
-            )}
+            <FaUpload className="text-lg text-[#9a9aaa]" />
+            <span className="text-[10px] font-medium text-[#6a6a7a]">
+              {store.mockupBathroomPhotos.length === 0 ? "Upload Photo" : "Add Another"}
+            </span>
           </button>
         </div>
       </div>
+
+      {/* ── Items to Include ── */}
+      <div className="mt-4 rounded-2xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+          <FaCartShopping className="text-xs text-[#2d5a3d]" />
+          Items to Include
+          <span className="rounded-full bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#2d5a3d]">
+            {includedProducts.length}/{selectedProducts.length}
+          </span>
+        </h3>
+        <p className="mt-1 text-xs text-[#9a9aaa]">
+          Toggle items on or off for this mockup.
+        </p>
+
+        {selectedProducts.length === 0 ? (
+          <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] p-6 text-center">
+            <FaCartShopping className="text-xl text-[#d5d3cd]" />
+            <p className="text-xs text-[#9a9aaa]">No items selected yet.</p>
+            <p className="text-[10px] text-[#c5c3bd]">Go to Items &amp; Materials to select products.</p>
+          </div>
+        ) : (
+          <div className="mt-3 grid grid-cols-5 gap-2.5 max-h-[500px] overflow-y-auto pr-1">
+            {selectedProducts.map((p, i) => {
+              const included = !excludedIndices.has(i);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => toggleItem(i)}
+                  className={`group relative flex flex-col overflow-hidden rounded-xl border transition ${
+                    included
+                      ? "border-[#2d5a3d] bg-white shadow-sm"
+                      : "border-[#e8e6e1] bg-[#f5f4f1] opacity-60"
+                  }`}
+                >
+                  {/* Checkbox indicator */}
+                  <div className={`absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full text-[9px] shadow ${
+                    included ? "bg-[#2d5a3d] text-white" : "border border-[#c5c3bd] bg-white text-transparent"
+                  }`}>
+                    <FaCheck />
+                  </div>
+                  {p.thumbnail && (
+                    <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
+                      <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="200px" unoptimized />
+                    </div>
+                  )}
+                  <div className="p-2 text-left">
+                    <p className="line-clamp-2 text-[11px] font-medium leading-tight text-[#1a1a2e]">{p.title}</p>
+                    {p.price && <p className="mt-0.5 text-[10px] font-semibold text-[#2d5a3d]">{p.price}</p>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+          <FaCircleExclamation className="shrink-0 text-xs" />
+          {error}
+        </div>
+      )}
+
+      {/* Generate button */}
+      <div className="mt-5 flex justify-center">
+        <button
+          onClick={handleGenerateMockup}
+          disabled={store.mockupLoading || store.mockupBathroomPhotos.length === 0 || includedProducts.length === 0}
+          className="flex items-center gap-2.5 rounded-xl bg-[#2d5a3d] px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-[#2d5a3d]/20 transition hover:bg-[#234a31] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {store.mockupLoading ? (
+            <>
+              <FaSpinner className="animate-spin text-sm" />
+              Generating Mockup...
+            </>
+          ) : (
+            <>
+              <FaWandMagicSparkles className="text-sm" />
+              Generate Mockup
+            </>
+          )}
+        </button>
+        </div>
 
       {/* Generated results */}
       {store.mockupGeneratedImages.length > 0 && (
