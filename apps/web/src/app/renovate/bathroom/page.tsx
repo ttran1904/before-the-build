@@ -2624,7 +2624,7 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
                   )}
                   <div className="p-2 text-left">
                     <p className="line-clamp-2 text-[11px] font-medium leading-tight text-[#1a1a2e]">{p.title}</p>
-                    {p.price && <p className="mt-0.5 text-[10px] font-semibold text-[#2d5a3d]">{p.price}</p>}
+                    {p.price && <p className="mt-0.5 text-sm font-bold text-[#2d5a3d]">{p.price}</p>}
                   </div>
                 </button>
               );
