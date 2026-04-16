@@ -59,6 +59,10 @@ export interface BathroomWizardState {
   moodboardPointedItems: Record<string, PointedItem[]>;
   moodboardManualProducts: Product[];
   moodboardDragPositions: Record<number, { x: number; y: number }>;
+  // Catalogue selections (separate from manual/shopping)
+  catalogueProducts: Product[];
+  // Shopping / manual-link products
+  shoppingProducts: Product[];
   // Real Mockup state
   mockupBathroomPhotos: string[]; // base64 data URLs of uploaded bathroom photos
   mockupGeneratedImages: string[]; // URLs of AI-generated mockup images
@@ -95,6 +99,8 @@ interface WizardActions {
   setMoodboardPointedItems: (updater: Record<string, PointedItem[]> | ((prev: Record<string, PointedItem[]>) => Record<string, PointedItem[]>)) => void;
   setMoodboardManualProducts: (updater: Product[] | ((prev: Product[]) => Product[])) => void;
   setMoodboardDragPositions: (updater: Record<number, { x: number; y: number }> | ((prev: Record<number, { x: number; y: number }>) => Record<number, { x: number; y: number }>)) => void;
+  setCatalogueProducts: (updater: Product[] | ((prev: Product[]) => Product[])) => void;
+  setShoppingProducts: (updater: Product[] | ((prev: Product[]) => Product[])) => void;
   addMockupPhoto: (dataUrl: string) => void;
   removeMockupPhoto: (index: number) => void;
   setMockupGeneratedImages: (images: string[]) => void;
@@ -134,6 +140,8 @@ const initialState: BathroomWizardState = {
   moodboardPointedItems: {},
   moodboardManualProducts: [],
   moodboardDragPositions: {},
+  catalogueProducts: [],
+  shoppingProducts: [],
   mockupBathroomPhotos: [],
   mockupGeneratedImages: [],
   mockupLoading: false,
@@ -190,6 +198,12 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>()(
       })),
       setMoodboardDragPositions: (updater) => set((state) => ({
         moodboardDragPositions: typeof updater === "function" ? updater(state.moodboardDragPositions) : updater,
+      })),
+      setCatalogueProducts: (updater) => set((state) => ({
+        catalogueProducts: typeof updater === "function" ? updater(state.catalogueProducts) : updater,
+      })),
+      setShoppingProducts: (updater) => set((state) => ({
+        shoppingProducts: typeof updater === "function" ? updater(state.shoppingProducts) : updater,
       })),
       addMockupPhoto: (dataUrl) => set((state) => ({
         mockupBathroomPhotos: [...state.mockupBathroomPhotos, dataUrl],

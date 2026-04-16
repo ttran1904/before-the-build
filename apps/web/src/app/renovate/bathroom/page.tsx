@@ -9,7 +9,7 @@ import {
   FaChartLine, FaUpRightAndDownLeftFromCenter, FaLeaf, FaPaintRoller,
   FaChildReaching, FaWheelchair, FaWrench, FaBox, FaSpa,
   FaPaintbrush, FaScrewdriverWrench, FaHammer, FaRuler,
-  FaCompass, FaTrash, FaPlus,
+  FaCompass, FaTrash, FaPlus, FaMinus,
   FaCalendarDays, FaHelmetSafety, FaStar, FaStarHalfStroke,
   FaCircleCheck, FaThumbsUp, FaClock, FaDiamond,
   FaArrowUpRightFromSquare, FaLocationDot, FaShieldHalved, FaMagnifyingGlass,
@@ -98,8 +98,9 @@ const STEPS = [
   { id: "bathroom-info", label: "Bathroom Info", icon: FaRulerCombined, section: "goal" },
   { id: "must-haves", label: "Must-Haves", icon: FaClipboardList, section: "goal" },
   { id: "budget", label: "Budget", icon: FaCoins, section: "goal" },
-  { id: "items-pictures", label: "From Pictures", icon: FaCrosshairs, section: "items-materials" },
+  { id: "items-pictures", label: "From Ideas", icon: FaCrosshairs, section: "items-materials" },
   { id: "catalogue", label: "From Catalogue", icon: FaSwatchbook, section: "items-materials" },
+  { id: "shopping", label: "From Shopping", icon: FaLink, section: "items-materials" },
   { id: "moodboard", label: "Moodboard", icon: FaImages, section: "visualize" },
   { id: "mockup", label: "Real Mockup", icon: FaCamera, section: "visualize" },
   { id: "summary", label: "Build Book", icon: FaListCheck },
@@ -183,6 +184,10 @@ function BathroomWizardPageContent() {
   const setMoodboardManualProducts = store.setMoodboardManualProducts;
   const moodboardDragPositions = store.moodboardDragPositions;
   const setMoodboardDragPositions = store.setMoodboardDragPositions;
+  const catalogueProducts = store.catalogueProducts;
+  const setCatalogueProducts = store.setCatalogueProducts;
+  const shoppingProducts = store.shoppingProducts;
+  const setShoppingProducts = store.setShoppingProducts;
 
   /* Goal sub-step removed — now separate wizard steps */
 
@@ -197,6 +202,66 @@ function BathroomWizardPageContent() {
   /* Budget Builder — deterministic graph engine */
   const [budgetBuilderOpen, setBudgetBuilderOpen] = useState(false);
   const [includeNiceToHaves, setIncludeNiceToHaves] = useState(true);
+  const [shoppingCartOpen, setShoppingCartOpen] = useState(false);
+
+  /* All selected products across all 3 sources */
+  const allSelectedFromPointed = useMemo(() =>
+    Object.entries(moodboardPointedItems).flatMap(([imageId, items]) =>
+      items
+        .filter(p => p.selectedProductIdx !== null && p.products[p.selectedProductIdx!])
+        .map(p => ({ product: p.products[p.selectedProductIdx!], source: "ideas" as const, imageId, pointedId: p.id, productIdx: p.selectedProductIdx! }))
+    ), [moodboardPointedItems]);
+
+  const allSelectedProducts = useMemo(() => [
+    ...allSelectedFromPointed.map(e => e.product),
+    ...catalogueProducts,
+    ...shoppingProducts,
+  ], [allSelectedFromPointed, catalogueProducts, shoppingProducts]);
+
+  /* Cart quantities — keyed by "source:id" */
+  const [cartQuantities, setCartQuantities] = useState<Record<string, number>>({});
+  const getCartKey = useCallback((source: string, id: string) => `${source}:${id}`, []);
+  const getCartQty = useCallback((source: string, id: string) => cartQuantities[getCartKey(source, id)] ?? 1, [cartQuantities, getCartKey]);
+  const setCartQty = useCallback((source: string, id: string, qty: number) => {
+    setCartQuantities(prev => ({ ...prev, [getCartKey(source, id)]: Math.max(1, qty) }));
+  }, [getCartKey]);
+
+  /* Auto-estimate tile quantities for pointed items using price overrides */
+  useEffect(() => {
+    setCartQuantities(prev => {
+      const next = { ...prev };
+      for (const entry of allSelectedFromPointed) {
+        const key = getCartKey("ideas", entry.pointedId);
+        if (next[key] !== undefined) continue; // user already set a quantity
+        const pi = (moodboardPointedItems[entry.imageId] || []).find(p => p.id === entry.pointedId);
+        if (!pi) continue;
+        const overrideLabel = pi.matchedItemLabel || pi.label;
+        const override = store.priceOverrides.find(o => o.itemLabel === overrideLabel);
+        if (override?.tileInfo) {
+          next[key] = override.tileInfo.quantity;
+        }
+      }
+      return next;
+    });
+  }, [allSelectedFromPointed, moodboardPointedItems, store.priceOverrides, getCartKey]);
+
+  /* Cart subtotal */
+  const cartSubtotal = useMemo(() => {
+    let total = 0;
+    for (const entry of allSelectedFromPointed) {
+      const price = entry.product.price ? parseFloat(entry.product.price.replace(/[^0-9.]/g, "")) : 0;
+      if (!isNaN(price)) total += price * getCartQty("ideas", entry.pointedId);
+    }
+    for (let i = 0; i < catalogueProducts.length; i++) {
+      const price = catalogueProducts[i].price ? parseFloat(catalogueProducts[i].price.replace(/[^0-9.]/g, "")) : 0;
+      if (!isNaN(price)) total += price * getCartQty("catalogue", String(i));
+    }
+    for (let i = 0; i < shoppingProducts.length; i++) {
+      const price = shoppingProducts[i].price ? parseFloat(shoppingProducts[i].price.replace(/[^0-9.]/g, "")) : 0;
+      if (!isNaN(price)) total += price * getCartQty("shopping", String(i));
+    }
+    return total;
+  }, [allSelectedFromPointed, catalogueProducts, shoppingProducts, getCartQty]);
 
   /* Items Checklist — computed from moodboard pointed items */
   const allPointedFlat = useMemo(() => Object.values(moodboardPointedItems).flat(), [moodboardPointedItems]);
@@ -276,16 +341,36 @@ function BathroomWizardPageContent() {
   }, [store.roomWidth, store.roomWidthIn, store.roomLength, store.roomLengthIn]);
 
   /* Budget — nice-to-haves only included when matched in moodboard */
-  const budgetGraph: BudgetGraphResult = useMemo(() => computeBudgetGraph({
-    roomSize: store.bathroomSize,
-    roomSqft,
-    scope: store.scope,
-    mustHaves: store.mustHaves,
-    niceToHaves: store.niceToHaves.filter(nh => matchedLabels.has(nh)),
-    includeNiceToHaves,
-    customerBudget: store.budgetAmount,
-    priceOverrides: store.priceOverrides,
-  }), [store.bathroomSize, roomSqft, store.scope, store.mustHaves, store.niceToHaves, store.budgetAmount, store.priceOverrides, includeNiceToHaves, matchedLabels]);
+  const budgetGraph: BudgetGraphResult = useMemo(() => {
+    // Build combined overrides: pointed items (with cart qty) + catalogue + shopping
+    const extraOverrides: typeof store.priceOverrides = [];
+    for (let i = 0; i < catalogueProducts.length; i++) {
+      const p = catalogueProducts[i];
+      const price = p.price ? parseFloat(p.price.replace(/[^0-9.]/g, "")) : null;
+      const qty = cartQuantities[`catalogue:${i}`] ?? 1;
+      if (price && !isNaN(price)) {
+        extraOverrides.push({ itemLabel: `catalogue:${p.title}`, materialCost: Math.round(price * qty), laborCost: Math.round(price * qty * 0.55) });
+      }
+    }
+    for (let i = 0; i < shoppingProducts.length; i++) {
+      const p = shoppingProducts[i];
+      const price = p.price ? parseFloat(p.price.replace(/[^0-9.]/g, "")) : null;
+      const qty = cartQuantities[`shopping:${i}`] ?? 1;
+      if (price && !isNaN(price)) {
+        extraOverrides.push({ itemLabel: `shopping:${p.title}`, materialCost: Math.round(price * qty), laborCost: Math.round(price * qty * 0.55) });
+      }
+    }
+    return computeBudgetGraph({
+      roomSize: store.bathroomSize,
+      roomSqft,
+      scope: store.scope,
+      mustHaves: store.mustHaves,
+      niceToHaves: store.niceToHaves.filter(nh => matchedLabels.has(nh)),
+      includeNiceToHaves,
+      customerBudget: store.budgetAmount,
+      priceOverrides: [...store.priceOverrides, ...extraOverrides],
+    });
+  }, [store.bathroomSize, roomSqft, store.scope, store.mustHaves, store.niceToHaves, store.budgetAmount, store.priceOverrides, includeNiceToHaves, matchedLabels, catalogueProducts, shoppingProducts, cartQuantities]);
 
   const currentHash = useMemo(() => wizardInputHash(store), [store.goals, store.scope, store.mustHaves, store.niceToHaves, store.budgetTier, store.bathroomSize, store.style]);
 
@@ -486,7 +571,7 @@ function BathroomWizardPageContent() {
       <main className="flex-1 flex flex-col overflow-y-auto">
         {/* Budget Estimator – sticky top bar */}
         <div className="sticky top-0 z-30 border-b border-[#e8e6e1] bg-white/95 backdrop-blur-sm">
-          <div className="mx-auto flex items-center justify-start px-8 py-2.5">
+          <div className="mx-auto flex items-center justify-between px-8 py-2.5">
             <button
               onClick={() => setBudgetBuilderOpen((v) => !v)}
               className="group flex items-center gap-3 rounded-lg border border-[#d5d3cd] bg-white px-4 py-2 shadow-sm transition hover:border-[#d4a24c] hover:shadow-md"
@@ -499,20 +584,267 @@ function BathroomWizardPageContent() {
               </span>
               <FaArrowUpRightFromSquare className="text-[9px] text-[#3d3d3d]/30 group-hover:text-[#d4a24c] transition" />
             </button>
+
+            {/* Shopping Cart Tracker — only on Items & Materials steps */}
+            {[4, 5, 6].includes(currentStep) && (
+              <button
+                onClick={() => setShoppingCartOpen((v) => !v)}
+                className="relative flex items-center gap-2 rounded-lg border border-[#d5d3cd] bg-white px-4 py-2 shadow-sm transition hover:border-[#2d5a3d] hover:shadow-md"
+              >
+                <FaCartShopping className="text-sm text-[#2d5a3d]" />
+                <span className="text-sm font-semibold text-[#3d3d3d]">My Items</span>
+                {allSelectedProducts.length > 0 && (
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#2d5a3d] px-1.5 text-[10px] font-bold text-white">
+                    {allSelectedProducts.length}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </div>
-        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${[4, 5, 6, 7].includes(currentStep) ? "max-w-[1400px]" : currentStep === 2 ? "max-w-6xl" : "max-w-3xl"} w-full ${[4, 5, 6, 7].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[170px]" : ""}`}>
+
+        {/* Shopping Cart Drawer */}
+        {shoppingCartOpen && [4, 5, 6].includes(currentStep) && (
+          <div className="fixed inset-0 z-40 flex justify-end" onClick={() => setShoppingCartOpen(false)}>
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+            <div className="relative z-10 flex h-full w-full max-w-lg flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-[#e8e6e1] px-6 py-4">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-[#1a1a2e]">
+                  <FaCartShopping className="text-[#2d5a3d]" />
+                  Selected Items
+                  <span className="rounded-full bg-[#2d5a3d]/10 px-2 py-0.5 text-xs font-medium text-[#2d5a3d]">{allSelectedProducts.length}</span>
+                </h3>
+                <button onClick={() => setShoppingCartOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-full text-[#9a9aaa] transition hover:bg-[#f8f7f4] hover:text-[#4a4a5a]">
+                  <FaXmark className="text-sm" />
+                </button>
+              </div>
+
+              {/* Items list */}
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                {allSelectedProducts.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <FaCartShopping className="mb-3 text-3xl text-[#e8e6e1]" />
+                    <p className="text-sm font-medium text-[#9a9aaa]">No items selected yet</p>
+                    <p className="mt-1 text-xs text-[#c5c3bd]">Select items from Ideas, Catalogue, or Shopping.</p>
+                  </div>
+                )}
+
+                {/* From Ideas */}
+                {allSelectedFromPointed.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#6a6a7a] uppercase tracking-wide">
+                      <FaCrosshairs className="text-[10px]" /> From Ideas ({allSelectedFromPointed.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {allSelectedFromPointed.map((entry) => {
+                        const unitPrice = entry.product.price ? parseFloat(entry.product.price.replace(/[^0-9.]/g, "")) : null;
+                        const qty = getCartQty("ideas", entry.pointedId);
+                        return (
+                          <div key={entry.pointedId} className="rounded-xl border border-[#e8e6e1] bg-white p-3">
+                            {/* Top row: image | name | price */}
+                            <div className="flex items-start gap-3">
+                              {entry.product.thumbnail && (
+                                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+                                  <Image src={entry.product.thumbnail} alt={entry.product.title} fill className="object-cover" sizes="80px" unoptimized />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="line-clamp-2 text-sm font-medium leading-snug text-[#1a1a2e]">{entry.product.title}</p>
+                              </div>
+                              {entry.product.price && (
+                                <span className="shrink-0 text-base font-bold text-[#1a1a2e]">{entry.product.price}</span>
+                              )}
+                            </div>
+                            {/* Bottom row: trash + qty controls | line total */}
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => {
+                                    setMoodboardPointedItems((prev) => ({
+                                      ...prev,
+                                      [entry.imageId]: (prev[entry.imageId] || []).map(item =>
+                                        item.id === entry.pointedId ? { ...item, selectedProductIdx: null } : item
+                                      ),
+                                    }));
+                                    setCartQuantities(prev => { const n = { ...prev }; delete n[getCartKey("ideas", entry.pointedId)]; return n; });
+                                  }}
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e8e6e1] text-[#9a9aaa] transition hover:border-red-300 hover:text-red-500"
+                                >
+                                  <FaTrash className="text-xs" />
+                                </button>
+                                <div className="ml-1 flex items-center rounded-lg border border-[#e8e6e1]">
+                                  <button onClick={() => setCartQty("ideas", entry.pointedId, qty - 1)} className="flex h-8 w-8 items-center justify-center text-[#6a6a7a] transition hover:bg-[#f8f7f4]">
+                                    <FaMinus className="text-[10px]" />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    value={qty}
+                                    onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v) && v >= 1) setCartQty("ideas", entry.pointedId, v); }}
+                                    className="h-8 w-12 border-x border-[#e8e6e1] text-center text-sm font-medium text-[#1a1a2e] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  />
+                                  <button onClick={() => setCartQty("ideas", entry.pointedId, qty + 1)} className="flex h-8 w-8 items-center justify-center text-[#6a6a7a] transition hover:bg-[#f8f7f4]">
+                                    <FaPlus className="text-[10px]" />
+                                  </button>
+                                </div>
+                              </div>
+                              {unitPrice !== null && !isNaN(unitPrice) && qty > 1 && (
+                                <span className="text-sm font-semibold text-[#2d5a3d]">${(unitPrice * qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* From Catalogue */}
+                {catalogueProducts.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#6a6a7a] uppercase tracking-wide">
+                      <FaSwatchbook className="text-[10px]" /> From Catalogue ({catalogueProducts.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {catalogueProducts.map((p, i) => {
+                        const unitPrice = p.price ? parseFloat(p.price.replace(/[^0-9.]/g, "")) : null;
+                        const qty = getCartQty("catalogue", String(i));
+                        return (
+                          <div key={i} className="rounded-xl border border-[#e8e6e1] bg-white p-3">
+                            <div className="flex items-start gap-3">
+                              {p.thumbnail && (
+                                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+                                  <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="80px" unoptimized />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="line-clamp-2 text-sm font-medium leading-snug text-[#1a1a2e]">{p.title}</p>
+                              </div>
+                              {p.price && <span className="shrink-0 text-base font-bold text-[#1a1a2e]">{p.price}</span>}
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => {
+                                    setCatalogueProducts((prev) => prev.filter((_, idx) => idx !== i));
+                                    setCartQuantities(prev => { const n = { ...prev }; delete n[getCartKey("catalogue", String(i))]; return n; });
+                                  }}
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e8e6e1] text-[#9a9aaa] transition hover:border-red-300 hover:text-red-500"
+                                >
+                                  <FaTrash className="text-xs" />
+                                </button>
+                                <div className="ml-1 flex items-center rounded-lg border border-[#e8e6e1]">
+                                  <button onClick={() => setCartQty("catalogue", String(i), qty - 1)} className="flex h-8 w-8 items-center justify-center text-[#6a6a7a] transition hover:bg-[#f8f7f4]">
+                                    <FaMinus className="text-[10px]" />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    value={qty}
+                                    onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v) && v >= 1) setCartQty("catalogue", String(i), v); }}
+                                    className="h-8 w-12 border-x border-[#e8e6e1] text-center text-sm font-medium text-[#1a1a2e] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  />
+                                  <button onClick={() => setCartQty("catalogue", String(i), qty + 1)} className="flex h-8 w-8 items-center justify-center text-[#6a6a7a] transition hover:bg-[#f8f7f4]">
+                                    <FaPlus className="text-[10px]" />
+                                  </button>
+                                </div>
+                              </div>
+                              {unitPrice !== null && !isNaN(unitPrice) && qty > 1 && (
+                                <span className="text-sm font-semibold text-[#2d5a3d]">${(unitPrice * qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* From Shopping */}
+                {shoppingProducts.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#6a6a7a] uppercase tracking-wide">
+                      <FaLink className="text-[10px]" /> From Shopping ({shoppingProducts.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {shoppingProducts.map((p, i) => {
+                        const unitPrice = p.price ? parseFloat(p.price.replace(/[^0-9.]/g, "")) : null;
+                        const qty = getCartQty("shopping", String(i));
+                        return (
+                          <div key={i} className="rounded-xl border border-[#e8e6e1] bg-white p-3">
+                            <div className="flex items-start gap-3">
+                              {p.thumbnail && (
+                                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
+                                  <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="80px" unoptimized />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="line-clamp-2 text-sm font-medium leading-snug text-[#1a1a2e]">{p.title}</p>
+                              </div>
+                              {p.price && <span className="shrink-0 text-base font-bold text-[#1a1a2e]">{p.price}</span>}
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => {
+                                    setShoppingProducts((prev) => prev.filter((_, idx) => idx !== i));
+                                    setCartQuantities(prev => { const n = { ...prev }; delete n[getCartKey("shopping", String(i))]; return n; });
+                                  }}
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e8e6e1] text-[#9a9aaa] transition hover:border-red-300 hover:text-red-500"
+                                >
+                                  <FaTrash className="text-xs" />
+                                </button>
+                                <div className="ml-1 flex items-center rounded-lg border border-[#e8e6e1]">
+                                  <button onClick={() => setCartQty("shopping", String(i), qty - 1)} className="flex h-8 w-8 items-center justify-center text-[#6a6a7a] transition hover:bg-[#f8f7f4]">
+                                    <FaMinus className="text-[10px]" />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    value={qty}
+                                    onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v) && v >= 1) setCartQty("shopping", String(i), v); }}
+                                    className="h-8 w-12 border-x border-[#e8e6e1] text-center text-sm font-medium text-[#1a1a2e] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  />
+                                  <button onClick={() => setCartQty("shopping", String(i), qty + 1)} className="flex h-8 w-8 items-center justify-center text-[#6a6a7a] transition hover:bg-[#f8f7f4]">
+                                    <FaPlus className="text-[10px]" />
+                                  </button>
+                                </div>
+                              </div>
+                              {unitPrice !== null && !isNaN(unitPrice) && qty > 1 && (
+                                <span className="text-sm font-semibold text-[#2d5a3d]">${(unitPrice * qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer with subtotal */}
+              <div className="border-t border-[#e8e6e1] px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-[#6a6a7a]">Subtotal</span>
+                  <span className="text-lg font-bold text-[#2d5a3d]">
+                    ${cartSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${[4, 5, 6, 7, 8].includes(currentStep) ? "max-w-[1400px]" : currentStep === 2 ? "max-w-6xl" : "max-w-3xl"} w-full ${[4, 5, 6, 7, 8].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[170px]" : ""}`}>
           {currentStep === 0 && <GoalStep />}
           {currentStep === 1 && <BathroomInfoStep />}
           {currentStep > 1 && (
           <div className="rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-lg shadow-black/5">
             {currentStep === 2 && <MustHavesStep />}
             {currentStep === 3 && <BudgetStep />}
-            {currentStep === 4 && <MoodboardStep view="items-pictures" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 5 && <MoodboardStep view="catalogue" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 6 && <MoodboardStep view="moodboard" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 7 && <MoodboardStep view="mockup" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} />}
-            {currentStep === 8 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} pointedItems={moodboardPointedItems} manualProducts={moodboardManualProducts} dragPositions={moodboardDragPositions} thumbtackResults={thumbtackResults} googleResults={googleResults} />}
+            {currentStep === 4 && <MoodboardStep view="items-pictures" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} catalogueProducts={catalogueProducts} setCatalogueProducts={setCatalogueProducts} shoppingProducts={shoppingProducts} setShoppingProducts={setShoppingProducts} />}
+            {currentStep === 5 && <MoodboardStep view="catalogue" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} catalogueProducts={catalogueProducts} setCatalogueProducts={setCatalogueProducts} shoppingProducts={shoppingProducts} setShoppingProducts={setShoppingProducts} />}
+            {currentStep === 6 && <MoodboardStep view="shopping" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} catalogueProducts={catalogueProducts} setCatalogueProducts={setCatalogueProducts} shoppingProducts={shoppingProducts} setShoppingProducts={setShoppingProducts} />}
+            {currentStep === 7 && <MoodboardStep view="moodboard" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} catalogueProducts={catalogueProducts} setCatalogueProducts={setCatalogueProducts} shoppingProducts={shoppingProducts} setShoppingProducts={setShoppingProducts} />}
+            {currentStep === 8 && <MoodboardStep view="mockup" pointedItems={moodboardPointedItems} setPointedItems={setMoodboardPointedItems} manualProducts={moodboardManualProducts} setManualProducts={setMoodboardManualProducts} dragPositions={moodboardDragPositions} setDragPositions={setMoodboardDragPositions} catalogueProducts={catalogueProducts} setCatalogueProducts={setCatalogueProducts} shoppingProducts={shoppingProducts} setShoppingProducts={setShoppingProducts} />}
+            {currentStep === 9 && <SummaryStep tasks={timelineTasks} contractorCount={thumbtackResults.length + googleResults.length} budgetGraph={budgetGraph} pointedItems={moodboardPointedItems} manualProducts={moodboardManualProducts} dragPositions={moodboardDragPositions} thumbtackResults={thumbtackResults} googleResults={googleResults} />}
           </div>
           )}
 
@@ -546,7 +878,7 @@ function BathroomWizardPageContent() {
       </main>
 
       {/* ── Right sidebar: Items Checklist (Moodboard step only) ── */}
-      {[4, 5, 6, 7].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) && (
+      {[4, 5, 6, 7, 8].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) && (
         <div
           className="fixed z-20 flex items-center"
           style={{ top: "52px", right: "-16px", width: "200px", height: "calc(100vh - 52px)" }}
@@ -1530,14 +1862,18 @@ function BudgetStep() {
 
 /* ── Moodboard Step (discover items + moodboard view) ── */
 
-function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, setManualProducts, dragPositions, setDragPositions }: {
-  view: "items-pictures" | "catalogue" | "moodboard" | "mockup";
+function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, setManualProducts, dragPositions, setDragPositions, catalogueProducts, setCatalogueProducts, shoppingProducts, setShoppingProducts }: {
+  view: "items-pictures" | "catalogue" | "shopping" | "moodboard" | "mockup";
   pointedItems: Record<string, PointedItem[]>;
   setPointedItems: React.Dispatch<React.SetStateAction<Record<string, PointedItem[]>>>;
   manualProducts: Product[];
   setManualProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   dragPositions: Record<number, { x: number; y: number }>;
   setDragPositions: React.Dispatch<React.SetStateAction<Record<number, { x: number; y: number }>>>;
+  catalogueProducts: Product[];
+  setCatalogueProducts: (updater: Product[] | ((prev: Product[]) => Product[])) => void;
+  shoppingProducts: Product[];
+  setShoppingProducts: (updater: Product[] | ((prev: Product[]) => Product[])) => void;
 }) {
   const { items, removeItem } = useIdeaBoardStore();
   const { mustHaves, niceToHaves, setPriceOverride, removePriceOverride,
@@ -1547,6 +1883,8 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
   const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [activeIdeaIdx, setActiveIdeaIdx] = useState(0);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   // Manual product link input state
   const [manualLinkUrl, setManualLinkUrl] = useState("");
@@ -1615,6 +1953,14 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
     product: Product;
     source: "manual";
     manualIdx: number;
+  } | {
+    product: Product;
+    source: "catalogue";
+    catalogueIdx: number;
+  } | {
+    product: Product;
+    source: "shopping";
+    shoppingIdx: number;
   };
 
   const selectedEntries: SelectedProductEntry[] = [
@@ -1629,10 +1975,15 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
           productIdx: p.selectedProductIdx!,
         })),
     ),
-    ...manualProducts.map((product, i) => ({
+    ...catalogueProducts.map((product, i) => ({
       product,
-      source: "manual" as const,
-      manualIdx: i,
+      source: "catalogue" as const,
+      catalogueIdx: i,
+    })),
+    ...shoppingProducts.map((product, i) => ({
+      product,
+      source: "shopping" as const,
+      shoppingIdx: i,
     })),
   ];
 
@@ -1641,6 +1992,10 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
   const deselectEntry = (entry: SelectedProductEntry) => {
     if (entry.source === "pointed") {
       toggleProductSelection(entry.imageId, entry.pointedId, entry.productIdx);
+    } else if (entry.source === "catalogue") {
+      setCatalogueProducts((prev) => prev.filter((_, i) => i !== entry.catalogueIdx));
+    } else if (entry.source === "shopping") {
+      setShoppingProducts((prev) => prev.filter((_, i) => i !== entry.shoppingIdx));
     } else {
       removeManualProduct(entry.manualIdx);
     }
@@ -1913,6 +2268,30 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
     setManualProducts(prev => prev.filter((_, i) => i !== idx));
   };
 
+  const handleShoppingLinkSubmit = async () => {
+    if (!manualLinkUrl.trim()) return;
+    setManualLinkLoading(true);
+    setManualLinkError(null);
+    try {
+      const res = await fetch("/api/ai/fetch-product-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: manualLinkUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setManualLinkError(data.error || "Could not pull the item from the link. There is an error.");
+      } else {
+        setShoppingProducts(prev => [...prev, data]);
+        setManualLinkUrl("");
+      }
+    } catch {
+      setManualLinkError("Could not pull the item from the link. There is an error.");
+    } finally {
+      setManualLinkLoading(false);
+    }
+  };
+
   const selectionRect = drawStart && drawCurrent ? {
     left: `${Math.min(drawStart.x, drawCurrent.x) * 100}%`,
     top: `${Math.min(drawStart.y, drawCurrent.y) * 100}%`,
@@ -2066,14 +2445,14 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
         </div>
       )}
 
-      {/* ── SECTION: Look for Items from Pictures ── */}
+      {/* ── SECTION: From Ideas ── */}
       {view === "items-pictures" && (
         <div>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-[#1a1a2e]">Items from Pictures</h2>
+              <h2 className="text-2xl font-bold text-[#1a1a2e]">Items from Ideas</h2>
               <p className="mt-2 text-sm text-[#6a6a7a]">
-                Draw a box around any item. We&apos;ll find where to buy it online.
+                Select an idea image, then draw a box around any item. We&apos;ll find where to buy it.
               </p>
             </div>
             {items.length > 0 && (
@@ -2092,21 +2471,58 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
               className="mt-6 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] p-10 transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
             >
               <FaImages className="text-3xl text-[#9a9aaa]" />
-              <span className="text-sm font-medium text-[#6a6a7a]">No images saved yet &mdash; go to Explore to build your moodboard</span>
+              <span className="text-sm font-medium text-[#6a6a7a]">No images saved yet &mdash; go to Explore to build your idea board</span>
               <span className="flex items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white">
                 <FaCompass className="text-[10px]" /> Open Explore
               </span>
             </Link>
           ) : (
             <div className="mt-6 space-y-6">
-              {items.map((item) => {
+              {/* Thumbnail carousel */}
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {items.map((item, idx) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveIdeaIdx(idx)}
+                    className={`relative shrink-0 overflow-hidden rounded-xl border-2 transition ${
+                      idx === activeIdeaIdx
+                        ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/20"
+                        : "border-[#e8e6e1] hover:border-[#c5c3bd]"
+                    }`}
+                  >
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.title || `Idea ${idx + 1}`}
+                      width={120}
+                      height={90}
+                      className="h-[90px] w-[120px] object-cover"
+                      unoptimized
+                    />
+                    {idx === activeIdeaIdx && (
+                      <div className="absolute inset-0 border-2 border-[#2d5a3d] rounded-xl" />
+                    )}
+                    {/* Badge showing found items count */}
+                    {(pointedItems[item.id] || []).length > 0 && (
+                      <span className="absolute top-1 right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#2d5a3d] px-1 text-[9px] font-bold text-white shadow">
+                        {(pointedItems[item.id] || []).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Active idea: large image + find button + items */}
+              {(() => {
+                const item = items[activeIdeaIdx];
+                if (!item) return null;
                 const pointed = pointedItems[item.id] || [];
                 const isSelecting = selectingImageId === item.id;
 
                 return (
-                  <div key={item.id} className="overflow-hidden rounded-2xl border border-[#e8e6e1]">
+                  <div className="overflow-hidden rounded-2xl border border-[#e8e6e1]">
                     {/* Action bar */}
-                    <div className="flex items-center justify-end border-b border-[#e8e6e1] bg-[#faf9f6] px-5 py-3">
+                    <div className="flex items-center justify-between border-b border-[#e8e6e1] bg-[#faf9f6] px-5 py-3">
+                      <span className="text-xs font-medium text-[#6a6a7a]">{item.title || `Idea ${activeIdeaIdx + 1}`}</span>
                       <button
                         onClick={() => setConfirmDeleteId(item.id)}
                         className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs text-[#9a9aaa] transition hover:bg-red-50 hover:text-red-500"
@@ -2115,281 +2531,204 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                       </button>
                     </div>
 
-                    <div className="flex min-h-[500px]">
-                      {/* LEFT: Image + Point-out button */}
-                      <div className="flex w-1/3 flex-col items-center border-r border-[#e8e6e1] p-4">
-                        <div
-                          className={`relative select-none overflow-hidden rounded-xl ${isSelecting ? "cursor-crosshair ring-2 ring-[#2d5a3d] ring-offset-2" : ""}`}
-                          onMouseDown={(e) => handleMouseDown(e, item.id)}
-                          onMouseMove={handleMouseMove}
-                          onMouseUp={(e) => handleMouseUp(e, item.id, item.imageUrl)}
-                          onMouseLeave={() => { if (isSelecting) { setDrawStart(null); setDrawCurrent(null); } }}
-                        >
-                          <Image
-                            src={item.imageUrl}
-                            alt={item.title || "Inspiration"}
-                            width={600}
-                            height={450}
-                            className="h-auto w-full rounded-xl object-cover"
-                            unoptimized
-                            draggable={false}
+                    {/* Large image + Find This Item button */}
+                    <div className="flex flex-col items-center p-6">
+                      <div
+                        className={`relative w-full max-w-2xl select-none overflow-hidden rounded-xl ${isSelecting ? "cursor-crosshair ring-2 ring-[#2d5a3d] ring-offset-2" : ""}`}
+                        onMouseDown={(e) => handleMouseDown(e, item.id)}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={(e) => handleMouseUp(e, item.id, item.imageUrl)}
+                        onMouseLeave={() => { if (isSelecting) { setDrawStart(null); setDrawCurrent(null); } }}
+                      >
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.title || "Inspiration"}
+                          width={800}
+                          height={600}
+                          className="h-auto w-full rounded-xl object-cover"
+                          unoptimized
+                          draggable={false}
+                        />
+
+                        {/* Active drawing rectangle */}
+                        {isSelecting && selectionRect && (
+                          <div
+                            className="pointer-events-none absolute border-2 border-dashed border-[#2d5a3d] bg-[#2d5a3d]/15"
+                            style={selectionRect}
                           />
+                        )}
 
-                          {/* Active drawing rectangle */}
-                          {isSelecting && selectionRect && (
-                            <div
-                              className="pointer-events-none absolute border-2 border-dashed border-[#2d5a3d] bg-[#2d5a3d]/15"
-                              style={selectionRect}
-                            />
-                          )}
+                        {/* Existing bounding boxes */}
+                        {pointed.map((pi, idx) => (
+                          <div
+                            key={pi.id}
+                            className="pointer-events-none absolute border-2 border-[#2d5a3d] bg-[#2d5a3d]/10"
+                            style={{
+                              left: `${pi.cropBox.x * 100}%`,
+                              top: `${pi.cropBox.y * 100}%`,
+                              width: `${pi.cropBox.w * 100}%`,
+                              height: `${pi.cropBox.h * 100}%`,
+                            }}
+                          >
+                            <span className="absolute -top-5 left-0 whitespace-nowrap rounded bg-[#2d5a3d] px-1.5 py-0.5 text-[9px] font-medium text-white shadow-sm">
+                              {pi.loading ? "Identifying..." : `${idx + 1}. ${pi.label}`}
+                            </span>
+                          </div>
+                        ))}
 
-                          {/* Existing bounding boxes */}
-                          {pointed.map((pi, idx) => (
-                            <div
-                              key={pi.id}
-                              className="pointer-events-none absolute border-2 border-[#2d5a3d] bg-[#2d5a3d]/10"
-                              style={{
-                                left: `${pi.cropBox.x * 100}%`,
-                                top: `${pi.cropBox.y * 100}%`,
-                                width: `${pi.cropBox.w * 100}%`,
-                                height: `${pi.cropBox.h * 100}%`,
-                              }}
-                            >
-                              <span className="absolute -top-5 left-0 whitespace-nowrap rounded bg-[#2d5a3d] px-1.5 py-0.5 text-[9px] font-medium text-white shadow-sm">
-                                {pi.loading ? "Identifying..." : `${idx + 1}. ${pi.label}`}
-                              </span>
-                            </div>
-                          ))}
-
-                          {/* Selection mode hint overlay */}
-                          {isSelecting && !drawStart && (
-                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/5">
-                              <span className="rounded-full bg-white/90 px-4 py-2 text-xs font-medium text-[#2d5a3d] shadow-md">
-                                Click &amp; drag to select an item
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        <button
-                          onClick={() => setSelectingImageId(isSelecting ? null : item.id)}
-                          className={`mt-3 flex w-fit items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
-                            isSelecting
-                              ? "bg-[#2d5a3d] text-white shadow-md"
-                              : "border-2 border-[#2d5a3d] text-[#2d5a3d] hover:bg-[#2d5a3d]/5"
-                          }`}
-                        >
-                          <FaHandPointer className="text-xs" />
-                          {isSelecting ? "Drawing mode \u2014 cancel" : "Point out the Item"}
-                        </button>
+                        {/* Selection mode hint overlay */}
+                        {isSelecting && !drawStart && (
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/5">
+                            <span className="rounded-full bg-white/90 px-4 py-2 text-xs font-medium text-[#2d5a3d] shadow-md">
+                              Click &amp; drag to select an item
+                            </span>
+                          </div>
+                        )}
                       </div>
 
-                      {/* RIGHT: Found items & products */}
-                      <div className="flex w-2/3 flex-col p-4">
+                      <button
+                        onClick={() => setSelectingImageId(isSelecting ? null : item.id)}
+                        className={`mt-4 flex w-fit items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition ${
+                          isSelecting
+                            ? "bg-[#2d5a3d] text-white shadow-md"
+                            : "border-2 border-[#2d5a3d] text-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+                        }`}
+                      >
+                        <FaHandPointer className="text-xs" />
+                        {isSelecting ? "Drawing mode \u2014 cancel" : "Find This Item"}
+                      </button>
+                    </div>
+
+                    {/* Found items — collapsible accordion */}
+                    {pointed.length > 0 && (
+                      <div className="border-t border-[#e8e6e1] px-6 py-4">
                         <h4 className="mb-3 text-sm font-semibold text-[#1a1a2e]">
-                          Items to Buy
-                          {pointed.length > 0 && (
-                            <span className="ml-2 text-xs font-normal text-[#6a6a7a]">({pointed.length} found)</span>
-                          )}
+                          Found Items
+                          <span className="ml-2 text-xs font-normal text-[#6a6a7a]">({pointed.length})</span>
                         </h4>
 
-                        {pointed.length === 0 ? (
-                          <div className="flex flex-1 flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#e8e6e1] text-center">
-                            <FaCartShopping className="mb-2 text-2xl text-[#d5d3cd]" />
-                            <p className="text-xs text-[#9a9aaa]">
-                              Point out items in the image<br />to find them online
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="flex-1 space-y-4 overflow-y-auto pr-1">
-                            {pointed.map((pi, idx) => (
-                              <div key={pi.id} className="rounded-xl border border-[#e8e6e1] p-3">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2d5a3d] text-[9px] font-bold text-white">{idx + 1}</span>
-                                    {pi.loading ? (
-                                      <span className="flex items-center gap-1.5 text-xs text-[#6a6a7a]">
-                                        <FaSpinner className="animate-spin text-[10px]" /> Identifying...
-                                      </span>
-                                    ) : pi.label === "Unknown item" || pi.label === "Could not identify" ? (
-                                      <span className="text-xs text-red-400">Could not identify this item. Try a tighter selection.</span>
-                                    ) : (
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="text-sm font-medium text-[#1a1a2e]">{pi.label}</span>
-                                        {pi.matchedItemLabel && (
-                                          <span className="rounded bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[9px] font-medium text-[#2d5a3d]">
-                                            → {pi.matchedItemLabel}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
+                        <div className="space-y-3">
+                          {pointed.map((pi, idx) => {
+                            const isExpanded = expandedItems[pi.id] ?? true;
+                            return (
+                              <div key={pi.id} className="rounded-xl border border-[#e8e6e1] overflow-hidden">
+                                {/* Collapsible header */}
+                                <button
+                                  onClick={() => setExpandedItems(prev => ({ ...prev, [pi.id]: !isExpanded }))}
+                                  className="flex w-full items-center gap-2 px-4 py-3 text-left bg-[#faf9f6] hover:bg-[#f3f2ef] transition"
+                                >
+                                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2d5a3d] text-[9px] font-bold text-white">{idx + 1}</span>
+                                  {pi.loading ? (
+                                    <span className="flex items-center gap-1.5 text-xs text-[#6a6a7a]">
+                                      <FaSpinner className="animate-spin text-[10px]" /> Identifying...
+                                    </span>
+                                  ) : pi.label === "Unknown item" || pi.label === "Could not identify" ? (
+                                    <span className="text-xs text-red-400">Could not identify. Try a tighter selection.</span>
+                                  ) : (
+                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                      <span className="text-sm font-medium text-[#1a1a2e] truncate">{pi.label}</span>
+                                      {pi.matchedItemLabel && (
+                                        <span className="shrink-0 rounded bg-[#2d5a3d]/10 px-1.5 py-0.5 text-[9px] font-medium text-[#2d5a3d]">
+                                          → {pi.matchedItemLabel}
+                                        </span>
+                                      )}
+                                      {pi.selectedProductIdx !== null && (
+                                        <FaCheck className="shrink-0 text-[10px] text-[#2d5a3d]" />
+                                      )}
+                                    </div>
+                                  )}
+                                  <div className="ml-auto flex items-center gap-2">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); removePointedItem(item.id, pi.id); }}
+                                      className="text-[10px] text-[#9a9aaa] transition hover:text-red-500"
+                                    >
+                                      <FaTrash />
+                                    </button>
+                                    {isExpanded ? <FaChevronUp className="text-[10px] text-[#9a9aaa]" /> : <FaChevronDown className="text-[10px] text-[#9a9aaa]" />}
                                   </div>
-                                  <button
-                                    onClick={() => removePointedItem(item.id, pi.id)}
-                                    className="text-[10px] text-[#9a9aaa] transition hover:text-red-500"
-                                  >
-                                    <FaTrash />
-                                  </button>
-                                </div>
+                                </button>
 
-                                {!pi.loading && pi.products.length > 0 && (
-                                  <div className="mt-3 grid grid-cols-3 gap-2">
-                                    {pi.products.slice(0, 9).map((p, i) => {
-                                      const isSelected = pi.selectedProductIdx === i;
-                                      return (
-                                        <div
-                                          key={i}
-                                          className={`relative rounded-xl border overflow-hidden transition ${
-                                            isSelected
-                                              ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/20"
-                                              : "border-[#e8e6e1] hover:border-[#c5c3bd]"
-                                          }`}
-                                        >
-                                          {/* Product image - large */}
-                                          {p.thumbnail && (
-                                            <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
-                                              <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="200px" unoptimized />
-                                              {/* Selection indicator overlay */}
-                                              {isSelected && (
-                                                <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2d5a3d] shadow">
-                                                  <FaCheck className="text-[8px] text-white" />
-                                                </div>
-                                              )}
-                                              {/* External link icon — bottom-right of image */}
-                                              <a
-                                                href={p.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-md bg-white/80 text-[#9a9aaa] shadow-sm backdrop-blur-sm transition hover:bg-white hover:text-[#2d5a3d]"
-                                                title="Open product page"
-                                                onClick={(e) => e.stopPropagation()}
-                                              >
-                                                <FaArrowUpRightFromSquare className="text-[9px]" />
-                                              </a>
-                                            </div>
-                                          )}
-
-                                          {/* Product info */}
-                                          <div className="p-2">
-                                            <p className="line-clamp-2 text-[11px] leading-tight font-medium text-[#1a1a2e]">{p.title}</p>
-                                            <div className="mt-1.5 flex flex-col gap-1">
-                                              <span className="inline-flex self-start rounded-md bg-[#eeedea] px-1.5 py-0.5 text-[10px] font-medium text-[#6a6a7a]">{p.source}</span>
-                                              {p.price && <span className="text-xl font-bold text-[#2d5a3d]">{p.price}</span>}
-                                            </div>
-
-                                            {/* Action buttons row */}
-                                            <div className="mt-2 flex items-center gap-1">
-                                              {/* Select / deselect button */}
-                                              <button
-                                                onClick={() => toggleProductSelection(item.id, pi.id, i)}
-                                                className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-semibold transition ${
-                                                  isSelected
-                                                    ? "bg-[#2d5a3d] text-white"
-                                                    : "border border-[#2d5a3d] text-[#2d5a3d] hover:bg-[#2d5a3d]/5"
-                                                }`}
-                                              >
-                                                {isSelected ? <><FaCheck className="text-[8px]" /> Selected</> : "Select"}
-                                              </button>
-
-                                              {/* Detail / expand button */}
-                                              <button
-                                                onClick={() => { setDetailProduct(p); setDetailImageIdx(0); }}
-                                                className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#d5d3cd] text-[#6a6a7a] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
-                                                title="View details"
-                                              >
-                                                <FaCircleInfo className="text-xs" />
-                                              </button>
+                                {/* Collapsible body: product grid */}
+                                {isExpanded && !pi.loading && pi.products.length > 0 && (
+                                  <div className="p-3">
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+                                      {pi.products.slice(0, 9).map((p, i) => {
+                                        const isSelected = pi.selectedProductIdx === i;
+                                        return (
+                                          <div
+                                            key={i}
+                                            className={`relative rounded-xl border overflow-hidden transition ${
+                                              isSelected
+                                                ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/20"
+                                                : "border-[#e8e6e1] hover:border-[#c5c3bd]"
+                                            }`}
+                                          >
+                                            {p.thumbnail && (
+                                              <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
+                                                <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="180px" unoptimized />
+                                                {isSelected && (
+                                                  <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2d5a3d] shadow">
+                                                    <FaCheck className="text-[8px] text-white" />
+                                                  </div>
+                                                )}
+                                                <a
+                                                  href={p.url}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-md bg-white/80 text-[#9a9aaa] shadow-sm backdrop-blur-sm transition hover:bg-white hover:text-[#2d5a3d]"
+                                                  title="Open product page"
+                                                  onClick={(e) => e.stopPropagation()}
+                                                >
+                                                  <FaArrowUpRightFromSquare className="text-[9px]" />
+                                                </a>
+                                              </div>
+                                            )}
+                                            <div className="p-2">
+                                              <p className="line-clamp-2 text-[11px] leading-tight font-medium text-[#1a1a2e]">{p.title}</p>
+                                              <div className="mt-1.5 flex flex-col gap-1">
+                                                <span className="inline-flex self-start rounded-md bg-[#eeedea] px-1.5 py-0.5 text-[10px] font-medium text-[#6a6a7a]">{p.source}</span>
+                                                {p.price && <span className="text-sm font-semibold text-[#2d5a3d]">{p.price}</span>}
+                                              </div>
+                                              <div className="mt-2 flex items-center gap-1">
+                                                <button
+                                                  onClick={() => toggleProductSelection(item.id, pi.id, i)}
+                                                  className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-semibold transition ${
+                                                    isSelected
+                                                      ? "bg-[#2d5a3d] text-white"
+                                                      : "border border-[#2d5a3d] text-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+                                                  }`}
+                                                >
+                                                  {isSelected ? <><FaCheck className="text-[8px]" /> Selected</> : "Select"}
+                                                </button>
+                                                <button
+                                                  onClick={() => { setDetailProduct(p); setDetailImageIdx(0); }}
+                                                  className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#d5d3cd] text-[#6a6a7a] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5 hover:text-[#2d5a3d]"
+                                                  title="View details"
+                                                >
+                                                  <FaCircleInfo className="text-xs" />
+                                                </button>
+                                              </div>
                                             </div>
                                           </div>
-                                        </div>
-                                      );
-                                    })}
+                                        );
+                                      })}
+                                    </div>
                                   </div>
                                 )}
-                                {!pi.loading && pi.products.length === 0 && (
-                                  <p className="mt-1 text-[11px] text-[#9a9aaa]">No matching products found.</p>
+                                {isExpanded && !pi.loading && pi.products.length === 0 && (
+                                  <div className="p-3">
+                                    <p className="text-[11px] text-[#9a9aaa]">No matching products found.</p>
+                                  </div>
                                 )}
                               </div>
-                            ))}
-                          </div>
-                        )}
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
-              })}
-
-              {/* Manual product link input */}
-              <div className="rounded-2xl border border-[#e8e6e1] p-5">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
-                  <FaLink className="text-xs text-[#2d5a3d]" />
-                  Add an Item by Link
-                </h3>
-                <p className="mt-1 text-xs text-[#9a9aaa]">Paste a product URL to add it directly to your moodboard.</p>
-
-                <div className="mt-3 flex gap-2">
-                  <input
-                    type="url"
-                    value={manualLinkUrl}
-                    onChange={(e) => { setManualLinkUrl(e.target.value); setManualLinkError(null); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleManualLinkSubmit(); }}
-                    placeholder="https://www.example.com/product..."
-                    className="min-w-0 flex-1 rounded-lg border border-[#d5d3cd] px-3 py-2 text-sm text-[#1a1a2e] placeholder:text-[#c5c3bd] focus:border-[#2d5a3d] focus:outline-none focus:ring-1 focus:ring-[#2d5a3d]"
-                  />
-                  <button
-                    onClick={handleManualLinkSubmit}
-                    disabled={manualLinkLoading || !manualLinkUrl.trim()}
-                    className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#2d5a3d] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#234a31] disabled:opacity-50"
-                  >
-                    {manualLinkLoading ? <FaSpinner className="animate-spin text-xs" /> : <FaPlus className="text-[10px]" />}
-                    {manualLinkLoading ? "Fetching..." : "Add"}
-                  </button>
-                </div>
-
-                {manualLinkError && (
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-red-500">
-                    <FaCircleExclamation className="text-[10px]" />
-                    {manualLinkError}
-                  </div>
-                )}
-
-                {manualProducts.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs font-medium text-[#6a6a7a]">Added Items ({manualProducts.length})</p>
-                    {manualProducts.map((p, i) => (
-                      <div key={i} className="flex items-center gap-3 rounded-xl border border-[#e8e6e1] p-3">
-                        {p.thumbnail && (
-                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#f8f7f4]">
-                            <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="48px" unoptimized />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium text-[#1a1a2e]">{p.title}</p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-[#6a6a7a]">{p.source}</span>
-                            {p.price && <span className="text-xs font-semibold text-[#2d5a3d]">{p.price}</span>}
-                          </div>
-                        </div>
-                        <a
-                          href={p.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="shrink-0 text-[10px] text-[#9a9aaa] transition hover:text-[#2d5a3d]"
-                        >
-                          <FaArrowUpRightFromSquare />
-                        </a>
-                        <button
-                          onClick={() => removeManualProduct(i)}
-                          className="shrink-0 text-[10px] text-[#9a9aaa] transition hover:text-red-500"
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
+              })()}
             </div>
           )}
         </div>
@@ -2412,7 +2751,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                 <FaImages className="mb-3 text-4xl text-[#e8e6e1]" />
                 <p className="text-sm font-medium text-[#9a9aaa]">No items selected yet</p>
                 <p className="mt-1 text-xs text-[#c5c3bd]">
-                  Go to Items from Pictures, point out items, and select a product for each.
+                  Go to From Ideas, From Catalogue, or From Shopping to select items.
                 </p>
               </div>
             ) : (
@@ -2494,7 +2833,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                         <p className="line-clamp-2 text-[11px] leading-tight font-medium text-[#1a1a2e]">{p.title}</p>
                         <div className="mt-1.5 flex flex-col gap-1">
                           <span className="inline-flex self-start rounded-md bg-[#eeedea] px-1.5 py-0.5 text-[10px] font-medium text-[#6a6a7a]">{p.source}</span>
-                          {p.price && <span className="text-xl font-bold text-[#2d5a3d]">{p.price}</span>}
+                          {p.price && <span className="text-sm font-semibold text-[#2d5a3d]">{p.price}</span>}
                         </div>
                         <div className="mt-2 flex items-center gap-1">
                           <button
@@ -2520,16 +2859,105 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
       {view === "catalogue" && (
         <div className="mt-6">
           <CatalogueView
-            selectedProducts={manualProducts}
+            selectedProducts={catalogueProducts}
             onToggleProduct={(product) => {
-              const exists = manualProducts.some((mp) => mp.url === product.url || mp.title === product.title);
+              const exists = catalogueProducts.some((mp) => mp.url === product.url || mp.title === product.title);
               if (exists) {
-                setManualProducts((prev) => prev.filter((mp) => mp.url !== product.url && mp.title !== product.title));
+                setCatalogueProducts((prev) => prev.filter((mp) => mp.url !== product.url && mp.title !== product.title));
               } else {
-                setManualProducts((prev) => [...prev, product]);
+                setCatalogueProducts((prev) => [...prev, product]);
               }
             }}
           />
+        </div>
+      )}
+
+      {/* ── SECTION: From Shopping ── */}
+      {view === "shopping" && (
+        <div>
+          <h2 className="text-2xl font-bold text-[#1a1a2e]">Add Items by Link</h2>
+          <p className="mt-2 text-sm text-[#6a6a7a]">
+            Found a product online? Paste the URL and we&apos;ll pull in the details automatically.
+          </p>
+
+          <div className="mt-6 rounded-2xl border border-[#e8e6e1] p-6">
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={manualLinkUrl}
+                onChange={(e) => { setManualLinkUrl(e.target.value); setManualLinkError(null); }}
+                onKeyDown={(e) => { if (e.key === "Enter") handleShoppingLinkSubmit(); }}
+                placeholder="https://www.homedepot.com/product..."
+                className="min-w-0 flex-1 rounded-lg border border-[#d5d3cd] px-4 py-3 text-sm text-[#1a1a2e] placeholder:text-[#c5c3bd] focus:border-[#2d5a3d] focus:outline-none focus:ring-1 focus:ring-[#2d5a3d]"
+              />
+              <button
+                onClick={handleShoppingLinkSubmit}
+                disabled={manualLinkLoading || !manualLinkUrl.trim()}
+                className="flex shrink-0 items-center gap-2 rounded-lg bg-[#2d5a3d] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#234a31] disabled:opacity-50"
+              >
+                {manualLinkLoading ? <FaSpinner className="animate-spin text-xs" /> : <FaPlus className="text-xs" />}
+                {manualLinkLoading ? "Fetching..." : "Add"}
+              </button>
+            </div>
+
+            {manualLinkError && (
+              <div className="mt-3 flex items-center gap-1.5 text-xs text-red-500">
+                <FaCircleExclamation className="text-[10px]" />
+                {manualLinkError}
+              </div>
+            )}
+          </div>
+
+          {shoppingProducts.length > 0 && (
+            <div className="mt-6">
+              <h3 className="mb-4 text-sm font-semibold text-[#1a1a2e]">Added Items ({shoppingProducts.length})</h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {shoppingProducts.map((p, i) => (
+                  <div key={i} className="group overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#2d5a3d]/30 hover:shadow-sm">
+                    {p.thumbnail && (
+                      <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
+                        <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="200px" unoptimized />
+                        <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2d5a3d] shadow">
+                          <FaCheck className="text-[8px] text-white" />
+                        </div>
+                        <a
+                          href={p.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-md bg-white/80 text-[#9a9aaa] shadow-sm backdrop-blur-sm transition hover:bg-white hover:text-[#2d5a3d]"
+                          title="Open product page"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <FaArrowUpRightFromSquare className="text-[9px]" />
+                        </a>
+                      </div>
+                    )}
+                    <div className="p-2.5">
+                      <p className="line-clamp-2 text-[11px] leading-tight font-medium text-[#1a1a2e]">{p.title}</p>
+                      <div className="mt-1.5 flex flex-col gap-1">
+                        <span className="inline-flex self-start rounded-md bg-[#eeedea] px-1.5 py-0.5 text-[10px] font-medium text-[#6a6a7a]">{p.source}</span>
+                        {p.price && <span className="text-sm font-semibold text-[#2d5a3d]">{p.price}</span>}
+                      </div>
+                      <button
+                        onClick={() => setShoppingProducts((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg border border-red-200 px-2 py-1.5 text-[10px] font-semibold text-red-400 transition hover:bg-red-50 hover:text-red-500"
+                      >
+                        <FaTrash className="text-[8px]" /> Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {shoppingProducts.length === 0 && (
+            <div className="mt-6 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#e8e6e1] p-10 text-center">
+              <FaLink className="mb-3 text-3xl text-[#d5d3cd]" />
+              <p className="text-sm font-medium text-[#9a9aaa]">No items added yet</p>
+              <p className="mt-1 text-xs text-[#c5c3bd]">Paste a product URL above to start building your shopping list.</p>
+            </div>
+          )}
         </div>
       )}
 
