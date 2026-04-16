@@ -11,6 +11,26 @@ import type { BathroomSize } from "../room-sizes/bathroom";
 
 /* ─── Types ─── */
 
+/** Tile-specific info attached to a price override */
+export interface TileInfo {
+  /** Human-readable tile size, e.g. '12" × 24"' */
+  tileSizeLabel: string;
+  /** Tile width in inches */
+  tileWidthIn: number;
+  /** Tile height in inches */
+  tileHeightIn: number;
+  /** Calculated number of tiles needed (incl. waste) */
+  quantity: number;
+  /** Net area to cover in sq ft */
+  coverageSqft: number;
+  /** Per-tile price */
+  unitPrice: number;
+  /** Waste factor applied (e.g. 0.10 = 10%) */
+  wasteFactor: number;
+  /** Readable breakdown string */
+  breakdown: string;
+}
+
 /** A price override from a real moodboard selection */
 export interface PriceOverride {
   /** The must-have / nice-to-have label this replaces */
@@ -19,6 +39,8 @@ export interface PriceOverride {
   materialCost: number;
   /** Estimated labor cost (can be auto-calculated) */
   laborCost: number;
+  /** Tile-specific details (only for tile items) */
+  tileInfo?: TileInfo;
 }
 
 export interface BudgetGraphInput {
@@ -54,6 +76,8 @@ export interface ItemCostBreakdown {
   /** True when a real moodboard price replaced the estimate */
   overridden: boolean;
   source: "must-have" | "nice-to-have";
+  /** Tile-specific details (only for tile items) */
+  tileInfo?: TileInfo;
 }
 
 export interface BudgetGraphResult {
@@ -203,6 +227,7 @@ function resolveItemBreakdown(
         totalHigh: total,
         overridden: true,
         source,
+        tileInfo: override.tileInfo,
       });
       totalLow += total;
       totalHigh += total;
@@ -287,6 +312,7 @@ export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
       totalHigh: total,
       overridden: true,
       source: "must-have" as const,
+      tileInfo: o.tileInfo,
     };
   });
 

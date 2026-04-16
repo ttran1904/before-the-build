@@ -22,7 +22,7 @@ import {
   FaHouse, FaBookOpen,
 } from "react-icons/fa6";
 import { useWizardStore, useIdeaBoardStore, type BathroomScope, type BudgetTier, type IdeaBoardItem } from "@/lib/store";
-import { BATHROOM_SIZES, type BathroomSize, computeBudgetGraph, type BudgetGraphResult, ftInToMStr, mStrToFtIn, displayArea, type PointedItem, type Product } from "@before-the-build/shared";
+import { BATHROOM_SIZES, type BathroomSize, computeBudgetGraph, type BudgetGraphResult, ftInToMStr, mStrToFtIn, displayArea, type PointedItem, type Product, parseTileDimensions, calcFloorTileArea, calcWallTileArea, DEFAULT_FLOOR_TILE, DEFAULT_WALL_TILE, TILE_LABOR_PER_SQFT, type TileInfo } from "@before-the-build/shared";
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
 import CatalogueView from "@/components/CatalogueView";
@@ -214,6 +214,58 @@ function BathroomWizardPageContent() {
   const unmatchedItems = useMemo(() =>
     allPointedFlat.filter((pi) => !pi.loading && !pi.matchedItemLabel && pi.label !== "Unknown item" && pi.label !== "Could not identify" && pi.label !== "Identifying..."),
   [allPointedFlat]);
+
+  // Map any AI-identified label to a short human-readable category for display
+  const CATEGORY_KEYWORDS: [string[], string][] = [
+    [["vanity", "bathroom vanity", "sink cabinet", "bath vanity"], "Bath vanity"],
+    [["floor tile", "porcelain tile", "ceramic tile", "marble floor", "stone floor", "tile floor"], "Floor tile"],
+    [["shower tile", "wall tile", "subway tile", "shower wall", "marble tile", "backsplash tile", "stone tile"], "Wall tile"],
+    [["toilet", "commode"], "Toilet"],
+    [["bidet"], "Bidet"],
+    [["exhaust fan", "vent fan", "bathroom fan"], "Exhaust fan"],
+    [["recessed light", "can light", "downlight"], "Recessed lighting"],
+    [["walk-in shower", "shower enclosure", "curbless shower"], "Walk-in shower"],
+    [["bathtub", "soaking tub", "freestanding tub", "freestanding bath", "soaking bath", "oval bath"], "Bathtub"],
+    [["shower door", "glass door", "frameless door"], "Shower door"],
+    [["rain showerhead", "rain shower", "rainfall"], "Rain showerhead"],
+    [["handheld shower", "hand shower", "detachable shower"], "Handheld showerhead"],
+    [["medicine cabinet", "mirrored cabinet"], "Medicine cabinet"],
+    [["led mirror", "lighted mirror", "backlit mirror"], "LED mirror"],
+    [["mirror"], "Mirror"],
+    [["heated floor", "radiant floor", "floor heating"], "Heated floors"],
+    [["towel warmer", "towel rack", "heated towel", "towel bar", "towel ring"], "Towel bar/rack"],
+    [["grab bar", "safety bar"], "Grab bars"],
+    [["shelf", "shelving", "niche", "built-in shelf"], "Shelving"],
+    [["dimmer", "light switch"], "Dimmer switch"],
+    [["under-cabinet", "cabinet light", "vanity light", "sconce", "wall light"], "Vanity lighting"],
+    [["faucet", "tap"], "Faucet"],
+    [["showerhead", "shower head"], "Showerhead"],
+    [["cabinet", "shaker", "storage"], "Cabinet"],
+    [["sink", "basin", "lavatory"], "Sink"],
+    [["countertop", "counter top", "marble top", "quartz top", "granite top"], "Countertop"],
+    [["hardware", "knob", "handle", "pull", "drawer pull"], "Hardware"],
+    [["soap dispenser", "soap dish"], "Soap dispenser"],
+    [["toilet paper holder", "tissue holder"], "Toilet paper holder"],
+    [["shower bench", "shower seat"], "Shower bench"],
+    [["bath mat", "bath rug"], "Bath mat"],
+    [["curtain", "shower curtain"], "Shower curtain"],
+  ];
+
+  const getCategoryLabel = useCallback((label: string): string => {
+    const lower = label.toLowerCase();
+    for (const [keywords, category] of CATEGORY_KEYWORDS) {
+      if (keywords.some((kw) => lower.includes(kw))) return category;
+    }
+    // Fallback: strip brand names, dimensions, and model numbers to shorten
+    return label
+      .replace(/\b\d+(\.\d+)?\s*(in|inch|inches|ft|cm|mm|x)\b\.?/gi, "")
+      .replace(/\b[A-Z][a-z]+\s+(Bay|Creek|Hill|Collection|Series)\b/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 3)
+      .join(" ");
+  }, []);
 
   /* Compute actual room sqft — ft+in values are always pre-computed regardless of unit mode */
   const roomSqft = useMemo(() => {
@@ -567,22 +619,41 @@ function BathroomWizardPageContent() {
                 </div>
               )}
 
-              {/* New Items (unmatched from moodboard) */}
-              {unmatchedItems.length > 0 && (
-                <div>
-                  <h4 className="flex items-center gap-1.5 text-xs font-semibold text-[#6a6a7a] uppercase tracking-wide">
-                    <FaPlus className="text-[10px]" /> New Items
-                  </h4>
-                  <div className="mt-2 space-y-1.5">
-                    {unmatchedItems.map((pi) => (
-                      <div key={pi.id} className="flex items-center gap-2 rounded-lg bg-[#2d5a3d]/5 px-3 py-1.5 text-sm">
-                        <FaCheck className="shrink-0 text-[10px] text-[#5b8c6e]" />
-                        <span className="flex-1 text-[#4a4a5a] truncate">{pi.label}</span>
-                      </div>
-                    ))}
+              {/* New Items (unmatched from moodboard + catalogue) */}
+              {(unmatchedItems.length > 0 || moodboardManualProducts.length > 0) && (() => {
+                // Deduplicate by category so we show each category only once
+                const seen = new Set<string>();
+                const uniqueCategories: { id: string; category: string }[] = [];
+                for (const pi of unmatchedItems) {
+                  const cat = getCategoryLabel(pi.label);
+                  if (!seen.has(cat)) {
+                    seen.add(cat);
+                    uniqueCategories.push({ id: pi.id, category: cat });
+                  }
+                }
+                for (const mp of moodboardManualProducts) {
+                  const cat = getCategoryLabel(mp.title);
+                  if (!seen.has(cat)) {
+                    seen.add(cat);
+                    uniqueCategories.push({ id: `manual-${mp.url}`, category: cat });
+                  }
+                }
+                return (
+                  <div>
+                    <h4 className="flex items-center gap-1.5 text-xs font-semibold text-[#6a6a7a] uppercase tracking-wide">
+                      <FaPlus className="text-[10px]" /> New Items
+                    </h4>
+                    <div className="mt-2 space-y-1.5">
+                      {uniqueCategories.map(({ id, category }) => (
+                        <div key={id} className="flex items-center gap-2 rounded-lg bg-[#2d5a3d]/5 px-3 py-1.5 text-sm">
+                          <FaCheck className="shrink-0 text-[10px] text-[#5b8c6e]" />
+                          <span className="flex-1 text-[#4a4a5a] truncate">{category}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Progress bar */}
@@ -810,23 +881,30 @@ function BudgetBuilderPopout({
                     const labFixed = item.laborLow === item.laborHigh;
                     const totFixed = item.totalLow === item.totalHigh;
                     return (
-                      <div key={item.label} className="flex items-center py-2 border-b border-[#e8e6e1]/50 group hover:bg-[#e8e6e1]/30 -mx-2 px-2 rounded transition">
-                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                          <span className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${item.source === "must-have" ? "bg-[#2d5a3d]" : "bg-[#d4a24c]"}`} />
-                          <span className="text-xs text-[#1a1a2e] truncate">{item.label}</span>
-                          {item.overridden && (
-                            <span className="shrink-0 rounded bg-[#2d5a3d]/10 px-1 py-0.5 text-[8px] font-semibold text-[#2d5a3d]">REAL</span>
-                          )}
+                      <div key={item.label} className="flex flex-col py-2 border-b border-[#e8e6e1]/50 group hover:bg-[#e8e6e1]/30 -mx-2 px-2 rounded transition">
+                        <div className="flex items-center">
+                          <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                            <span className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${item.source === "must-have" ? "bg-[#2d5a3d]" : "bg-[#d4a24c]"}`} />
+                            <span className="text-xs text-[#1a1a2e] truncate">{item.label}</span>
+                            {item.overridden && (
+                              <span className="shrink-0 rounded bg-[#2d5a3d]/10 px-1 py-0.5 text-[8px] font-semibold text-[#2d5a3d]">REAL</span>
+                            )}
+                          </div>
+                          <span className="w-20 text-right text-[11px] text-[#6a6a7a]">
+                            {matFixed ? formatCurrency(item.materialLow) : `${formatCurrency(item.materialLow)}–${formatCurrency(item.materialHigh)}`}
+                          </span>
+                          <span className="w-20 text-right text-[11px] text-[#6a6a7a]">
+                            {labFixed ? formatCurrency(item.laborLow) : `${formatCurrency(item.laborLow)}–${formatCurrency(item.laborHigh)}`}
+                          </span>
+                          <span className="w-24 text-right text-xs font-medium text-[#1a1a2e]">
+                            {totFixed ? formatCurrency(item.totalLow) : `${formatCurrency(item.totalLow)}–${formatCurrency(item.totalHigh)}`}
+                          </span>
                         </div>
-                        <span className="w-20 text-right text-[11px] text-[#6a6a7a]">
-                          {matFixed ? formatCurrency(item.materialLow) : `${formatCurrency(item.materialLow)}–${formatCurrency(item.materialHigh)}`}
-                        </span>
-                        <span className="w-20 text-right text-[11px] text-[#6a6a7a]">
-                          {labFixed ? formatCurrency(item.laborLow) : `${formatCurrency(item.laborLow)}–${formatCurrency(item.laborHigh)}`}
-                        </span>
-                        <span className="w-24 text-right text-xs font-medium text-[#1a1a2e]">
-                          {totFixed ? formatCurrency(item.totalLow) : `${formatCurrency(item.totalLow)}–${formatCurrency(item.totalHigh)}`}
-                        </span>
+                        {item.tileInfo && (
+                          <div className="ml-3 mt-0.5 text-[9px] text-[#6a6a7a]">
+                            {item.tileInfo.quantity} tiles @ {item.tileInfo.tileSizeLabel} · {item.tileInfo.coverageSqft.toFixed(1)} sq ft
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1474,7 +1552,9 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
   setDragPositions: React.Dispatch<React.SetStateAction<Record<number, { x: number; y: number }>>>;
 }) {
   const { items, removeItem } = useIdeaBoardStore();
-  const { mustHaves, niceToHaves, setPriceOverride, removePriceOverride } = useWizardStore();
+  const { mustHaves, niceToHaves, setPriceOverride, removePriceOverride,
+    roomWidth, roomWidthIn, roomLength, roomLengthIn, roomHeight, roomHeightIn,
+    showerWidth, showerWidthIn, showerLength, showerLengthIn } = useWizardStore();
   const [selectingImageId, setSelectingImageId] = useState<string | null>(null);
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
   const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
@@ -1719,6 +1799,10 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
   // Labor estimate: ~55% of material cost for most bathroom items
   const estimateLabor = (materialCost: number): number => Math.round(materialCost * 0.55);
 
+  // Labels that represent tile items for smart quantity calculation
+  const TILE_LABELS = new Set(["New tile (floor)", "Non-slip flooring", "New tile (shower walls)"]);
+  const FLOOR_TILE_LABELS = new Set(["New tile (floor)", "Non-slip flooring"]);
+
   const toggleProductSelection = (imageId: string, pointedId: string, productIdx: number) => {
     // First: update pointed items state
     setPointedItems(prev => ({
@@ -1744,14 +1828,71 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
     } else {
       const product = pi.products[productIdx];
       if (product) {
-        const materialCost = parsePrice(product.price);
-        if (materialCost !== null) {
-          setPriceOverride({
-            itemLabel: overrideLabel,
-            materialCost,
-            laborCost: estimateLabor(materialCost),
-          });
+        const unitPrice = parsePrice(product.price);
+        if (unitPrice === null) return;
+
+        // Smart tile calculation: compute quantity from room dimensions + tile size
+        if (TILE_LABELS.has(overrideLabel)) {
+          const tileDims = parseTileDimensions(product.specs) ?? (FLOOR_TILE_LABELS.has(overrideLabel) ? DEFAULT_FLOOR_TILE : DEFAULT_WALL_TILE);
+          const isFloor = FLOOR_TILE_LABELS.has(overrideLabel);
+
+          let tileInfo: TileInfo | undefined;
+
+          if (isFloor) {
+            // Floor tile: use room dimensions, subtract bathtub if present
+            const rWidthIn = (Number(roomWidth) || 0) * 12 + (Number(roomWidthIn) || 0);
+            const rLengthIn = (Number(roomLength) || 0) * 12 + (Number(roomLengthIn) || 0);
+
+            if (rWidthIn > 0 && rLengthIn > 0) {
+              const hasBathtub = mustHaves.includes("Bathtub") || niceToHaves.includes("Bathtub");
+              const area = calcFloorTileArea({ roomWidthIn: rWidthIn, roomLengthIn: rLengthIn, hasBathtub, hasWalkInShower: mustHaves.includes("Walk-in shower") || niceToHaves.includes("Walk-in shower") }, tileDims);
+              const materialCost = Math.round(unitPrice * area.quantity);
+              const laborCost = Math.round(area.netSqft * TILE_LABOR_PER_SQFT);
+              tileInfo = {
+                tileSizeLabel: tileDims.label,
+                tileWidthIn: tileDims.widthIn,
+                tileHeightIn: tileDims.heightIn,
+                quantity: area.quantity,
+                coverageSqft: area.netSqft,
+                unitPrice,
+                wasteFactor: area.wasteFactor,
+                breakdown: area.breakdown,
+              };
+              setPriceOverride({ itemLabel: overrideLabel, materialCost, laborCost, tileInfo });
+              return;
+            }
+          } else {
+            // Wall tile: use shower dimensions
+            const sWidthIn = (Number(showerWidth) || 0) * 12 + (Number(showerWidthIn) || 0);
+            const sLengthIn = (Number(showerLength) || 0) * 12 + (Number(showerLengthIn) || 0);
+            const wallHeightIn = (Number(roomHeight) || 0) * 12 + (Number(roomHeightIn) || 0);
+
+            if (sWidthIn > 0 && sLengthIn > 0) {
+              const area = calcWallTileArea({ showerWidthIn: sWidthIn, showerLengthIn: sLengthIn, wallHeightIn: wallHeightIn || undefined }, tileDims);
+              const materialCost = Math.round(unitPrice * area.quantity);
+              const laborCost = Math.round(area.netSqft * TILE_LABOR_PER_SQFT);
+              tileInfo = {
+                tileSizeLabel: tileDims.label,
+                tileWidthIn: tileDims.widthIn,
+                tileHeightIn: tileDims.heightIn,
+                quantity: area.quantity,
+                coverageSqft: area.netSqft,
+                unitPrice,
+                wasteFactor: area.wasteFactor,
+                breakdown: area.breakdown,
+              };
+              setPriceOverride({ itemLabel: overrideLabel, materialCost, laborCost, tileInfo });
+              return;
+            }
+          }
         }
+
+        // Non-tile items or tile items without room dimensions: use simple price + labor
+        setPriceOverride({
+          itemLabel: overrideLabel,
+          materialCost: unitPrice,
+          laborCost: estimateLabor(unitPrice),
+        });
       }
     }
   };
@@ -3578,15 +3719,22 @@ function SummaryStep({ tasks, contractorCount, budgetGraph, pointedItems, manual
                     const labFixed = item.laborLow === item.laborHigh;
                     const totFixed = item.totalLow === item.totalHigh;
                     return (
-                      <div key={item.label} className="flex items-center py-1.5 border-b border-[#e8e6e1]/50">
-                        <div className="flex-1 min-w-0 flex items-center gap-1">
-                          <span className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${item.source === "must-have" ? "bg-[#2d5a3d]" : "bg-[#d4a24c]"}`} />
-                          <span className="text-[#1a1a2e] truncate">{item.label}</span>
-                          {item.overridden && <span className="shrink-0 rounded bg-[#2d5a3d]/10 px-1 py-0.5 text-[7px] font-semibold text-[#2d5a3d]">REAL</span>}
+                      <div key={item.label} className="flex flex-col py-1.5 border-b border-[#e8e6e1]/50">
+                        <div className="flex items-center">
+                          <div className="flex-1 min-w-0 flex items-center gap-1">
+                            <span className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${item.source === "must-have" ? "bg-[#2d5a3d]" : "bg-[#d4a24c]"}`} />
+                            <span className="text-[#1a1a2e] truncate">{item.label}</span>
+                            {item.overridden && <span className="shrink-0 rounded bg-[#2d5a3d]/10 px-1 py-0.5 text-[7px] font-semibold text-[#2d5a3d]">REAL</span>}
+                          </div>
+                          <span className="w-20 text-right text-[#6a6a7a]">{matFixed ? formatCurrency(item.materialLow) : `${formatCurrency(item.materialLow)}–${formatCurrency(item.materialHigh)}`}</span>
+                          <span className="w-20 text-right text-[#6a6a7a]">{labFixed ? formatCurrency(item.laborLow) : `${formatCurrency(item.laborLow)}–${formatCurrency(item.laborHigh)}`}</span>
+                          <span className="w-24 text-right font-medium text-[#1a1a2e]">{totFixed ? formatCurrency(item.totalLow) : `${formatCurrency(item.totalLow)}–${formatCurrency(item.totalHigh)}`}</span>
                         </div>
-                        <span className="w-20 text-right text-[#6a6a7a]">{matFixed ? formatCurrency(item.materialLow) : `${formatCurrency(item.materialLow)}–${formatCurrency(item.materialHigh)}`}</span>
-                        <span className="w-20 text-right text-[#6a6a7a]">{labFixed ? formatCurrency(item.laborLow) : `${formatCurrency(item.laborLow)}–${formatCurrency(item.laborHigh)}`}</span>
-                        <span className="w-24 text-right font-medium text-[#1a1a2e]">{totFixed ? formatCurrency(item.totalLow) : `${formatCurrency(item.totalLow)}–${formatCurrency(item.totalHigh)}`}</span>
+                        {item.tileInfo && (
+                          <div className="ml-3 mt-0.5 text-[9px] text-[#6a6a7a]">
+                            {item.tileInfo.quantity} tiles @ {item.tileInfo.tileSizeLabel} · {item.tileInfo.coverageSqft.toFixed(1)} sq ft
+                          </div>
+                        )}
                       </div>
                     );
                   })}

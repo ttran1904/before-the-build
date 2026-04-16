@@ -10,9 +10,9 @@ import {
   FaCalendarDays, FaHelmetSafety, FaCube, FaBook,
 } from "react-icons/fa6";
 import { useWizardStore } from "@/lib/store";
-import { computeBudgetGraph } from "@before-the-build/shared";
+import { computeBudgetGraph, parseTileDimensions, calcFloorTileArea, calcWallTileArea, DEFAULT_FLOOR_TILE, DEFAULT_WALL_TILE, TILE_LABOR_PER_SQFT } from "@before-the-build/shared";
 import { saveBuildBook, saveWizardState } from "@/lib/supabase-sync";
-import type { Product } from "@before-the-build/shared";
+import type { Product, TileInfo } from "@before-the-build/shared";
 
 /* ── Helpers ── */
 
@@ -104,19 +104,31 @@ export default function BuildBookPage() {
   };
 
   /* ── Product summary with quantities and totals ── */
+  const TILE_LABELS = new Set(["New tile (floor)", "Non-slip flooring", "New tile (shower walls)"]);
+
   const productSummary = useMemo(() => {
-    const map = new Map<string, { product: Product; quantity: number; unitPrice: number | null }>();
+    const map = new Map<string, { product: Product; quantity: number; unitPrice: number | null; tileInfo?: TileInfo; matchedLabel?: string }>();
     for (const p of selectedProducts) {
       const key = p.title + "|" + p.url;
       const existing = map.get(key);
       if (existing) {
         existing.quantity += 1;
       } else {
-        map.set(key, { product: p, quantity: 1, unitPrice: parsePrice(p.price) });
+        // Find if this product has a tile override with quantity info
+        const pi = allPointedFlat.find(
+          pt => pt.selectedProductIdx !== null && pt.products[pt.selectedProductIdx!] === p
+        );
+        const matchedLabel = pi?.matchedItemLabel;
+        const tileOverride = matchedLabel ? wizard.priceOverrides.find(o => o.itemLabel === matchedLabel) : undefined;
+        const tileInfo = tileOverride?.tileInfo;
+        // For tiles, the quantity comes from the tile calculation, not from counting products
+        const qty = tileInfo ? tileInfo.quantity : 1;
+
+        map.set(key, { product: p, quantity: qty, unitPrice: parsePrice(p.price), tileInfo, matchedLabel });
       }
     }
     return Array.from(map.values());
-  }, [selectedProducts]);
+  }, [selectedProducts, allPointedFlat, wizard.priceOverrides]);
 
   const productTotal = productSummary.reduce((sum, r) => {
     if (r.unitPrice != null) return sum + r.unitPrice * r.quantity;
@@ -497,7 +509,18 @@ export default function BuildBookPage() {
                             const totalForRow = row.unitPrice != null ? row.unitPrice * row.quantity : null;
                             return (
                               <tr key={i} className="border-b border-[#e8e6e1] hover:bg-[#f8f7f4] transition">
-                                <td className="py-2.5 px-4 font-semibold text-[#1a1a2e] uppercase text-xs">{row.product.title}</td>
+                                <td className="py-2.5 px-4">
+                                  <div className="font-semibold text-[#1a1a2e] uppercase text-xs">{row.product.title}</div>
+                                  {row.tileInfo && (
+                                    <div className="mt-0.5 text-[10px] text-[#6a6a7a] leading-snug">
+                                      <span className="inline-flex items-center gap-1">
+                                        <span className="font-medium text-[#2d5a3d]">Tile: {row.tileInfo.tileSizeLabel}</span>
+                                        <span>· {row.tileInfo.coverageSqft.toFixed(1)} sq ft coverage</span>
+                                        <span>· {Math.round(row.tileInfo.wasteFactor * 100)}% waste incl.</span>
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
                                 <td className="py-2.5 px-4 text-xs text-[#4a4a5a]">{row.product.source || "—"}</td>
                                 <td className="py-2.5 px-4">
                                   {row.product.url ? (
@@ -506,9 +529,15 @@ export default function BuildBookPage() {
                                     </a>
                                   ) : "—"}
                                 </td>
-                                <td className="py-2.5 px-4 text-center text-xs text-[#4a4a5a]">{row.quantity}</td>
+                                <td className="py-2.5 px-4 text-center text-xs text-[#4a4a5a]">
+                                  {row.tileInfo ? (
+                                    <span className="font-semibold text-[#2d5a3d]">{row.quantity} tiles</span>
+                                  ) : row.quantity}
+                                </td>
                                 <td className="py-2.5 px-4 text-right text-xs text-[#4a4a5a]">
-                                  {row.unitPrice != null ? fmtDecimal(row.unitPrice) : "TBD"}
+                                  {row.unitPrice != null ? (
+                                    <span>{fmtDecimal(row.unitPrice)}{row.tileInfo ? "/ea" : ""}</span>
+                                  ) : "TBD"}
                                 </td>
                                 <td className="py-2.5 px-4 text-right text-xs font-semibold text-[#1a1a2e]">
                                   {totalForRow != null ? fmtDecimal(totalForRow) : "$0.00"}
@@ -630,6 +659,11 @@ export default function BuildBookPage() {
                                       <span className="shrink-0 rounded bg-[#2d5a3d]/10 px-1 py-0.5 text-[8px] font-semibold text-[#2d5a3d]">REAL</span>
                                     )}
                                   </div>
+                                  {item.tileInfo && (
+                                    <div className="mt-0.5 ml-3 text-[10px] text-[#6a6a7a]">
+                                      {item.tileInfo.quantity} tiles @ {item.tileInfo.tileSizeLabel} · {item.tileInfo.coverageSqft.toFixed(1)} sq ft · {fmtDecimal(item.tileInfo.unitPrice)}/tile
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="py-2.5 px-4 text-right text-[#6a6a7a]">
                                   {matFixed ? fmt(item.materialLow) : `${fmt(item.materialLow)}–${fmt(item.materialHigh)}`}
