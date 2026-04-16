@@ -293,25 +293,40 @@ export default function BuildBookPage() {
                     onClick={() => setActiveTab("cost")}
                     className="group rounded-xl border border-[#e8e6e1] bg-[#f8f7f4] p-4 text-left transition hover:border-[#2d5a3d]/30 hover:shadow-md"
                   >
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2d5a3d]/10">
                         <FaChartPie className="text-sm text-[#2d5a3d]" />
                       </div>
                       <span className="text-sm font-semibold text-[#1a1a2e]">Cost Estimate</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <MiniPieChart segments={pieSegments} size={56} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-lg font-bold text-[#2d5a3d]">{fmt(budgetGraph.estimatedLow)}</p>
-                        <p className="text-[10px] text-[#6a6a7a]">to {fmt(budgetGraph.estimatedHigh)}</p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {budgetGraph.breakdown.slice(0, 3).map((b, i) => (
-                            <span key={b.category} className="flex items-center gap-1 text-[9px] text-[#6a6a7a]">
-                              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: BREAKDOWN_COLORS[i] }} />
-                              {b.category}
-                            </span>
-                          ))}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-bold text-[#2d5a3d]">{fmt(budgetGraph.estimatedLow)} – {fmt(budgetGraph.estimatedHigh)}</p>
+                        {/* Budget slider */}
+                        <div className="mt-2">
+                          <div className="relative h-1.5 w-full rounded-full bg-[#e8e6e1]">
+                            {(() => {
+                              const maxVal = Math.max(budgetGraph.estimatedHigh, wizard.budgetAmount || 0) * 1.15;
+                              const lowPct = (budgetGraph.estimatedLow / maxVal) * 100;
+                              const highPct = (budgetGraph.estimatedHigh / maxVal) * 100;
+                              const budgetPct = wizard.budgetAmount ? (wizard.budgetAmount / maxVal) * 100 : null;
+                              return (
+                                <>
+                                  <div className="absolute top-0 h-full rounded-full bg-[#2d5a3d]" style={{ left: `${lowPct}%`, width: `${highPct - lowPct}%` }} />
+                                  {budgetPct !== null && (
+                                    <div className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border-2 border-white bg-[#d4a24c] shadow-sm" style={{ left: `${budgetPct}%`, marginLeft: "-6px" }} />
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                          {wizard.budgetAmount != null && wizard.budgetAmount > 0 && (
+                            <p className="mt-1.5 text-xs text-[#6a6a7a]">My Budget: <span className="font-bold text-[#d4a24c]">{fmt(wizard.budgetAmount)}</span></p>
+                          )}
                         </div>
+                      </div>
+                      <div className="shrink-0">
+                        <MiniPieChart segments={pieSegments} size={80} />
                       </div>
                     </div>
                   </button>
@@ -327,7 +342,7 @@ export default function BuildBookPage() {
                       </div>
                       <span className="text-sm font-semibold text-[#1a1a2e]">Timeline</span>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 mt-auto">
                       {Object.entries(PHASE_COLORS).map(([phase, color]) => (
                         <div key={phase} className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
@@ -343,7 +358,7 @@ export default function BuildBookPage() {
                   {/* Contractor card */}
                   <button
                     onClick={() => setActiveTab("contractor")}
-                    className="group rounded-xl border border-[#e8e6e1] bg-[#f8f7f4] p-4 text-left transition hover:border-[#d4a24c]/30 hover:shadow-md"
+                    className="group flex flex-col rounded-xl border border-[#e8e6e1] bg-[#f8f7f4] p-4 text-left transition hover:border-[#d4a24c]/30 hover:shadow-md"
                   >
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#d4a24c]/10">
@@ -352,85 +367,75 @@ export default function BuildBookPage() {
                       <span className="text-sm font-semibold text-[#1a1a2e]">Contractor</span>
                     </div>
                     {budgetGraph.breakdown.find(b => b.category === "Labor") ? (
-                      <div>
-                        <p className="text-lg font-bold text-[#d4a24c]">
-                          {fmt(budgetGraph.breakdown.find(b => b.category === "Labor")!.lowAmount)}
-                          <span className="text-sm font-normal text-[#6a6a7a]"> – {fmt(budgetGraph.breakdown.find(b => b.category === "Labor")!.highAmount)}</span>
-                        </p>
-                        <p className="text-[10px] text-[#6a6a7a] mt-0.5">Estimated labor cost</p>
-                      </div>
+                      <p className="text-base font-bold text-[#d4a24c]">
+                        {fmt(budgetGraph.breakdown.find(b => b.category === "Labor")!.lowAmount)} – {fmt(budgetGraph.breakdown.find(b => b.category === "Labor")!.highAmount)}
+                      </p>
                     ) : (
-                      <div>
-                        <p className="text-sm text-[#9a9aaa]">No estimate yet</p>
-                        <p className="text-[10px] text-[#6a6a7a] mt-0.5">Search for contractors</p>
-                      </div>
+                      <p className="text-sm text-[#9a9aaa]">No estimate yet</p>
                     )}
                   </button>
                 </div>
 
-                {/* ── Side-by-side: Rendering + Moodboard ── */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Rendering */}
-                  <div className="rounded-xl border border-[#e8e6e1] bg-[#f8f7f4] overflow-hidden">
-                    <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e8e6e1] bg-white">
-                      <FaPhotoFilm className="text-sm text-[#2d5a3d]" />
-                      <span className="text-sm font-bold text-[#1a1a2e]">2D Rendering</span>
-                    </div>
-                    <div className="p-4">
-                      {wizard.mockupGeneratedImages.length > 0 ? (
-                        <div className="grid gap-2 grid-cols-2">
-                          {wizard.mockupGeneratedImages.map((imgUrl, i) => (
-                            <div key={i} className="overflow-hidden rounded-lg border border-[#e8e6e1] bg-white shadow-sm">
-                              <div className="relative aspect-[3/2] w-full">
-                                <Image src={imgUrl} alt={`Mockup ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-10 text-center">
-                          <FaPhotoFilm className="text-3xl text-[#d5d3cd] mb-2" />
-                          <p className="text-sm text-[#9a9aaa]">No renderings generated yet.</p>
-                          <p className="text-xs text-[#b5b5c5] mt-1">Generate mockups in the wizard to see them here.</p>
-                        </div>
-                      )}
-                    </div>
+                {/* ── 2D Rendering ── */}
+                <div className="rounded-xl border border-[#e8e6e1] bg-[#f8f7f4] overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e8e6e1] bg-white">
+                    <FaPhotoFilm className="text-sm text-[#2d5a3d]" />
+                    <span className="text-sm font-bold text-[#1a1a2e]">2D Rendering</span>
                   </div>
+                  <div className="p-4">
+                    {wizard.mockupGeneratedImages.length > 0 ? (
+                      <div className="grid gap-3 grid-cols-2">
+                        {wizard.mockupGeneratedImages.map((imgUrl, i) => (
+                          <div key={i} className="overflow-hidden rounded-lg border border-[#e8e6e1] bg-white shadow-sm">
+                            <div className="relative aspect-[3/2] w-full">
+                              <Image src={imgUrl} alt={`Mockup ${i + 1}`} fill className="object-cover" sizes="500px" unoptimized />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-10 text-center">
+                        <FaPhotoFilm className="text-3xl text-[#d5d3cd] mb-2" />
+                        <p className="text-sm text-[#9a9aaa]">No renderings generated yet.</p>
+                        <p className="text-xs text-[#b5b5c5] mt-1">Generate mockups in the wizard to see them here.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-                  {/* Moodboard */}
-                  <div className="rounded-xl border border-[#e8e6e1] bg-[#f8f7f4] overflow-hidden">
-                    <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e8e6e1] bg-white">
-                      <FaImages className="text-sm text-[#2d5a3d]" />
-                      <span className="text-sm font-bold text-[#1a1a2e]">Moodboard</span>
-                    </div>
-                    <div className="p-4">
-                      {selectedProducts.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-10 text-center">
-                          <FaImages className="text-3xl text-[#d5d3cd] mb-2" />
-                          <p className="text-sm text-[#9a9aaa]">No items selected yet.</p>
-                        </div>
-                      ) : (
-                        <div className="relative h-[300px] overflow-hidden rounded-lg border border-[#e8e6e1] bg-white">
-                          {selectedProducts.map((p, i) => {
-                            const pos = wizard.moodboardDragPositions[i] || getDefaultPosition(i, selectedProducts.length, 500, 300);
-                            return (
-                              <div key={i} className="absolute" style={{ left: pos.x * 500 / 900, top: pos.y * 300 / 520 }}>
-                                {p.thumbnail ? (
-                                  <div className="relative h-[100px] w-[100px]">
-                                    <Image src={p.thumbnail} alt={p.title} fill className="object-contain" sizes="100px" unoptimized />
-                                  </div>
-                                ) : (
-                                  <div className="flex h-[100px] w-[100px] items-center justify-center rounded-lg bg-[#f8f7f4]">
-                                    <FaCartShopping className="text-xl text-[#d5d3cd]" />
-                                  </div>
-                                )}
-                                <p className="mt-0.5 max-w-[100px] truncate text-center text-[8px] font-medium text-[#6a6a7a]">{p.title}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
+                {/* ── Moodboard ── */}
+                <div className="rounded-xl border border-[#e8e6e1] bg-[#f8f7f4] overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e8e6e1] bg-white">
+                    <FaImages className="text-sm text-[#2d5a3d]" />
+                    <span className="text-sm font-bold text-[#1a1a2e]">Moodboard</span>
+                  </div>
+                  <div className="p-4">
+                    {selectedProducts.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 text-center">
+                        <FaImages className="text-3xl text-[#d5d3cd] mb-2" />
+                        <p className="text-sm text-[#9a9aaa]">No items selected yet.</p>
+                      </div>
+                    ) : (
+                      <div className="relative h-[420px] overflow-hidden rounded-lg border border-[#e8e6e1] bg-white">
+                        {selectedProducts.map((p, i) => {
+                          const pos = wizard.moodboardDragPositions[i] || getDefaultPosition(i, selectedProducts.length, 900, 420);
+                          return (
+                            <div key={i} className="absolute" style={{ left: pos.x, top: pos.y }}>
+                              {p.thumbnail ? (
+                                <div className="relative h-[140px] w-[140px]">
+                                  <Image src={p.thumbnail} alt={p.title} fill className="object-contain" sizes="140px" unoptimized />
+                                </div>
+                              ) : (
+                                <div className="flex h-[140px] w-[140px] items-center justify-center rounded-lg bg-[#f8f7f4]">
+                                  <FaCartShopping className="text-xl text-[#d5d3cd]" />
+                                </div>
+                              )}
+                              <p className="mt-0.5 max-w-[140px] truncate text-center text-[9px] font-medium text-[#6a6a7a]">{p.title}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -440,28 +445,28 @@ export default function BuildBookPage() {
                     <h3 className="flex items-center gap-2 text-base font-bold text-[#1a1a2e] mb-3">
                       <FaCartShopping className="text-sm text-[#2d5a3d]" /> Product Selections
                     </h3>
-                    <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                       {selectedProducts.map((p, i) => (
                         <div key={i} className="group overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#2d5a3d]/30 hover:shadow-md">
-                          {p.thumbnail ? (
-                            <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
+                          <div className="relative aspect-square w-full overflow-hidden bg-[#f8f7f4]">
+                            {p.thumbnail ? (
                               <Image src={p.thumbnail} alt={p.title} fill className="object-cover" sizes="160px" unoptimized />
-                            </div>
-                          ) : (
-                            <div className="flex aspect-square w-full items-center justify-center bg-[#f8f7f4]">
-                              <FaCartShopping className="text-xl text-[#d5d3cd]" />
-                            </div>
-                          )}
-                          <div className="p-2">
-                            <p className="line-clamp-2 text-[10px] font-medium leading-tight text-[#1a1a2e]">{p.title}</p>
-                            <div className="mt-1 flex items-center justify-between">
-                              <span className="text-xs font-bold text-[#2d5a3d]">{p.price || "$TBD"}</span>
-                            </div>
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <FaCartShopping className="text-xl text-[#d5d3cd]" />
+                              </div>
+                            )}
                             {p.url && (
-                              <a href={p.url} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-1 text-[9px] font-semibold text-[#2d8a9a] hover:underline">
-                                LINK <FaArrowUpRightFromSquare className="text-[7px]" />
+                              <a href={p.url} target="_blank" rel="noopener noreferrer" className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-md bg-white/80 text-[#9a9aaa] hover:bg-white hover:text-[#6a6a7a] transition backdrop-blur-sm">
+                                <FaArrowUpRightFromSquare className="text-[10px]" />
                               </a>
                             )}
+                          </div>
+                          <div className="p-2">
+                            <p className="line-clamp-2 text-[10px] font-medium leading-tight text-[#1a1a2e]">{p.title}</p>
+                            <div className="mt-1">
+                              <span className="text-sm font-bold text-[#2d5a3d]">{p.price || "$TBD"}</span>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -496,8 +501,8 @@ export default function BuildBookPage() {
                                 <td className="py-2.5 px-4 text-xs text-[#4a4a5a]">{row.product.source || "—"}</td>
                                 <td className="py-2.5 px-4">
                                   {row.product.url ? (
-                                    <a href={row.product.url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-[#2d8a9a] hover:underline">
-                                      SHOP NOW
+                                    <a href={row.product.url} target="_blank" rel="noopener noreferrer" className="inline-flex text-[#2d8a9a] hover:text-[#1a6a7a] transition">
+                                      <FaArrowUpRightFromSquare className="text-sm" />
                                     </a>
                                   ) : "—"}
                                 </td>
@@ -772,37 +777,56 @@ export default function BuildBookPage() {
 
 /* ── Shared Components ── */
 
-function MiniPieChart({ segments, size = 56 }: { segments: { pct: number; color: string }[]; size?: number }) {
+function MiniPieChart({ segments, size = 56 }: { segments: { pct: number; color: string; label?: string; amount?: string }[]; size?: number }) {
   const cx = size / 2;
   const cy = size / 2;
   const radius = (size - 2) / 2;
-  let cumulativeAngle = -90;
+  const [hovered, setHovered] = useState<number | null>(null);
   const toRad = (deg: number) => (deg * Math.PI) / 180;
 
+  let cumulativeAngle = -90;
+  const wedges = segments.map((seg) => {
+    const startAngle = cumulativeAngle;
+    const sweepAngle = (seg.pct / 100) * 360;
+    cumulativeAngle += sweepAngle;
+    return { ...seg, startAngle, sweepAngle };
+  });
+
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
-      {segments.map((seg, i) => {
-        const startAngle = cumulativeAngle;
-        const sweepAngle = (seg.pct / 100) * 360;
-        cumulativeAngle += sweepAngle;
-        const startRad = toRad(startAngle);
-        const endRad = toRad(startAngle + sweepAngle);
-        const x1 = cx + radius * Math.cos(startRad);
-        const y1 = cy + radius * Math.sin(startRad);
-        const x2 = cx + radius * Math.cos(endRad);
-        const y2 = cy + radius * Math.sin(endRad);
-        const largeArc = sweepAngle > 180 ? 1 : 0;
-        return (
-          <path
-            key={i}
-            d={`M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`}
-            fill={seg.color}
-            stroke="#fff"
-            strokeWidth={1}
-          />
-        );
-      })}
-    </svg>
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {wedges.map((w, i) => {
+          const isHovered = hovered === i;
+          const r = isHovered ? radius : radius - 1;
+          const startRad = toRad(w.startAngle);
+          const endRad = toRad(w.startAngle + w.sweepAngle);
+          const x1 = cx + r * Math.cos(startRad);
+          const y1 = cy + r * Math.sin(startRad);
+          const x2 = cx + r * Math.cos(endRad);
+          const y2 = cy + r * Math.sin(endRad);
+          const largeArc = w.sweepAngle > 180 ? 1 : 0;
+          return (
+            <path
+              key={i}
+              d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`}
+              fill={w.color}
+              stroke="#fff"
+              strokeWidth={1}
+              className="transition-all duration-150 cursor-pointer"
+              style={{ filter: isHovered ? "brightness(1.15)" : undefined }}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+            />
+          );
+        })}
+      </svg>
+      {hovered !== null && segments[hovered]?.label && (
+        <div className="pointer-events-none absolute rounded-md bg-[#1a1a2e]/90 px-2 py-1 text-white shadow-lg whitespace-nowrap z-10" style={{ left: "50%", top: "-8px", transform: "translate(-50%, -100%)" }}>
+          <div className="text-[9px] text-white/70">{segments[hovered].label}</div>
+          <div className="text-xs font-bold">{segments[hovered].amount ?? `${segments[hovered].pct}%`}</div>
+        </div>
+      )}
+    </div>
   );
 }
 
