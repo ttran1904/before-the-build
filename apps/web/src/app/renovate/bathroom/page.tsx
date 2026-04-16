@@ -2406,6 +2406,24 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
   const store = useWizardStore();
   const [error, setError] = useState<string | null>(null);
   const [excludedIndices, setExcludedIndices] = useState<Set<number>>(new Set());
+  const mockupFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMockupFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > 10 * 1024 * 1024) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          store.addMockupPhoto(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
 
   // Reset stale loading state on mount (e.g. if page was refreshed mid-generation)
   useEffect(() => {
@@ -2476,40 +2494,58 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
     <div className="mt-6">
       <h2 className="text-2xl font-bold text-[#1a1a2e]">Real Mockup</h2>
       <p className="mt-2 text-sm text-[#6a6a7a]">
-        Generate a realistic AI mockup with your selected items using the bathroom photos you uploaded in the Budget step.
+        Generate a realistic AI mockup with your selected items using your bathroom photos.
       </p>
+
+      <input
+        ref={mockupFileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleMockupFileUpload}
+      />
 
       {/* ── Input section: photos + items side by side ── */}
       <div className="mt-6 rounded-2xl border border-[#e8e6e1] bg-[#fafaf8] p-5">
         <div className="grid gap-6 lg:grid-cols-[1fr_1px_2fr]">
-          {/* ── Left: Read-only bathroom photos ── */}
+          {/* ── Left: Bathroom photos with upload/remove ── */}
           <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
               <FaCamera className="text-xs text-[#2d5a3d]" />
               Your Bathroom Photos
             </h3>
             <p className="mt-1 text-xs text-[#9a9aaa]">
-              Uploaded in the Budget step. Go back to edit.
+              Upload at least 1 angle of your current bathroom.
             </p>
 
-            {store.mockupBathroomPhotos.length === 0 ? (
-              <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] p-6 text-center">
-                <FaCamera className="text-xl text-[#d5d3cd]" />
-                <p className="text-xs text-[#9a9aaa]">No photos uploaded yet.</p>
-                <p className="text-[10px] text-[#c5c3bd]">Go back to the Budget step to upload bathroom photos.</p>
-              </div>
-            ) : (
-              <div className="mt-3 grid grid-cols-1 gap-2.5">
-                {store.mockupBathroomPhotos.map((photo, i) => (
-                  <div key={i} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
-                    <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
-                    <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
-                      Angle {i + 1}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="mt-3 grid grid-cols-1 gap-2.5">
+              {store.mockupBathroomPhotos.map((photo, i) => (
+                <div key={i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#e8e6e1] shadow-sm">
+                  <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
+                  <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
+                  <button
+                    onClick={() => store.removeMockupPhoto(i)}
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                  >
+                    <FaXmark className="text-[10px]" />
+                  </button>
+                  <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                    Angle {i + 1}
+                  </span>
+                </div>
+              ))}
+
+              <button
+                onClick={() => mockupFileInputRef.current?.click()}
+                className="flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#d5d3cd] transition hover:border-[#2d5a3d] hover:bg-[#2d5a3d]/5"
+              >
+                <FaUpload className="text-lg text-[#9a9aaa]" />
+                <span className="text-[10px] font-medium text-[#6a6a7a]">
+                  {store.mockupBathroomPhotos.length === 0 ? "Upload Photo" : "Add Another"}
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Vertical divider */}
