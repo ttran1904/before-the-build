@@ -77,6 +77,10 @@ export function useSupabaseSync() {
         if (ids && (!state.projectId || !state.roomId)) {
           useWizardStore.setState({ projectId: ids.projectId, roomId: ids.roomId });
         }
+        // Also ensure a build_books row exists so it shows on the dashboard
+        if (ids) {
+          await saveBuildBook(ids.projectId).catch(console.error);
+        }
       } catch (err) {
         console.error("Failed to save wizard state:", err);
       }

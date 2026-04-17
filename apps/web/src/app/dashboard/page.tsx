@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen } from "react-icons/fa6";
+import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen, FaTrash } from "react-icons/fa6";
 import { useIdeaBoardStore, useWizardStore } from "@/lib/store";
-import { loadBuildBooks, loadWizardState } from "@/lib/supabase-sync";
+import { loadBuildBooks, loadWizardState, deleteBuildBook, cleanupEmptyBuildBooks } from "@/lib/supabase-sync";
 
 interface BuildBookEntry {
   id: string;
@@ -55,12 +55,17 @@ export default function DashboardPage() {
   // Build books from Supabase
   const [buildBooks, setBuildBooks] = useState<BuildBookEntry[]>([]);
   const [buildBooksLoaded, setBuildBooksLoaded] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadBuildBooks().then((books) => {
+    (async () => {
+      // Clean up empty build books first, then load
+      await cleanupEmptyBuildBooks().catch(() => {});
+      const books = await loadBuildBooks().catch(() => [] as BuildBookEntry[]);
       setBuildBooks(books);
       setBuildBooksLoaded(true);
-    }).catch(() => setBuildBooksLoaded(true));
+    })();
   }, []);
 
   // Boards sorted by newest first
@@ -101,6 +106,17 @@ export default function DashboardPage() {
       useWizardStore.setState(remote);
     }
     router.push("/build-book");
+  };
+
+  /** Delete a build book */
+  const handleDeleteBuildBook = async (id: string) => {
+    setDeletingId(id);
+    const ok = await deleteBuildBook(id);
+    if (ok) {
+      setBuildBooks((prev) => prev.filter((b) => b.id !== id));
+    }
+    setDeletingId(null);
+    setConfirmDeleteId(null);
   };
 
   const fetchPinterestBoards = useCallback(async () => {
@@ -182,9 +198,14 @@ export default function DashboardPage() {
             See all <FaArrowRight className="text-[8px]" />
           </Link>
         </div>
-        {buildBooksLoaded && buildBooks.length > 0 ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {buildBooks.map((bb) => {
+        {!buildBooksLoaded ? (
+          <div className="rounded-xl border border-[#e8e6e1] bg-white p-12 text-center">
+            <FaSpinner className="mx-auto animate-spin text-2xl text-[#2d5a3d]" />
+            <p className="mt-3 text-sm text-[#9a9aaa]">Loading your build books…</p>
+          </div>
+        ) : buildBooksLoaded && buildBooks.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {buildBooks.slice(0, 3).map((bb) => {
               // Build collage images: Render > uploaded original > Moodboard
               // If render exists, exclude moodboard
               const renderImg = bb.mockupImage;
@@ -198,9 +219,35 @@ export default function DashboardPage() {
               return (
               <div
                 key={bb.id}
-                onClick={() => handleOpenBuildBook(bb.projectId)}
-                className="group cursor-pointer overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#d5d3cd] hover:shadow-md"
+                className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#d5d3cd] hover:shadow-md"
               >
+                {/* Delete button */}
+                {confirmDeleteId === bb.id ? (
+                  <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5 rounded-lg border border-red-200 bg-white/95 p-1.5 shadow-lg backdrop-blur-sm">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteBuildBook(bb.id); }}
+                      disabled={deletingId === bb.id}
+                      className="rounded-md bg-red-500 px-2.5 py-1 text-[10px] font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {deletingId === bb.id ? <FaSpinner className="animate-spin text-xs" /> : "Delete"}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                      className="rounded-md bg-[#e8e6e1] px-2.5 py-1 text-[10px] font-semibold text-[#4a4a5a] transition hover:bg-[#d5d3cd]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(bb.id); }}
+                    className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#9a9aaa] opacity-0 shadow-sm backdrop-blur-sm transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                    title="Delete build book"
+                  >
+                    <FaTrash className="text-xs" />
+                  </button>
+                )}
+                <div onClick={() => handleOpenBuildBook(bb.projectId)}>
                 {collageImages.length >= 2 ? (
                   <div className="flex h-52 w-full gap-0.5 overflow-hidden bg-[#f0ede8]">
                     {/* Largest image (Render if available, else first) */}
@@ -263,6 +310,7 @@ export default function DashboardPage() {
                   <p className="mt-0.5 text-xs text-[#9a9aaa]">
                     Updated {new Date(bb.updatedAt).toLocaleDateString()}
                   </p>
+                </div>
                 </div>
               </div>
               );

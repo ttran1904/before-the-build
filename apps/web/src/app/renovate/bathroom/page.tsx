@@ -191,13 +191,16 @@ function BathroomWizardPageContent() {
 
   /* Goal sub-step removed — now separate wizard steps */
 
-  /* Auto-create build book on first visit */
+  /* Auto-create build book only after user has entered data */
   const buildBookCreatedRef = useRef(false);
   useEffect(() => {
     if (buildBookCreatedRef.current) return;
+    // Only create if wizard already has a project (resuming) or has content
+    const hasContent = store.goals.length > 0 || !!store.scope || store.mustHaves.length > 0;
+    if (!store.projectId && !hasContent) return;
     buildBookCreatedRef.current = true;
     saveBuildBook(store.projectId).catch(() => {});
-  }, [store.projectId]);
+  }, [store.projectId, store.goals.length, store.scope, store.mustHaves.length]);
 
   /* Budget Builder — deterministic graph engine */
   const [budgetBuilderOpen, setBudgetBuilderOpen] = useState(false);

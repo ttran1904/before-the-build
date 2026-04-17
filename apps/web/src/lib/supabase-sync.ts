@@ -476,8 +476,41 @@ export async function loadIdeaBoards(): Promise<{
    BUILD BOOK
    ================================================================ */
 
-/** Save/update a build book from wizard state */
+/** Check if the wizard state has any user-entered content (any interaction qualifies) */
+export function wizardHasContent(state: BathroomWizardState): boolean {
+  return (
+    state.goals.length > 0 ||
+    !!state.scope ||
+    state.mustHaves.length > 0 ||
+    state.niceToHaves.length > 0 ||
+    !!state.budgetTier ||
+    !!state.budgetAmount ||
+    !!state.style ||
+    !!state.roomWidth ||
+    !!state.roomLength ||
+    !!state.roomHeight ||
+    !!state.showerWidth ||
+    !!state.showerLength ||
+    state.priceOverrides.length > 0 ||
+    Object.keys(state.moodboardPointedItems).length > 0 ||
+    state.moodboardManualProducts.length > 0 ||
+    state.catalogueProducts.length > 0 ||
+    state.shoppingProducts.length > 0 ||
+    state.mockupGeneratedImages.length > 0
+  );
+}
+
+/** Save/update a build book from wizard state.
+ *  Only creates a build book if the wizard has any user-entered content. */
 export async function saveBuildBook(projectId?: string | null): Promise<string | null> {
+  // Don't create a build book if no project context exists and wizard is empty
+  if (!projectId) {
+    // Peek at wizard store — if completely empty, skip saving
+    const { useWizardStore: store } = await import("@/lib/store");
+    const state = store.getState();
+    if (!wizardHasContent(state)) return null;
+  }
+
   const ids = await getOrCreateBathroomProject(projectId);
   if (!ids) return null;
 
@@ -629,4 +662,62 @@ export async function loadBuildBooks(): Promise<
   }
 
   return results;
+}
+
+/** Delete all build books whose wizard_answers have no meaningful data.
+ *  Returns the number of deleted projects. */
+export async function cleanupEmptyBuildBooks(): Promise<number> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  const { data, error } = await supabase
+    .from("build_books")
+    .select(`
+      id,
+      project_id,
+      projects!inner ( user_id )
+    `)
+    .eq("projects.user_id", user.id);
+
+  if (error || !data) return 0;
+
+  let deleted = 0;
+
+  for (const bb of data) {
+    // Check if project has any meaningful wizard answers
+    const { data: rooms } = await supabase
+      .from("rooms")
+      .select("wizard_answers")
+      .eq("project_id", bb.project_id)
+      .limit(1);
+
+    const wa = rooms?.[0]?.wizard_answers as Record<string, unknown> | undefined;
+
+    const hasGoals = Array.isArray(wa?.goals) && (wa.goals as string[]).length > 0;
+    const hasScope = !!wa?.scope;
+    const hasMustHaves = Array.isArray(wa?.must_haves) && (wa.must_haves as string[]).length > 0;
+    const hasNiceToHaves = Array.isArray(wa?.nice_to_haves) && (wa.nice_to_haves as string[]).length > 0;
+    const hasBudget = !!wa?.budget_tier || !!wa?.budget_amount;
+    const hasStyle = !!wa?.style;
+    const hasDimensions = !!wa?.room_width || !!wa?.room_length || !!wa?.room_height || !!wa?.shower_width || !!wa?.shower_length;
+    const hasMoodboard = wa?.moodboard_pointed_items && Object.keys(wa.moodboard_pointed_items as object).length > 0;
+    const hasManualProducts = Array.isArray(wa?.moodboard_manual_products) && (wa.moodboard_manual_products as unknown[]).length > 0;
+    const hasMockup = Array.isArray(wa?.mockup_generated_images) && (wa.mockup_generated_images as string[]).length > 0;
+    const hasPriceOverrides = Array.isArray(wa?.price_overrides) && (wa.price_overrides as unknown[]).length > 0;
+
+    const isEmpty = !hasGoals && !hasScope && !hasMustHaves && !hasNiceToHaves && !hasBudget && !hasStyle && !hasDimensions && !hasMoodboard && !hasManualProducts && !hasMockup && !hasPriceOverrides;
+
+    if (isEmpty) {
+      const { error: delError } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", bb.project_id);
+
+      if (!delError) deleted++;
+    }
+  }
+
+  return deleted;
 }

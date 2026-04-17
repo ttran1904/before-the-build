@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { FaBookOpen, FaPlus, FaTrash, FaCheck, FaSpinner } from "react-icons/fa6";
-import { loadBuildBooks, deleteBuildBook, loadWizardState } from "@/lib/supabase-sync";
+import { loadBuildBooks, deleteBuildBook, loadWizardState, cleanupEmptyBuildBooks } from "@/lib/supabase-sync";
 import { useWizardStore } from "@/lib/store";
 
 interface BuildBookEntry {
@@ -60,7 +60,9 @@ export default function BuildBooksPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const fetchBooks = useCallback(() => {
+  const fetchBooks = useCallback(async () => {
+    // Clean up empty build books first
+    await cleanupEmptyBuildBooks().catch(() => {});
     loadBuildBooks()
       .then((books) => {
         setBuildBooks(books);
