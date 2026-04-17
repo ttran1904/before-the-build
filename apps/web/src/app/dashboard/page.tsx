@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen, FaTrash } from "react-icons/fa6";
+import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen, FaTrash, FaArrowsRotate } from "react-icons/fa6";
 import { useIdeaBoardStore, useWizardStore } from "@/lib/store";
 import { loadBuildBooks, loadWizardState, deleteBuildBook, cleanupEmptyBuildBooks } from "@/lib/supabase-sync";
 
@@ -197,6 +197,16 @@ export default function DashboardPage() {
           >
             See all <FaArrowRight className="text-[8px]" />
           </Link>
+          <button
+            onClick={() => {
+              setBuildBooksLoaded(false);
+              loadBuildBooks().then((books) => { setBuildBooks(books); setBuildBooksLoaded(true); }).catch(() => setBuildBooksLoaded(true));
+            }}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[#9a9aaa] transition hover:bg-[#e8e6e1] hover:text-[#2d5a3d]"
+            title="Refresh build books"
+          >
+            <FaArrowsRotate className="text-xs" />
+          </button>
         </div>
         {!buildBooksLoaded ? (
           <div className="rounded-xl border border-[#e8e6e1] bg-white p-12 text-center">

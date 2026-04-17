@@ -18,12 +18,12 @@ interface BuildBookEntry {
 }
 
 /* Timeline progress milestones based on wizard steps:
-   Goal (steps 0-2), Items & Materials (steps 3-4), Visualize (steps 5-6), Done (steps 7-9 complete) */
+   Goal (steps 0-3), Items & Materials (steps 4-6), Visualize (steps 7-8), Build Book (step 9) */
 const MILESTONES = [
   { label: "Goal", minStep: 0 },
-  { label: "Items & Materials", minStep: 3 },
-  { label: "Visualize", minStep: 5 },
-  { label: "Done", minStep: 10 },
+  { label: "Items & Materials", minStep: 4 },
+  { label: "Visualize", minStep: 7 },
+  { label: "Build Book", minStep: 9 },
 ];
 
 function ProgressTimeline({ currentStep }: { currentStep: number }) {
@@ -144,6 +144,7 @@ export default function BuildBooksPage() {
               key={book.id}
               className="group relative rounded-2xl border border-[#e8e6e1] bg-white shadow-sm transition hover:shadow-md"
             >
+
               {/* Thumbnail */}
               <div className="cursor-pointer" onClick={() => handleOpenBuildBook(book.projectId)}>
                 <div className="relative h-40 w-full overflow-hidden rounded-t-2xl bg-[#f0ede8]">
@@ -207,6 +208,14 @@ export default function BuildBooksPage() {
               </div>
             </div>
           ))}
+          {/* New Build Book card */}
+          <button
+            onClick={handleNewBuildBook}
+            className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] bg-white p-8 text-center transition hover:border-[#2d5a3d]/30 hover:shadow-sm"
+          >
+            <FaPlus className="text-xl text-[#9a9aaa]" />
+            <span className="text-sm font-medium text-[#6a6a7a]">New Build Book</span>
+          </button>
         </div>
       )}
     </div>
