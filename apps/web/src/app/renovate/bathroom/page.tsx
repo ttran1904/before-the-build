@@ -196,8 +196,8 @@ function BathroomWizardPageContent() {
   useEffect(() => {
     if (buildBookCreatedRef.current) return;
     buildBookCreatedRef.current = true;
-    saveBuildBook().catch(() => {});
-  }, []);
+    saveBuildBook(store.projectId).catch(() => {});
+  }, [store.projectId]);
 
   /* Budget Builder — deterministic graph engine */
   const [budgetBuilderOpen, setBudgetBuilderOpen] = useState(false);

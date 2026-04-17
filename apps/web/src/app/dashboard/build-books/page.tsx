@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { FaBookOpen, FaPlus, FaTrash, FaCheck, FaSpinner } from "react-icons/fa6";
-import { loadBuildBooks, deleteBuildBook } from "@/lib/supabase-sync";
+import { loadBuildBooks, deleteBuildBook, loadWizardState } from "@/lib/supabase-sync";
+import { useWizardStore } from "@/lib/store";
 
 interface BuildBookEntry {
   id: string;
@@ -52,6 +53,8 @@ function ProgressTimeline({ currentStep }: { currentStep: number }) {
 }
 
 export default function BuildBooksPage() {
+  const router = useRouter();
+  const resetWizard = useWizardStore((s) => s.reset);
   const [buildBooks, setBuildBooks] = useState<BuildBookEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -80,6 +83,20 @@ export default function BuildBooksPage() {
     setConfirmDeleteId(null);
   };
 
+  const handleNewBuildBook = () => {
+    resetWizard();
+    router.push("/renovate/bathroom");
+  };
+
+  const handleOpenBuildBook = async (projectId: string) => {
+    const remote = await loadWizardState(projectId);
+    if (remote) {
+      resetWizard();
+      useWizardStore.setState(remote);
+    }
+    router.push("/renovate/bathroom");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -89,12 +106,12 @@ export default function BuildBooksPage() {
             All your renovation build books in one place. Click one to view or edit.
           </p>
         </div>
-        <Link
-          href="/renovate/bathroom"
+        <button
+          onClick={handleNewBuildBook}
           className="inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
         >
           <FaPlus className="text-xs" /> New Build Book
-        </Link>
+        </button>
       </div>
 
       {!loaded ? (
@@ -110,12 +127,12 @@ export default function BuildBooksPage() {
             Build books are contractor-ready documents with your designs, budgets, timelines,
             and product selections. Start by exploring ideas and creating your first one!
           </p>
-          <Link
-            href="/renovate/bathroom"
+          <button
+            onClick={handleNewBuildBook}
             className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
           >
             <FaPlus className="text-xs" /> Create Your First Build Book
-          </Link>
+          </button>
         </div>
       ) : (
         /* Build book cards grid */
@@ -126,7 +143,7 @@ export default function BuildBooksPage() {
               className="group relative rounded-2xl border border-[#e8e6e1] bg-white shadow-sm transition hover:shadow-md"
             >
               {/* Thumbnail */}
-              <Link href={`/renovate/bathroom`}>
+              <div className="cursor-pointer" onClick={() => handleOpenBuildBook(book.projectId)}>
                 <div className="relative h-40 w-full overflow-hidden rounded-t-2xl bg-[#f0ede8]">
                   {book.mockupImage ? (
                     <Image
@@ -141,7 +158,7 @@ export default function BuildBooksPage() {
                     </div>
                   )}
                 </div>
-              </Link>
+              </div>
 
               {/* Delete button */}
               {confirmDeleteId === book.id ? (
@@ -170,13 +187,12 @@ export default function BuildBooksPage() {
                 </button>
               )}
 
-              {/* Info */}
               <div className="p-4">
-                <Link href={`/renovate/bathroom`}>
+                <button onClick={() => handleOpenBuildBook(book.projectId)} className="text-left">
                   <h3 className="text-sm font-semibold text-[#1a1a2e] transition hover:text-[#2d5a3d]">
                     {book.name}
                   </h3>
-                </Link>
+                </button>
                 <p className="mt-0.5 text-xs text-[#9a9aaa]">
                   Updated {new Date(book.updatedAt).toLocaleDateString()}
                   {book.totalCost > 0 && (

@@ -32,13 +32,13 @@ export function useSupabaseSync() {
     hasLoadedRef.current = true;
 
     (async () => {
-      // Load wizard state
-      const remoteWizard = await loadWizardState();
-      if (remoteWizard) {
-        const localState = useWizardStore.getState();
-        // Only overwrite if local store seems empty (no goals set)
-        const localIsEmpty = localState.goals.length === 0 && !localState.scope;
-        if (localIsEmpty) {
+      // Load wizard state (for the most recent project with a build book)
+      const localState = useWizardStore.getState();
+      const localIsEmpty = localState.goals.length === 0 && !localState.scope;
+
+      if (localIsEmpty) {
+        const remoteWizard = await loadWizardState(localState.projectId);
+        if (remoteWizard) {
           useWizardStore.setState(remoteWizard);
         }
       }
@@ -47,8 +47,8 @@ export function useSupabaseSync() {
       const remoteIdeaBoards = await loadIdeaBoards();
       if (remoteIdeaBoards) {
         const localIdeaBoard = useIdeaBoardStore.getState();
-        const localIsEmpty = localIdeaBoard.boards.length === 0;
-        if (localIsEmpty && remoteIdeaBoards.boards.length > 0) {
+        const localBoardsEmpty = localIdeaBoard.boards.length === 0;
+        if (localBoardsEmpty && remoteIdeaBoards.boards.length > 0) {
           useIdeaBoardStore.setState({
             boards: remoteIdeaBoards.boards,
             items: remoteIdeaBoards.items,
@@ -69,9 +69,17 @@ export function useSupabaseSync() {
   const debouncedSaveWizard = useCallback(() => {
     if (!user) return;
     if (wizardTimerRef.current) clearTimeout(wizardTimerRef.current);
-    wizardTimerRef.current = setTimeout(() => {
+    wizardTimerRef.current = setTimeout(async () => {
       const state = useWizardStore.getState();
-      saveWizardState(state).catch(console.error);
+      try {
+        const ids = await saveWizardState(state);
+        // Store the projectId/roomId back so future saves reuse the same project
+        if (ids && (!state.projectId || !state.roomId)) {
+          useWizardStore.setState({ projectId: ids.projectId, roomId: ids.roomId });
+        }
+      } catch (err) {
+        console.error("Failed to save wizard state:", err);
+      }
     }, DEBOUNCE_MS);
   }, [user]);
 

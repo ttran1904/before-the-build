@@ -40,8 +40,17 @@ export default function BuildBookPage() {
 
   // Save build book + wizard state to Supabase when viewing
   useEffect(() => {
-    saveBuildBook().catch(console.error);
-    saveWizardState(wizard).catch(console.error);
+    (async () => {
+      const ids = await saveBuildBook(wizard.projectId);
+      if (ids && !wizard.projectId) {
+        // Store the project association
+        useWizardStore.setState({ projectId: wizard.projectId });
+      }
+      const savedIds = await saveWizardState(wizard);
+      if (savedIds && !wizard.projectId) {
+        useWizardStore.setState({ projectId: savedIds.projectId, roomId: savedIds.roomId });
+      }
+    })().catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

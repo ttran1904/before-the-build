@@ -9,8 +9,12 @@ const supabase = createSupabaseBrowserClient();
    ================================================================ */
 
 /** Get or create the user's bathroom renovation project + room.
+ *  If existingProjectId is given, reuse that project.
+ *  Otherwise create a brand-new project (supports multiple build books).
  *  Returns { projectId, roomId } */
-export async function getOrCreateBathroomProject(): Promise<{
+export async function getOrCreateBathroomProject(
+  existingProjectId?: string | null,
+): Promise<{
   projectId: string;
   roomId: string;
 } | null> {
@@ -19,20 +23,34 @@ export async function getOrCreateBathroomProject(): Promise<{
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // Try to find existing bathroom project
-  const { data: existingProjects } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("name", "Bathroom Renovation")
-    .order("created_at", { ascending: false })
-    .limit(1);
-
   let projectId: string;
 
-  if (existingProjects && existingProjects.length > 0) {
-    projectId = existingProjects[0].id;
+  if (existingProjectId) {
+    // Verify this project exists and belongs to the user
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("id", existingProjectId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (project) {
+      projectId = project.id;
+    } else {
+      // Project not found — create a new one
+      const { data: newProject, error } = await supabase
+        .from("projects")
+        .insert({ user_id: user.id, name: "Bathroom Renovation", status: "planning" })
+        .select("id")
+        .single();
+      if (error || !newProject) {
+        console.error("Failed to create project:", error);
+        return null;
+      }
+      projectId = newProject.id;
+    }
   } else {
+    // No projectId — create a brand-new project
     const { data: newProject, error } = await supabase
       .from("projects")
       .insert({ user_id: user.id, name: "Bathroom Renovation", status: "planning" })
@@ -45,7 +63,7 @@ export async function getOrCreateBathroomProject(): Promise<{
     projectId = newProject.id;
   }
 
-  // Try to find existing bathroom room
+  // Try to find existing bathroom room for this project
   const { data: existingRooms } = await supabase
     .from("rooms")
     .select("id")
@@ -73,10 +91,14 @@ export async function getOrCreateBathroomProject(): Promise<{
   return { projectId, roomId };
 }
 
-/** Save wizard state to Supabase (rooms.wizard_answers + project fields) */
-export async function saveWizardState(state: BathroomWizardState): Promise<boolean> {
-  const ids = await getOrCreateBathroomProject();
-  if (!ids) return false;
+/** Save wizard state to Supabase (rooms.wizard_answers + project fields).
+ *  Returns { projectId, roomId } on success so caller can store them. */
+export async function saveWizardState(state: BathroomWizardState): Promise<{
+  projectId: string;
+  roomId: string;
+} | null> {
+  const ids = await getOrCreateBathroomProject(state.projectId);
+  if (!ids) return null;
 
   // Save the full wizard state as JSONB in rooms.wizard_answers
   const { error: roomError } = await supabase
@@ -125,7 +147,7 @@ export async function saveWizardState(state: BathroomWizardState): Promise<boole
 
   if (roomError) {
     console.error("Failed to save wizard answers:", roomError);
-    return false;
+    return null;
   }
 
   // Also update project-level fields
@@ -143,21 +165,68 @@ export async function saveWizardState(state: BathroomWizardState): Promise<boole
 
   if (projectError) {
     console.error("Failed to save project fields:", projectError);
-    return false;
+    return null;
   }
 
-  return true;
+  return ids;
 }
 
-/** Load wizard state from Supabase → returns partial state to merge into store */
-export async function loadWizardState(): Promise<Partial<BathroomWizardState> | null> {
-  const ids = await getOrCreateBathroomProject();
-  if (!ids) return null;
+/** Load wizard state from Supabase for a specific project (or the most recent one).
+ *  Returns partial state to merge into store, including projectId/roomId. */
+export async function loadWizardState(existingProjectId?: string | null): Promise<Partial<BathroomWizardState> | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  let projectId: string;
+  let roomId: string;
+
+  if (existingProjectId) {
+    // Load specific project
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("id", existingProjectId)
+      .eq("user_id", user.id)
+      .single();
+    if (!project) return null;
+    projectId = project.id;
+
+    const { data: rooms } = await supabase
+      .from("rooms")
+      .select("id")
+      .eq("project_id", projectId)
+      .eq("type", "bathroom")
+      .limit(1);
+    if (!rooms || rooms.length === 0) return null;
+    roomId = rooms[0].id;
+  } else {
+    // Find the most recent project that has a build book
+    const { data: recentBB } = await supabase
+      .from("build_books")
+      .select("project_id, projects!inner ( user_id )")
+      .eq("projects.user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+
+    if (!recentBB || recentBB.length === 0) return null;
+    projectId = recentBB[0].project_id;
+
+    const { data: rooms } = await supabase
+      .from("rooms")
+      .select("id")
+      .eq("project_id", projectId)
+      .eq("type", "bathroom")
+      .limit(1);
+    if (!rooms || rooms.length === 0) return null;
+    roomId = rooms[0].id;
+  }
 
   const { data: room, error } = await supabase
     .from("rooms")
     .select("wizard_answers")
-    .eq("id", ids.roomId)
+    .eq("id", roomId)
     .single();
 
   if (error || !room?.wizard_answers) return null;
@@ -168,6 +237,8 @@ export async function loadWizardState(): Promise<Partial<BathroomWizardState> | 
   if (!wa.goals && !wa.scope && !wa.budget_tier) return null;
 
   return {
+    projectId,
+    roomId,
     goals: (wa.goals as string[]) || [],
     scope: (wa.scope as BathroomWizardState["scope"]) || null,
     mustHaves: (wa.must_haves as string[]) || [],
@@ -206,6 +277,12 @@ export async function loadWizardState(): Promise<Partial<BathroomWizardState> | 
    IDEA BOARDS + INSPIRATION ITEMS
    ================================================================ */
 
+/** Helper: check if a string is a valid UUID v4 */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUUID(s: string): boolean {
+  return UUID_RE.test(s);
+}
+
 /** Save all idea boards & items to Supabase */
 export async function saveIdeaBoards(
   boards: IdeaBoard[],
@@ -216,6 +293,9 @@ export async function saveIdeaBoards(
   } = await supabase.auth.getUser();
   if (!user) return false;
 
+  // Only sync boards that have valid UUID IDs (old format board_xxx will be skipped)
+  const syncableBoards = boards.filter((b) => isUUID(b.id));
+
   // --- Sync boards ---
   // Get existing boards for this user
   const { data: existingBoards } = await supabase
@@ -224,35 +304,40 @@ export async function saveIdeaBoards(
     .eq("user_id", user.id);
 
   const existingBoardIds = new Set((existingBoards || []).map((b) => b.id));
-  const localBoardIds = new Set(boards.map((b) => b.id));
+  const localBoardIds = new Set(syncableBoards.map((b) => b.id));
 
   // Upsert boards that exist locally
-  for (const board of boards) {
+  for (const board of syncableBoards) {
     if (existingBoardIds.has(board.id)) {
       await supabase
         .from("mood_boards")
         .update({ name: board.name, updated_at: new Date().toISOString() })
         .eq("id", board.id);
     } else {
-      await supabase.from("mood_boards").insert({
+      const { error } = await supabase.from("mood_boards").insert({
         id: board.id,
         user_id: user.id,
         name: board.name,
         created_at: new Date(board.createdAt).toISOString(),
       });
+      if (error) {
+        console.error("Failed to insert board:", error);
+      }
     }
   }
 
   // Delete boards that were removed locally
   for (const existing of existingBoards || []) {
     if (!localBoardIds.has(existing.id)) {
+      // Also delete associated inspiration items first
+      await supabase.from("inspiration_items").delete().eq("mood_board_id", existing.id);
       await supabase.from("mood_boards").delete().eq("id", existing.id);
     }
   }
 
   // --- Sync inspiration items ---
-  // Delete all existing items for this user's boards, then re-insert
-  const allBoardIds = boards.map((b) => b.id);
+  // Delete all existing items for syncable boards, then re-insert
+  const allBoardIds = syncableBoards.map((b) => b.id);
   if (allBoardIds.length > 0) {
     await supabase
       .from("inspiration_items")
@@ -260,20 +345,37 @@ export async function saveIdeaBoards(
       .in("mood_board_id", allBoardIds);
   }
 
-  // Get or create a project for linking (optional, can be null)
-  const ids = await getOrCreateBathroomProject();
+  // Get a project ID for linking (inspiration_items.project_id is NOT NULL)
+  // Find the user's most recent project to link items to
+  const { data: recentProject } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  let linkProjectId: string | null = recentProject?.id ?? null;
+  if (!linkProjectId) {
+    // Create a fallback project
+    const ids = await getOrCreateBathroomProject();
+    linkProjectId = ids?.projectId ?? null;
+  }
 
   // Insert items — one row per item-board relationship
+  // Don't set `id` — let the DB auto-generate UUIDs
+  const VALID_SOURCES = new Set(["pinterest", "instagram", "google", "etsy", "house_tour", "resort", "magazine", "upload"]);
   const rows = items.flatMap((item) =>
-    item.boardIds.map((boardId) => ({
-      id: `${item.id}_${boardId}`,
-      project_id: ids?.projectId,
-      mood_board_id: boardId,
-      source: "google" as const, // default source
-      image_url: item.imageUrl,
-      source_url: item.sourceUrl || null,
-      tags: item.tags || [],
-    })),
+    item.boardIds
+      .filter((boardId) => isUUID(boardId)) // only sync items linked to UUID boards
+      .map((boardId) => ({
+        mood_board_id: boardId,
+        project_id: linkProjectId,
+        source: VALID_SOURCES.has(item.source) ? item.source : "google",
+        image_url: item.imageUrl,
+        source_url: item.sourceUrl || null,
+        tags: item.tags || [],
+      })),
   );
 
   if (rows.length > 0) {
@@ -356,8 +458,8 @@ export async function loadIdeaBoards(): Promise<{
   }
 
   const items: IdeaBoardItem[] = Array.from(itemMap.entries()).map(
-    ([imageUrl, data]) => ({
-      id: `img_${imageUrl.split("/").pop() || Date.now()}`,
+    ([, data]) => ({
+      id: crypto.randomUUID(),
       imageUrl: data.imageUrl,
       sourceUrl: data.sourceUrl,
       source: "google",
@@ -375,8 +477,8 @@ export async function loadIdeaBoards(): Promise<{
    ================================================================ */
 
 /** Save/update a build book from wizard state */
-export async function saveBuildBook(): Promise<string | null> {
-  const ids = await getOrCreateBathroomProject();
+export async function saveBuildBook(projectId?: string | null): Promise<string | null> {
+  const ids = await getOrCreateBathroomProject(projectId);
   if (!ids) return null;
 
   // Upsert build book

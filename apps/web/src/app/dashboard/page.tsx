@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen } from "react-icons/fa6";
 import { useIdeaBoardStore, useWizardStore } from "@/lib/store";
-import { loadBuildBooks } from "@/lib/supabase-sync";
+import { loadBuildBooks, loadWizardState } from "@/lib/supabase-sync";
 
 interface BuildBookEntry {
   id: string;
@@ -19,6 +20,7 @@ interface BuildBookEntry {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const boards = useIdeaBoardStore((s) => s.boards);
   const items = useIdeaBoardStore((s) => s.items);
   const getBoardItems = useIdeaBoardStore((s) => s.getBoardItems);
@@ -26,6 +28,7 @@ export default function DashboardPage() {
   const saveItemToBoard = useIdeaBoardStore((s) => s.saveItemToBoard);
   const removeBoard = useIdeaBoardStore((s) => s.removeBoard);
   const renameBoard = useIdeaBoardStore((s) => s.renameBoard);
+  const resetWizard = useWizardStore((s) => s.reset);
 
   // Uploaded bathroom photos from wizard store (base64, client-only)
   const uploadedPhotos = useWizardStore((s) => s.mockupBathroomPhotos);
@@ -82,6 +85,23 @@ export default function DashboardPage() {
       setPinterestConnected(d.connected);
     }).catch(() => setPinterestConnected(false));
   }, []);
+
+  /** Start a brand-new build book (reset wizard state, navigate) */
+  const handleNewBuildBook = () => {
+    resetWizard();
+    router.push("/renovate/bathroom");
+  };
+
+  /** Open an existing build book (load its project data into the store, navigate) */
+  const handleOpenBuildBook = async (projectId: string) => {
+    const remote = await loadWizardState(projectId);
+    if (remote) {
+      // Reset first to clear stale data, then apply loaded state
+      resetWizard();
+      useWizardStore.setState(remote);
+    }
+    router.push("/build-book");
+  };
 
   const fetchPinterestBoards = useCallback(async () => {
     setPinterestLoading(true);
@@ -176,10 +196,10 @@ export default function DashboardPage() {
               if (!renderImg && moodboardImg) collageImages.push(moodboardImg);
 
               return (
-              <Link
+              <div
                 key={bb.id}
-                href="/build-book"
-                className="group overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#d5d3cd] hover:shadow-md"
+                onClick={() => handleOpenBuildBook(bb.projectId)}
+                className="group cursor-pointer overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#d5d3cd] hover:shadow-md"
               >
                 {collageImages.length >= 2 ? (
                   <div className="flex h-52 w-full gap-0.5 overflow-hidden bg-[#f0ede8]">
@@ -244,27 +264,27 @@ export default function DashboardPage() {
                     Updated {new Date(bb.updatedAt).toLocaleDateString()}
                   </p>
                 </div>
-              </Link>
+              </div>
               );
             })}
-            <Link
-              href="/renovate/bathroom"
+            <button
+              onClick={handleNewBuildBook}
               className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-8 text-center transition hover:border-[#2d5a3d]/30 hover:shadow-sm"
             >
               <FaPlus className="text-lg text-[#9a9aaa]" />
               <span className="text-sm font-medium text-[#6a6a7a]">New Build Book</span>
-            </Link>
+            </button>
           </div>
         ) : (
           <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center">
             <FaBookOpen className="mx-auto text-3xl text-[#d5d3cd]" />
             <p className="mt-3 text-sm text-[#9a9aaa]">No build books yet.</p>
-            <Link
-              href="/renovate/bathroom"
+            <button
+              onClick={handleNewBuildBook}
               className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-medium text-white hover:bg-[#234a31]"
             >
               <FaPlus className="text-xs" /> Start Your First Build Book
-            </Link>
+            </button>
           </div>
         )}
       </div>

@@ -53,6 +53,9 @@ export interface BathroomWizardState {
   currentStep: number;
   // Highest step ever visited (enables sidebar nav to completed steps)
   highestStep: number;
+  // Supabase project + room IDs (tracks which project this wizard session belongs to)
+  projectId: string | null;
+  roomId: string | null;
   // Price overrides from moodboard selections
   priceOverrides: PriceOverride[];
   // Moodboard discovery state (persisted across navigation / hot reloads)
@@ -105,6 +108,8 @@ interface WizardActions {
   removeMockupPhoto: (index: number) => void;
   setMockupGeneratedImages: (images: string[]) => void;
   setMockupLoading: (loading: boolean) => void;
+  setProjectId: (projectId: string | null) => void;
+  setRoomId: (roomId: string | null) => void;
   reset: () => void;
 }
 
@@ -136,6 +141,8 @@ const initialState: BathroomWizardState = {
   measurementUnit: "ft" as const,
   currentStep: 0,
   highestStep: 0,
+  projectId: null,
+  roomId: null,
   priceOverrides: [],
   moodboardPointedItems: {},
   moodboardManualProducts: [],
@@ -213,6 +220,8 @@ export const useWizardStore = create<BathroomWizardState & WizardActions>()(
       })),
       setMockupGeneratedImages: (images) => set({ mockupGeneratedImages: images }),
       setMockupLoading: (loading) => set({ mockupLoading: loading }),
+      setProjectId: (projectId) => set({ projectId }),
+      setRoomId: (roomId) => set({ roomId }),
       reset: () => set(initialState),
     }),
     {
@@ -263,8 +272,6 @@ interface IdeaBoardState {
   getSuggestedBoardNames: (tags: string[]) => string[];
 }
 
-let boardCounter = 0;
-
 export const useIdeaBoardStore = create<IdeaBoardState>()(
   persist(
     (set, get) => ({
@@ -284,7 +291,7 @@ export const useIdeaBoardStore = create<IdeaBoardState>()(
   },
 
   createBoard: (name: string, source?: string) => {
-    const id = `board_${Date.now()}_${++boardCounter}`;
+    const id = crypto.randomUUID();
     const board: IdeaBoard = { id, name, createdAt: Date.now(), ...(source ? { source } : {}) };
     set({ boards: [...get().boards, board] });
     return id;
