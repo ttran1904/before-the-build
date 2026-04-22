@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { FaArrowUpRightFromSquare, FaFilter, FaXmark } from "react-icons/fa6";
+import { FaFilter, FaXmark } from "react-icons/fa6";
 
 interface AirtableMaterial {
   id: string;
@@ -10,9 +10,11 @@ interface AirtableMaterial {
   category: string;
   subCategory: string;
   vendor: string;
+  vendors: string[];
   price: number | null;
   description: string;
   finish: string;
+  finishes: string[];
   imageUrl: string;
   link: string;
 }
@@ -62,15 +64,15 @@ export default function AirtableMaterialsGrid() {
     [materials]
   );
   const finishes = useMemo(
-    () => [...new Set(materials.map((m) => m.finish).filter(Boolean))].sort(),
+    () => [...new Set(materials.flatMap((m) => m.finishes ?? (m.finish ? [m.finish] : [])).filter(Boolean))].sort(),
     [materials]
   );
 
   const filtered = useMemo(() => {
     return materials.filter((m) => {
       if (filterCategory && m.category !== filterCategory) return false;
-      if (filterVendor && m.vendor !== filterVendor) return false;
-      if (filterFinish && m.finish !== filterFinish) return false;
+      if (filterVendor && !(m.vendors ?? [m.vendor]).includes(filterVendor)) return false;
+      if (filterFinish && !(m.finishes ?? [m.finish]).includes(filterFinish)) return false;
       return true;
     });
   }, [materials, filterCategory, filterVendor, filterFinish]);
@@ -193,78 +195,80 @@ AIRTABLE_TABLE_NAME=Materials`}
         {filtered.map((m) => (
           <div
             key={m.id}
-            className="group overflow-hidden rounded-xl border border-[#e8e6e1] bg-white shadow-sm transition hover:shadow-md"
+            className="group flex flex-col overflow-hidden rounded-xl border border-[#e8e6e1] bg-white shadow-sm transition hover:shadow-md"
           >
-            {/* Image */}
-            <div className="relative h-44 w-full bg-[#f9f8f6]">
+            {/* Image — flush to all edges */}
+            <div className="relative aspect-square w-full bg-[#f9f8f6]">
               {m.imageUrl ? (
                 <Image
                   src={m.imageUrl}
                   alt={m.name}
                   fill
-                  className="object-contain p-2"
+                  className="object-cover"
                   unoptimized
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-3xl text-[#d5d3cd]">
-                  📦
+                <div className="flex h-full flex-col items-center justify-center gap-1.5 text-[#c5c3bd]">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-10 w-10">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="9" cy="9" r="1.5" fill="currentColor" />
+                    <path d="M3 17l5-5 4 4 3-3 6 6" />
+                  </svg>
+                  <span className="text-[10px] font-medium uppercase tracking-wider">No image</span>
                 </div>
               )}
             </div>
 
             {/* Info */}
-            <div className="p-3">
-              <h4 className="line-clamp-2 text-sm font-bold text-[#1a1a2e] leading-snug">
+            <div className="flex flex-1 flex-col p-2.5">
+              <h4 className="line-clamp-2 text-[13px] font-bold text-[#1a1a2e] leading-snug">
                 {m.name}
               </h4>
 
-              {m.vendor && (
-                <div className="mt-1.5">
-                  <span className="text-[10px] uppercase tracking-wider text-[#9a9aaa]">Vendor</span>
-                  <span className="ml-1.5 inline-block rounded-full border border-[#e8e6e1] bg-[#f9f8f6] px-2 py-0.5 text-xs font-medium text-[#1a1a2e]">
-                    {m.vendor}
+              {m.category && (
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className="text-[9px] uppercase tracking-wider text-[#9a9aaa]">Category</span>
+                  <span className="inline-block rounded bg-[#fde9d6] px-1.5 py-0.5 text-[10px] font-medium text-[#7a4a1a]">
+                    {m.category}
                   </span>
                 </div>
               )}
 
+              {(m.vendors?.length ?? 0) > 0 && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  <span className="text-[9px] uppercase tracking-wider text-[#9a9aaa]">Vendor</span>
+                  {m.vendors.map((v) => (
+                    <span
+                      key={v}
+                      className="inline-block rounded bg-[#e6f0ff] px-1.5 py-0.5 text-[10px] font-medium text-[#1a3a7a]"
+                    >
+                      {v}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {(m.finishes?.length ?? 0) > 0 && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  <span className="text-[9px] uppercase tracking-wider text-[#9a9aaa]">Finish</span>
+                  {m.finishes.map((fin) => (
+                    <span
+                      key={fin}
+                      className="inline-block rounded bg-[#eef0f3] px-1.5 py-0.5 text-[10px] text-[#4a4a5a]"
+                    >
+                      {fin}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Price — bottom-right, larger */}
               {m.price !== null && (
-                <div className="mt-1.5">
-                  <span className="text-[10px] uppercase tracking-wider text-[#9a9aaa]">MSRP</span>
-                  <p className="text-sm font-bold text-[#1a1a2e]">
+                <div className="mt-auto pt-2 flex justify-start">
+                  <span className="text-base font-extrabold text-[#1a1a2e]">
                     ${typeof m.price === "number" ? m.price.toFixed(2) : m.price}
-                  </p>
-                </div>
-              )}
-
-              {m.description && (
-                <div className="mt-1.5">
-                  <span className="text-[10px] uppercase tracking-wider text-[#9a9aaa]">
-                    Description
-                  </span>
-                  <p className="line-clamp-2 text-xs text-[#4a4a5a]">{m.description}</p>
-                </div>
-              )}
-
-              {m.finish && (
-                <div className="mt-1.5">
-                  <span className="text-[10px] uppercase tracking-wider text-[#9a9aaa]">
-                    Finishes
-                  </span>
-                  <span className="ml-1.5 inline-block rounded-full border border-[#e8e6e1] bg-[#f9f8f6] px-2 py-0.5 text-xs text-[#4a4a5a]">
-                    {m.finish}
                   </span>
                 </div>
-              )}
-
-              {m.link && (
-                <a
-                  href={m.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 flex items-center gap-1 text-xs font-medium text-[#2d5a3d] transition hover:underline"
-                >
-                  View Product <FaArrowUpRightFromSquare className="text-[8px]" />
-                </a>
               )}
             </div>
           </div>

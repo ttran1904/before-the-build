@@ -9,6 +9,7 @@ import {
   saveIdeaBoards,
   loadIdeaBoards,
   saveBuildBook,
+  loadBathroomPhotos,
 } from "@/lib/supabase-sync";
 
 const DEBOUNCE_MS = 2000; // Save 2s after last change
@@ -40,6 +41,16 @@ export function useSupabaseSync() {
         const remoteWizard = await loadWizardState(localState.projectId);
         if (remoteWizard) {
           useWizardStore.setState(remoteWizard);
+        }
+      }
+
+      // Always reload bathroom photos from Supabase Storage (URLs are small,
+      // and ensures photos persist across refreshes / devices).
+      const currentRoomId = useWizardStore.getState().roomId;
+      if (currentRoomId) {
+        const photos = await loadBathroomPhotos(currentRoomId);
+        if (photos.length > 0) {
+          useWizardStore.setState({ mockupBathroomPhotos: photos });
         }
       }
 

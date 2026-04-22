@@ -4,6 +4,99 @@ import type { IdeaBoardItem, IdeaBoard } from "@/lib/store";
 
 const supabase = createSupabaseBrowserClient();
 
+const ROOM_PHOTOS_BUCKET = "room-photos";
+
+/* ================================================================
+   BATHROOM PHOTOS  (Supabase Storage + room_photos table)
+   ================================================================ */
+
+/** Upload a single bathroom photo to Supabase Storage and record it in
+ *  room_photos. Returns the public URL on success, or null on failure. */
+export async function uploadBathroomPhoto(
+  file: File,
+  existingProjectId?: string | null,
+): Promise<{ url: string; storagePath: string; projectId: string; roomId: string } | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    console.error("[uploadBathroomPhoto] no authenticated user");
+    return null;
+  }
+
+  const ids = await getOrCreateBathroomProject(existingProjectId);
+  if (!ids) return null;
+
+  // Path: <userId>/<roomId>/<timestamp>-<rand>.<ext>
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().slice(0, 8);
+  const safeExt = /^[a-z0-9]+$/.test(ext) ? ext : "jpg";
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${safeExt}`;
+  const storagePath = `${user.id}/${ids.roomId}/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(ROOM_PHOTOS_BUCKET)
+    .upload(storagePath, file, {
+      contentType: file.type || "image/jpeg",
+      upsert: false,
+    });
+  if (uploadError) {
+    console.error("[uploadBathroomPhoto] storage upload failed:", uploadError);
+    return null;
+  }
+
+  // Track in room_photos table
+  const { error: dbError } = await supabase
+    .from("room_photos")
+    .insert({ room_id: ids.roomId, storage_path: storagePath });
+  if (dbError) {
+    console.error("[uploadBathroomPhoto] room_photos insert failed:", dbError);
+    // best-effort cleanup; bucket is public so URL is still usable
+  }
+
+  const { data: pub } = supabase.storage.from(ROOM_PHOTOS_BUCKET).getPublicUrl(storagePath);
+  return { url: pub.publicUrl, storagePath, projectId: ids.projectId, roomId: ids.roomId };
+}
+
+/** Delete a bathroom photo by its public URL (or storage path). */
+export async function deleteBathroomPhoto(urlOrPath: string): Promise<boolean> {
+  // Extract storage path from public URL if needed
+  let storagePath = urlOrPath;
+  const marker = `/${ROOM_PHOTOS_BUCKET}/`;
+  const idx = urlOrPath.indexOf(marker);
+  if (idx !== -1) {
+    storagePath = urlOrPath.substring(idx + marker.length);
+  }
+
+  const { error: storageErr } = await supabase.storage
+    .from(ROOM_PHOTOS_BUCKET)
+    .remove([storagePath]);
+  if (storageErr) console.warn("[deleteBathroomPhoto] storage remove failed:", storageErr);
+
+  const { error: dbErr } = await supabase
+    .from("room_photos")
+    .delete()
+    .eq("storage_path", storagePath);
+  if (dbErr) console.warn("[deleteBathroomPhoto] db delete failed:", dbErr);
+
+  return !storageErr;
+}
+
+/** Load all bathroom photos for the given room as public URLs. */
+export async function loadBathroomPhotos(roomId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("room_photos")
+    .select("storage_path, created_at")
+    .eq("room_id", roomId)
+    .order("created_at", { ascending: true });
+  if (error || !data) {
+    if (error) console.warn("[loadBathroomPhotos] failed:", error);
+    return [];
+  }
+  return data.map(
+    (r) => supabase.storage.from(ROOM_PHOTOS_BUCKET).getPublicUrl(r.storage_path).data.publicUrl,
+  );
+}
+
 /* ================================================================
    PROJECT + ROOM  (wizard answers)
    ================================================================ */

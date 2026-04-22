@@ -26,7 +26,7 @@ import { BATHROOM_SIZES, type BathroomSize, computeBudgetGraph, type BudgetGraph
 import Link from "next/link";
 import type { DesignStyle } from "@before-the-build/shared";
 import CatalogueView from "@/components/CatalogueView";
-import { saveBuildBook } from "@/lib/supabase-sync";
+import { saveBuildBook, uploadBathroomPhoto, deleteBathroomPhoto } from "@/lib/supabase-sync";
 
 /* ── Slot-machine animated number ──
  * Rules:
@@ -585,7 +585,7 @@ function BathroomWizardPageContent() {
               <span className="text-sm font-semibold text-[#3d3d3d]">Budget Estimate</span>
               <span className="mx-1 h-4 w-px bg-[#d5d3cd]" />
               <span className="text-base font-extrabold text-[#2d5a3d] tracking-tight">
-                <SlotNumber value={`$${budgetGraph.estimatedLow.toLocaleString()}\u00A0\u2013\u00A0$${budgetGraph.estimatedHigh.toLocaleString()}`} />
+                {`$${budgetGraph.estimatedLow.toLocaleString()}\u00A0\u2013\u00A0$${budgetGraph.estimatedHigh.toLocaleString()}`}
               </span>
               <FaArrowUpRightFromSquare className="text-[9px] text-[#3d3d3d]/30 group-hover:text-[#d4a24c] transition" />
             </button>
@@ -1516,21 +1516,28 @@ function BathroomInfoStep() {
     });
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith("image/")) return;
-      if (file.size > 10 * 1024 * 1024) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          store.addMockupPhoto(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    const fileList = Array.from(files);
     e.target.value = "";
+    for (const file of fileList) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 10 * 1024 * 1024) continue;
+      const result = await uploadBathroomPhoto(file, store.projectId);
+      if (result) {
+        store.addMockupPhoto(result.url);
+        if (!store.projectId) store.setProjectId(result.projectId);
+        if (!store.roomId) store.setRoomId(result.roomId);
+      } else {
+        // Fallback: keep behavior working even if upload fails (not persisted)
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") store.addMockupPhoto(reader.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
   };
 
   const DimensionInput = ({ label, value, valueIn, valueM, onChangeFt, onChangeIn, onChangeM, placeholder }: {
@@ -1760,7 +1767,11 @@ function BathroomInfoStep() {
                   <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
                   <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
                   <button
-                    onClick={() => store.removeMockupPhoto(i)}
+                    onClick={() => {
+                      const url = store.mockupBathroomPhotos[i];
+                      store.removeMockupPhoto(i);
+                      if (url && url.startsWith("http")) deleteBathroomPhoto(url);
+                    }}
                     className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
                   >
                     <FaXmark className="text-[10px]" />
@@ -2634,8 +2645,8 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                     onClick={() => setActiveIdeaIdx(idx)}
                     className={`relative shrink-0 overflow-hidden rounded-xl border-2 transition ${
                       idx === activeIdeaIdx
-                        ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/20"
-                        : "border-[#e8e6e1] hover:border-[#c5c3bd]"
+                        ? "border-[#2d5a3d]"
+                        : "border-transparent hover:border-[#c5c3bd]"
                     }`}
                   >
                     <Image
@@ -2646,9 +2657,6 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
                       className="h-[90px] w-[120px] object-cover"
                       unoptimized
                     />
-                    {idx === activeIdeaIdx && (
-                      <div className="absolute inset-0 border-2 border-[#2d5a3d] rounded-xl" />
-                    )}
                     {/* Badge showing found items count */}
                     {(pointedItems[item.id] || []).length > 0 && (
                       <span className="absolute top-1 right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#2d5a3d] px-1 text-[9px] font-bold text-white shadow">
@@ -3124,21 +3132,27 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
   const [excludedIndices, setExcludedIndices] = useState<Set<number>>(new Set());
   const mockupFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleMockupFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMockupFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith("image/")) return;
-      if (file.size > 10 * 1024 * 1024) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          store.addMockupPhoto(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    const fileList = Array.from(files);
     e.target.value = "";
+    for (const file of fileList) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 10 * 1024 * 1024) continue;
+      const result = await uploadBathroomPhoto(file, store.projectId);
+      if (result) {
+        store.addMockupPhoto(result.url);
+        if (!store.projectId) store.setProjectId(result.projectId);
+        if (!store.roomId) store.setRoomId(result.roomId);
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") store.addMockupPhoto(reader.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
   };
 
   // Reset stale loading state on mount (e.g. if page was refreshed mid-generation)
@@ -3254,7 +3268,11 @@ function RealMockupSection({ selectedProducts }: { selectedProducts: Product[] }
               <Image src={photo} alt={`Bathroom angle ${i + 1}`} fill className="object-cover" sizes="300px" unoptimized />
               <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
               <button
-                onClick={() => store.removeMockupPhoto(i)}
+                onClick={() => {
+                  const url = store.mockupBathroomPhotos[i];
+                  store.removeMockupPhoto(i);
+                  if (url && url.startsWith("http")) deleteBathroomPhoto(url);
+                }}
                 className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] opacity-0 shadow transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
               >
                 <FaXmark className="text-[10px]" />
@@ -3960,7 +3978,7 @@ function SummaryStep({ tasks, contractorCount, budgetGraph, pointedItems, manual
           Estimated Budget Range
         </div>
         <div className="mt-2 text-3xl font-bold tracking-tight">
-          <SlotNumber value={`${formatCurrency(budgetGraph.estimatedLow)} – ${formatCurrency(budgetGraph.estimatedHigh)}`} />
+          {`${formatCurrency(budgetGraph.estimatedLow)} – ${formatCurrency(budgetGraph.estimatedHigh)}`}
         </div>
         {store.budgetAmount != null && store.budgetAmount > 0 && (
           <div className="mt-3 flex items-center gap-2">
