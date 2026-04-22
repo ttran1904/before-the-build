@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { FaCheck, FaFilter, FaXmark } from "react-icons/fa6";
+import { FaCheck, FaFilter, FaXmark, FaArrowUpRightFromSquare } from "react-icons/fa6";
 import type { Product as MoodboardProduct } from "@before-the-build/shared";
 
 interface AirtableMaterial {
@@ -88,7 +88,11 @@ export default function AirtableMaterialsGrid({
 
   const hasFilters = filterCategory || filterVendor || filterFinish;
 
-  // Convert an Airtable material into the shared MoodboardProduct shape
+  // Convert an Airtable material into the shared MoodboardProduct shape.
+  // Crucially: include link + description in `specs` so the shared
+  // `parseTileDimensions` helper can extract dimensions from the URL slug
+  // (many product URLs contain things like "12x24-tile") or from the
+  // designer's description text.
   const toMoodboardProduct = (m: AirtableMaterial): MoodboardProduct => ({
     title: m.name,
     price: m.price !== null ? `$${typeof m.price === "number" ? m.price.toFixed(2) : m.price}` : "",
@@ -101,6 +105,8 @@ export default function AirtableMaterialsGrid({
       ...(m.subCategory ? { sub_category: m.subCategory } : {}),
       ...(m.finishes?.length ? { finishes: m.finishes.join(", ") } : {}),
       ...(m.vendors?.length ? { vendors: m.vendors.join(", ") } : {}),
+      ...(m.description ? { description: m.description } : {}),
+      ...(m.link ? { link: m.link } : {}),
     },
   });
 
@@ -267,6 +273,20 @@ AIRTABLE_TABLE_NAME=Materials`}
                   <div className="h-6 w-6 rounded-full border-2 border-[#c5c3be] bg-white/80 shadow-sm transition group-hover:border-[#2d5a3d]" />
                 )}
               </div>
+
+              {/* External link to product page (used for dimension scraping) */}
+              {m.link && (
+                <a
+                  href={m.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-2 bottom-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#9a9aaa] shadow-sm transition hover:bg-white hover:text-[#2d5a3d]"
+                  title="View product details"
+                >
+                  <FaArrowUpRightFromSquare className="text-[9px]" />
+                </a>
+              )}
             </div>
 
             {/* Info */}

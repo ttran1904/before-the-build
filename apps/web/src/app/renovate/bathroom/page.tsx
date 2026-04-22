@@ -250,6 +250,99 @@ function BathroomWizardPageContent() {
     });
   }, [allSelectedFromPointed, moodboardPointedItems, store.priceOverrides, getCartKey]);
 
+  /* Classify a catalogue / shopping product into a checklist item label.
+     Looks at category, sub_category and title keywords.  Returns a label
+     that matches the strings used in `store.mustHaves` / `store.niceToHaves`
+     (e.g. "New tile (floor)", "Bath vanity", "Mirror"). */
+  const classifyCatalogueProduct = useCallback((p: Product): string | null => {
+    const cat = String(p.specs?.category || "").toLowerCase();
+    const sub = String(p.specs?.sub_category || "").toLowerCase();
+    const title = (p.title || "").toLowerCase();
+    const haystack = `${cat} ${sub} ${title}`;
+    const isTile = /\btile\b|marble|porcelain|ceramic|\bstone\b|mosaic/.test(haystack) || cat.includes("surface");
+    if (isTile) {
+      // Wall/shower tile vs. floor tile
+      if (/\bshower\b|\bwall\b|backsplash/.test(haystack)) return "New tile (shower walls)";
+      return "New tile (floor)";
+    }
+    if (/vanity|sink cabinet/.test(haystack)) return "Bath vanity";
+    if (/bathtub|soaking tub|freestanding tub/.test(haystack)) return "Bathtub";
+    if (/toilet|commode/.test(haystack)) return "Toilet";
+    if (/shower door|frameless door/.test(haystack)) return "Shower door";
+    if (/walk-in shower|shower enclosure/.test(haystack)) return "Walk-in shower";
+    if (/rain shower/.test(haystack)) return "Rain showerhead";
+    if (/handheld shower|hand shower/.test(haystack)) return "Handheld showerhead";
+    if (/showerhead|shower head/.test(haystack)) return "Showerhead";
+    if (/medicine cabinet/.test(haystack)) return "Medicine cabinet";
+    if (/led mirror|lighted mirror|backlit mirror/.test(haystack)) return "LED mirror";
+    if (/\bmirror\b/.test(haystack)) return "Mirror";
+    if (/towel (bar|rack|warmer|ring)/.test(haystack)) return "Towel bar/rack";
+    if (/grab bar/.test(haystack)) return "Grab bars";
+    if (/exhaust fan|vent fan|bathroom fan/.test(haystack)) return "Exhaust fan";
+    if (/recessed light|can light|downlight/.test(haystack)) return "Recessed lighting";
+    if (/sconce|vanity light|wall light/.test(haystack)) return "Vanity lighting";
+    if (/heated floor|radiant floor|floor heating/.test(haystack)) return "Heated floors";
+    if (/faucet|tap/.test(haystack)) return "Faucet";
+    if (/countertop|counter top|quartz top|marble top|granite top/.test(haystack)) return "Countertop";
+    if (/\bsink\b|basin|lavatory/.test(haystack)) return "Sink";
+    return null;
+  }, []);
+
+  /* Auto-estimate tile quantity + write a price override for newly-added
+     catalogue / shopping products.  Mirrors what `toggleProductSelection`
+     does for AI-pointed items. */
+  useEffect(() => {
+    const rWidthIn = (Number(store.roomWidth) || 0) * 12 + (Number(store.roomWidthIn) || 0);
+    const rLengthIn = (Number(store.roomLength) || 0) * 12 + (Number(store.roomLengthIn) || 0);
+    const sWidthIn = (Number(store.showerWidth) || 0) * 12 + (Number(store.showerWidthIn) || 0);
+    const sLengthIn = (Number(store.showerLength) || 0) * 12 + (Number(store.showerLengthIn) || 0);
+    const wallHeightIn = (Number(store.roomHeight) || 0) * 12 + (Number(store.roomHeightIn) || 0);
+
+    setCartQuantities(prev => {
+      const next = { ...prev };
+      const sources: { source: "catalogue" | "shopping"; arr: Product[] }[] = [
+        { source: "catalogue", arr: catalogueProducts },
+        { source: "shopping", arr: shoppingProducts },
+      ];
+      for (const { source, arr } of sources) {
+        for (let i = 0; i < arr.length; i++) {
+          const key = getCartKey(source, String(i));
+          if (next[key] !== undefined) continue; // user already set a quantity
+          const p = arr[i];
+          const label = classifyCatalogueProduct(p);
+          if (!label) continue;
+          if (label === "New tile (floor)" && rWidthIn > 0 && rLengthIn > 0) {
+            const dims = parseTileDimensions(p.specs, p.title) ?? DEFAULT_FLOOR_TILE;
+            const hasBathtub = store.mustHaves.includes("Bathtub") || store.niceToHaves.includes("Bathtub");
+            const hasWalkIn = store.mustHaves.includes("Walk-in shower") || store.niceToHaves.includes("Walk-in shower");
+            const area = calcFloorTileArea({ roomWidthIn: rWidthIn, roomLengthIn: rLengthIn, hasBathtub, hasWalkInShower: hasWalkIn }, dims);
+            next[key] = area.quantity;
+          } else if (label === "New tile (shower walls)" && sWidthIn > 0 && sLengthIn > 0) {
+            const dims = parseTileDimensions(p.specs, p.title) ?? DEFAULT_WALL_TILE;
+            const area = calcWallTileArea({ showerWidthIn: sWidthIn, showerLengthIn: sLengthIn, wallHeightIn: wallHeightIn || undefined }, dims);
+            next[key] = area.quantity;
+          }
+        }
+      }
+      return next;
+    });
+  }, [catalogueProducts, shoppingProducts, store.roomWidth, store.roomWidthIn, store.roomLength, store.roomLengthIn, store.showerWidth, store.showerWidthIn, store.showerLength, store.showerLengthIn, store.roomHeight, store.roomHeightIn, store.mustHaves, store.niceToHaves, getCartKey, classifyCatalogueProduct]);
+
+  /* Labels that are "matched" because the user added a catalogue/shopping
+     product mapped to that checklist item. */
+  const catalogueMatchedLabels = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of catalogueProducts) {
+      const label = classifyCatalogueProduct(p);
+      if (label) set.add(label);
+    }
+    for (const p of shoppingProducts) {
+      const label = classifyCatalogueProduct(p);
+      if (label) set.add(label);
+    }
+    return set;
+  }, [catalogueProducts, shoppingProducts, classifyCatalogueProduct]);
+
   /* Cart subtotal */
   const cartSubtotal = useMemo(() => {
     let total = 0;
@@ -278,8 +371,10 @@ function BathroomWizardPageContent() {
         set.add(pi.matchedItemLabel);
       }
     }
+    // Catalogue/shopping selections also satisfy checklist items
+    for (const lbl of catalogueMatchedLabels) set.add(lbl);
     return set;
-  }, [allPointedFlat]);
+  }, [allPointedFlat, catalogueMatchedLabels]);
 
   const unmatchedItems = useMemo(() =>
     allPointedFlat.filter((pi) => !pi.loading && !pi.matchedItemLabel && pi.label !== "Unknown item" && pi.label !== "Could not identify" && pi.label !== "Identifying..."),
