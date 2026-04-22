@@ -75,7 +75,7 @@ export default function CatalogueView({ selectedProducts = [], onToggleProduct }
       {source === "home_depot" ? (
         <CollectionGrid onSelect={setActiveCollection} />
       ) : (
-        <AirtableMaterialsGrid />
+        <AirtableMaterialsGrid selectedProducts={selectedProducts} onToggleProduct={onToggleProduct} />
       )}
     </div>
   );

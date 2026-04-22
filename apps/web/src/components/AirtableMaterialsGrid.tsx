@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { FaFilter, FaXmark } from "react-icons/fa6";
+import { FaCheck, FaFilter, FaXmark } from "react-icons/fa6";
+import type { Product as MoodboardProduct } from "@before-the-build/shared";
 
 interface AirtableMaterial {
   id: string;
@@ -19,7 +20,15 @@ interface AirtableMaterial {
   link: string;
 }
 
-export default function AirtableMaterialsGrid() {
+interface AirtableMaterialsGridProps {
+  selectedProducts?: MoodboardProduct[];
+  onToggleProduct?: (product: MoodboardProduct) => void;
+}
+
+export default function AirtableMaterialsGrid({
+  selectedProducts = [],
+  onToggleProduct,
+}: AirtableMaterialsGridProps = {}) {
   const [materials, setMaterials] = useState<AirtableMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,6 +87,31 @@ export default function AirtableMaterialsGrid() {
   }, [materials, filterCategory, filterVendor, filterFinish]);
 
   const hasFilters = filterCategory || filterVendor || filterFinish;
+
+  // Convert an Airtable material into the shared MoodboardProduct shape
+  const toMoodboardProduct = (m: AirtableMaterial): MoodboardProduct => ({
+    title: m.name,
+    price: m.price !== null ? `$${typeof m.price === "number" ? m.price.toFixed(2) : m.price}` : "",
+    source: m.vendor || "Designer Picks",
+    url: m.link || `airtable:${m.id}`,
+    thumbnail: m.imageUrl,
+    images: m.imageUrl ? [m.imageUrl] : [],
+    specs: {
+      ...(m.category ? { category: m.category } : {}),
+      ...(m.subCategory ? { sub_category: m.subCategory } : {}),
+      ...(m.finishes?.length ? { finishes: m.finishes.join(", ") } : {}),
+      ...(m.vendors?.length ? { vendors: m.vendors.join(", ") } : {}),
+    },
+  });
+
+  const isSelected = (m: AirtableMaterial) => {
+    const url = m.link || `airtable:${m.id}`;
+    return selectedProducts.some((sp) => sp.url === url || sp.title === m.name);
+  };
+
+  const handleToggle = (m: AirtableMaterial) => {
+    if (onToggleProduct) onToggleProduct(toMoodboardProduct(m));
+  };
 
   if (loading) {
     return (
@@ -192,10 +226,15 @@ AIRTABLE_TABLE_NAME=Materials`}
 
       {/* Materials grid (matches your designer's Airtable card layout) */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {filtered.map((m) => (
+        {filtered.map((m) => {
+          const selected = isSelected(m);
+          return (
           <div
             key={m.id}
-            className="group flex flex-col overflow-hidden rounded-xl border border-[#e8e6e1] bg-white shadow-sm transition hover:shadow-md"
+            onClick={() => handleToggle(m)}
+            className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition hover:shadow-md ${
+              selected ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/20" : "border-[#e8e6e1]"
+            }`}
           >
             {/* Image — flush to all edges */}
             <div className="relative aspect-square w-full bg-[#f9f8f6]">
@@ -217,6 +256,17 @@ AIRTABLE_TABLE_NAME=Materials`}
                   <span className="text-[10px] font-medium uppercase tracking-wider">No image</span>
                 </div>
               )}
+
+              {/* Selection indicator */}
+              <div className="absolute right-2 top-2">
+                {selected ? (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2d5a3d] shadow">
+                    <FaCheck className="text-[10px] text-white" />
+                  </div>
+                ) : (
+                  <div className="h-6 w-6 rounded-full border-2 border-[#c5c3be] bg-white/80 shadow-sm transition group-hover:border-[#2d5a3d]" />
+                )}
+              </div>
             </div>
 
             {/* Info */}
@@ -272,7 +322,8 @@ AIRTABLE_TABLE_NAME=Materials`}
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {filtered.length === 0 && materials.length > 0 && (
