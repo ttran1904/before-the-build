@@ -1075,7 +1075,7 @@ function BathroomWizardPageContent() {
           </div>
         )}
 
-        <div className={`mx-auto flex flex-1 flex-col justify-center px-8 py-10 ${[4, 5, 6, 7, 8].includes(currentStep) ? "max-w-[1400px]" : currentStep === 2 ? "max-w-6xl" : "max-w-3xl"} w-full ${[4, 5, 6, 7, 8].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[170px]" : ""}`}>
+        <div className={`mx-auto flex flex-1 flex-col px-8 ${[4, 5, 6, 7, 8].includes(currentStep) ? "max-w-[1400px] justify-start py-4" : currentStep === 2 ? "max-w-6xl justify-center py-10" : "max-w-3xl justify-center py-10"} w-full ${[4, 5, 6, 7, 8].includes(currentStep) && (store.mustHaves.length > 0 || store.niceToHaves.length > 0) ? "pr-[170px]" : ""}`}>
           {currentStep === 0 && <GoalStep />}
           {currentStep === 1 && <BathroomInfoStep />}
           {currentStep > 1 && (
@@ -3108,7 +3108,7 @@ function MoodboardStep({ view, pointedItems, setPointedItems, manualProducts, se
 
       {/* ── SECTION: Designer's Catalogue ── */}
       {view === "catalogue" && (
-        <div className="mt-6">
+        <div>
           <CatalogueView
             selectedProducts={catalogueProducts}
             onToggleProduct={(product) => {

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { FaArrowUpRightFromSquare, FaCircleInfo } from "react-icons/fa6";
-import type { Store } from "@/lib/catalogue/stores";
+import { getStoreLogoUrl, type Store } from "@/lib/catalogue/stores";
 
 interface ComingSoonStoreProps {
   store: Store;
@@ -13,8 +14,12 @@ interface ComingSoonStoreProps {
  * we plan to surface, the brand's style vibe, and how we plan to fetch data.
  */
 export default function ComingSoonStore({ store }: ComingSoonStoreProps) {
+  const [logoFailed, setLogoFailed] = useState(false);
   const scaffold = store.scaffold;
   if (!scaffold) return null;
+
+  const logoUrl = getStoreLogoUrl(store);
+  const showLogo = logoUrl && !logoFailed;
 
   return (
     <div className="space-y-6">
@@ -23,12 +28,25 @@ export default function ComingSoonStore({ store }: ComingSoonStoreProps) {
         style={{ backgroundColor: store.accent }}
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#7a7a8a]">
-              {store.category} · {scaffold.priceTier}
-            </p>
-            <h2 className="mt-1 text-2xl font-bold text-[#1a1a2e]">{store.name}</h2>
-            <p className="mt-2 max-w-2xl text-sm text-[#4a4a5a]">{store.tagline}</p>
+          <div className="flex items-start gap-4">
+            {showLogo && (
+              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-white p-2 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={logoUrl!}
+                  alt={`${store.name} logo`}
+                  onError={() => setLogoFailed(true)}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+            )}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#7a7a8a]">
+                {store.category} · {scaffold.priceTier}
+              </p>
+              <h2 className="mt-1 text-2xl font-bold text-[#1a1a2e]">{store.name}</h2>
+              <p className="mt-2 max-w-2xl text-sm text-[#4a4a5a]">{store.tagline}</p>
+            </div>
           </div>
           <a
             href={scaffold.bathLandingUrl}

@@ -1,19 +1,19 @@
 "use client";
 
-import { FaPalette, FaStore, FaCouch, FaClockRotateLeft, FaLightbulb, FaArrowRight } from "react-icons/fa6";
-import { groupStoresByCategory, type Store, type StoreCategory } from "@/lib/catalogue/stores";
+import { useMemo, useState } from "react";
+import {
+  STORES,
+  STORE_CATEGORY_ORDER,
+  getStoreLogoUrl,
+  type Store,
+  type StoreCategory,
+} from "@/lib/catalogue/stores";
 
 interface StoreSelectorProps {
   onSelect: (store: Store) => void;
 }
 
-const CATEGORY_ICON: Record<StoreCategory, React.ReactNode> = {
-  "Curated for you":           <FaPalette className="text-xs" />,
-  "Big-box & DIY":             <FaStore className="text-xs" />,
-  "Modern furniture & decor":  <FaCouch className="text-xs" />,
-  "Vintage & artisan":         <FaClockRotateLeft className="text-xs" />,
-  "Lighting specialists":      <FaLightbulb className="text-xs" />,
-};
+type Filter = "All" | StoreCategory;
 
 function storeInitials(name: string): string {
   return name
@@ -25,79 +25,93 @@ function storeInitials(name: string): string {
     .join("");
 }
 
-function StoreCard({ store, onSelect }: { store: Store; onSelect: (s: Store) => void }) {
+function StoreTile({ store, onSelect }: { store: Store; onSelect: (s: Store) => void }) {
+  const [logoFailed, setLogoFailed] = useState(false);
+  const logoUrl = getStoreLogoUrl(store);
+  const showLogo = logoUrl && !logoFailed;
   const isComingSoon = store.status === "coming_soon";
+
   return (
     <button
       onClick={() => onSelect(store)}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#e8e6e1] bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#2d5a3d] hover:shadow-md"
+      className="group flex flex-col items-center text-center"
     >
-      {/* Tile / logo area */}
       <div
-        className="flex h-28 items-center justify-center"
+        className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-[#e8e6e1] transition group-hover:-translate-y-0.5 group-hover:border-[#2d5a3d] group-hover:shadow-md"
         style={{ backgroundColor: store.accent }}
       >
-        {store.logo ? (
+        {showLogo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={store.logo} alt={store.name} className="max-h-14 max-w-[70%] object-contain" />
+          <img
+            src={logoUrl!}
+            alt={`${store.name} logo`}
+            onError={() => setLogoFailed(true)}
+            className="max-h-[60%] max-w-[75%] object-contain"
+          />
         ) : (
-          <span className="text-2xl font-bold tracking-tight text-[#1a1a2e]">
+          <span className="text-xl font-bold tracking-tight text-[#1a1a2e]">
             {storeInitials(store.name)}
           </span>
         )}
         {isComingSoon && (
-          <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#7a7a8a]">
-            Coming soon
+          <span className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-[#7a7a8a]">
+            Soon
           </span>
         )}
       </div>
-
-      {/* Body */}
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        <div className="flex items-start justify-between gap-2">
-          <h4 className="text-sm font-semibold text-[#1a1a2e]">{store.name}</h4>
-          <FaArrowRight className="mt-1 text-[10px] text-[#9a9aaa] transition group-hover:translate-x-0.5 group-hover:text-[#2d5a3d]" />
-        </div>
-        <p className="line-clamp-2 text-xs leading-snug text-[#7a7a8a]">{store.tagline}</p>
-        {store.scaffold && (
-          <p className="mt-1 text-[10px] font-medium text-[#9a9aaa]">
-            {store.scaffold.priceTier} · {store.scaffold.styleVibes.slice(0, 2).join(" · ")}
-          </p>
-        )}
-      </div>
+      <p className="mt-1.5 line-clamp-1 w-full text-[12px] font-semibold text-[#1a1a2e]">
+        {store.name}
+      </p>
+      {store.scaffold && (
+        <p className="text-[10px] text-[#9a9aaa]">{store.scaffold.priceTier}</p>
+      )}
     </button>
   );
 }
 
 export default function StoreSelector({ onSelect }: StoreSelectorProps) {
-  const groups = groupStoresByCategory();
+  const [filter, setFilter] = useState<Filter>("All");
+
+  const filters: Filter[] = ["All", ...STORE_CATEGORY_ORDER];
+
+  const visibleStores = useMemo(
+    () => (filter === "All" ? STORES : STORES.filter((s) => s.category === filter)),
+    [filter]
+  );
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold text-[#1a1a2e]">Pick a store</h2>
-        <p className="mt-1 text-sm text-[#7a7a8a]">
-          Browse curated bathroom items by retailer. Tap a store to see their collections.
+    <div>
+      <div className="mb-3">
+        <h2 className="text-lg font-semibold text-[#1a1a2e]">Pick a store</h2>
+        <p className="text-xs text-[#7a7a8a]">
+          Browse curated bathroom items by retailer.
         </p>
       </div>
 
-      {groups.map((group) => (
-        <section key={group.category}>
-          <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#f3f2ef] text-[#2d5a3d]">
-              {CATEGORY_ICON[group.category]}
-            </span>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-[#4a4a5a]">
-              {group.category}
-            </h3>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-            {group.stores.map((store) => (
-              <StoreCard key={store.id} store={store} onSelect={onSelect} />
-            ))}
-          </div>
-        </section>
-      ))}
+      <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
+        {filters.map((f) => {
+          const active = f === filter;
+          return (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`flex-shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                active
+                  ? "border-[#2d5a3d] bg-[#2d5a3d] text-white"
+                  : "border-[#e8e6e1] bg-white text-[#4a4a5a] hover:border-[#2d5a3d] hover:text-[#2d5a3d]"
+              }`}
+            >
+              {f}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
+        {visibleStores.map((store) => (
+          <StoreTile key={store.id} store={store} onSelect={onSelect} />
+        ))}
+      </div>
     </div>
   );
 }

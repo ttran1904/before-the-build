@@ -366,8 +366,12 @@ export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
   // Soft costs as percentages of construction subtotal
   const permitsLow = Math.round(constructionLow * 0.05);
   const permitsHigh = Math.round(constructionHigh * 0.05);
-  const contingencyLow = Math.round(constructionLow * 0.20);
-  const contingencyHigh = Math.round(constructionHigh * 0.20);
+  // Contingency is 20% of the GRAND TOTAL (not of construction). With
+  // permits at 5% of construction, that works out to 0.2625 × construction:
+  //   total = construction + 0.05C + 0.20·total  →  total = 1.3125C
+  //   contingency = 0.20 · 1.3125C = 0.2625C
+  const contingencyLow = Math.round(constructionLow * 0.2625);
+  const contingencyHigh = Math.round(constructionHigh * 0.2625);
 
   // Grand total
   const estimatedLow = Math.round(
