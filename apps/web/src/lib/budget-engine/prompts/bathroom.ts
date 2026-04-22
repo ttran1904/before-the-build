@@ -42,7 +42,7 @@ COST ESTIMATION RULES
    • partial (replace select fixtures, retile) → moderate labor
    • full (gut and rebuild) → high labor, permits, plumbing rough-in
    • addition (new construction / expansion) → structural, permits, HVAC tie-in
-4. Always include: permits & fees, 10-15% contingency, design/planning.
+4. Always include: permits & fees and a 20% contingency buffer. Do NOT include a separate design/planning line item.
 5. Use RANGE pricing (low–high) for every line item.
 6. The total MUST noticeably change when nice-to-haves are added vs. removed.
    Each nice-to-have item should add its full installed cost to the totals.
@@ -55,8 +55,7 @@ Respond with ONLY the JSON below. No explanation, no markdown, just raw JSON:
     { "category": "Materials", "pct": <number 0-100>, "lowAmount": <number>, "highAmount": <number> },
     { "category": "Labor", "pct": <number 0-100>, "lowAmount": <number>, "highAmount": <number> },
     { "category": "Permits & Fees", "pct": <number 0-100>, "lowAmount": <number>, "highAmount": <number> },
-    { "category": "Contingency", "pct": <number 0-100>, "lowAmount": <number>, "highAmount": <number> },
-    { "category": "Design & Planning", "pct": <number 0-100>, "lowAmount": <number>, "highAmount": <number> }
+    { "category": "Contingency", "pct": <number 0-100>, "lowAmount": <number>, "highAmount": <number> }
   ],
   "rationale": "<2-3 sentence expert explanation of why this project costs what it does, referencing specific must-haves or scope factors>"
 }`;

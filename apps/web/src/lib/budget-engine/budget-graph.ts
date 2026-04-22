@@ -366,17 +366,15 @@ export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
   // Soft costs as percentages of construction subtotal
   const permitsLow = Math.round(constructionLow * 0.05);
   const permitsHigh = Math.round(constructionHigh * 0.05);
-  const contingencyLow = Math.round(constructionLow * 0.10);
-  const contingencyHigh = Math.round(constructionHigh * 0.10);
-  const designLow = Math.round(constructionLow * 0.05);
-  const designHigh = Math.round(constructionHigh * 0.05);
+  const contingencyLow = Math.round(constructionLow * 0.20);
+  const contingencyHigh = Math.round(constructionHigh * 0.20);
 
   // Grand total
   const estimatedLow = Math.round(
-    (constructionLow + permitsLow + contingencyLow + designLow) / 100
+    (constructionLow + permitsLow + contingencyLow) / 100
   ) * 100;
   const estimatedHigh = Math.round(
-    (constructionHigh + permitsHigh + contingencyHigh + designHigh) / 100
+    (constructionHigh + permitsHigh + contingencyHigh) / 100
   ) * 100;
   const estimatedMid = Math.round((estimatedLow + estimatedHigh) / 2);
 
@@ -413,13 +411,6 @@ export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
       lowAmount: contingencyLow,
       highAmount: contingencyHigh,
     },
-    {
-      category: "Design & Planning",
-      pct: Math.round(((designLow + designHigh) / 2 / grandMid) * 100),
-      amount: Math.round((designLow + designHigh) / 2),
-      lowAmount: designLow,
-      highAmount: designHigh,
-    },
   ];
 
   // Keep old-style totals for backward compat (used in nodes)
@@ -446,7 +437,7 @@ export function computeBudgetGraph(input: BudgetGraphInput): BudgetGraphResult {
     `A ${scopeLabel} for a ${input.roomSize.replace(/-/g, " ")} with ` +
     `${input.mustHaves.length} must-have item(s) typically costs ` +
     `${fmt(estimatedLow)}–${fmt(estimatedHigh)} in the current market.${nthNote} ` +
-    `This includes materials, labor, permits, and a 10% contingency buffer.`;
+    `This includes materials, labor, permits, and a 20% contingency buffer.`;
 
   return {
     estimatedLow,

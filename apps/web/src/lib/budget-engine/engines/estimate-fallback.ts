@@ -72,11 +72,10 @@ const DEFAULT_ITEM_COST = { low: 500, high: 1_500 };
  */
 
 const BREAKDOWN_PCTS: { category: string; pct: number }[] = [
-  { category: "Materials",         pct: 45 },
+  { category: "Materials",         pct: 40 },
   { category: "Labor",             pct: 35 },
   { category: "Permits & Fees",    pct: 5 },
-  { category: "Contingency",       pct: 10 },
-  { category: "Design & Planning", pct: 5 },
+  { category: "Contingency",       pct: 20 },
 ];
 
 export function estimateBudgetFallback(input: BudgetEstimateInput): BudgetEstimateResult {
@@ -144,6 +143,6 @@ export function estimateBudgetFallback(input: BudgetEstimateInput): BudgetEstima
       `A ${scopeLabel} for a ${input.roomSize.replace("-", " ")} with ` +
       `${input.mustHaves.length} must-have item(s) typically costs ` +
       `$${estimatedLow.toLocaleString()}–$${estimatedHigh.toLocaleString()} in the current market.${nthNote} ` +
-      `This includes materials, labor, permits, and a 10% contingency buffer.`,
+      `This includes materials, labor, permits, and a 20% contingency buffer.`,
   };
 }
