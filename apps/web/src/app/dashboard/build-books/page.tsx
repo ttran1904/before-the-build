@@ -8,6 +8,8 @@ import { loadBuildBooks, deleteBuildBook, loadWizardState, cleanupEmptyBuildBook
 import { useWizardStore } from "@/lib/store";
 import { useGroundworkStore } from "@/lib/groundwork/store";
 import { importLegacyProjectIntoGroundwork } from "@/lib/groundwork/import-from-legacy";
+import { useBuildBookStore } from "@/lib/build-book/store";
+import { importLegacyProjectIntoBuildBook } from "@/lib/build-book/import-from-legacy";
 
 interface BuildBookEntry {
   id: string;
@@ -58,6 +60,7 @@ export default function BuildBooksPage() {
   const router = useRouter();
   const resetWizard = useWizardStore((s) => s.reset);
   const resetGroundwork = useGroundworkStore((s) => s.reset);
+  const resetBuildBook = useBuildBookStore((s) => s.reset);
   const [buildBooks, setBuildBooks] = useState<BuildBookEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -91,6 +94,7 @@ export default function BuildBooksPage() {
   const handleNewBuildBook = () => {
     resetWizard();
     resetGroundwork();
+    resetBuildBook();
     router.push("/start");
   };
 
@@ -103,6 +107,8 @@ export default function BuildBooksPage() {
       // saved project shows up populated in the new flow.
       resetGroundwork();
       importLegacyProjectIntoGroundwork(remote);
+      resetBuildBook();
+      importLegacyProjectIntoBuildBook(remote);
       router.push("/groundwork/bathroom/summary");
       return;
     }
