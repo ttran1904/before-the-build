@@ -94,7 +94,7 @@ export default function DashboardPage() {
   /** Start a brand-new build book (reset wizard state, navigate) */
   const handleNewBuildBook = () => {
     resetWizard();
-    router.push("/renovate/bathroom");
+    router.push("/start");
   };
 
   /** Open an existing build book (load its project data into the store, navigate) */
