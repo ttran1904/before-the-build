@@ -1,11 +1,14 @@
 "use client";
 
+import * as React from "react";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen, FaTrash, FaArrowsRotate } from "react-icons/fa6";
+import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaClipboardList, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen, FaTrash, FaArrowsRotate } from "react-icons/fa6";
 import { useIdeaBoardStore, useWizardStore } from "@/lib/store";
+import { useGroundworkStore, projectTypeLabel } from "@/lib/groundwork/store";
+
 import { loadBuildBooks, loadWizardState, deleteBuildBook, cleanupEmptyBuildBooks } from "@/lib/supabase-sync";
 
 interface BuildBookEntry {
@@ -186,6 +189,9 @@ export default function DashboardPage() {
           <FaCompass className="text-sm" /> Explore Ideas
         </Link>
       </div>
+
+      {/* Groundwork — scoping briefs */}
+      <GroundworkHomeSection />
 
       {/* Build Books */}
       <div>
@@ -596,3 +602,89 @@ export default function DashboardPage() {
 }
 
 
+
+
+function GroundworkHomeSection() {
+  const router = useRouter();
+  const groundwork = useGroundworkStore();
+  const resetGroundwork = useGroundworkStore((s) => s.reset);
+  const hydrated = React.useSyncExternalStore(
+    (cb) => useGroundworkStore.persist.onFinishHydration(cb),
+    () => useGroundworkStore.persist.hasHydrated(),
+    () => false
+  );
+  const has =
+    groundwork.projectType !== null ||
+    groundwork.bathroomKind !== null ||
+    groundwork.budgetTier !== null ||
+    groundwork.goals.length > 0 ||
+    groundwork.photos.length > 0;
+  const startNew = () => {
+    resetGroundwork();
+    router.push("/groundwork/bathroom");
+  };
+  const title = projectTypeLabel(groundwork.projectType) ?? "Bathroom Groundwork";
+  const complete = groundwork.completedAt !== null;
+  const photo = groundwork.photos[0];
+  return (
+    <div>
+      <div className="mb-4 flex items-center gap-3">
+        <h2 className="text-lg font-semibold text-[#1a1a2e]">Groundwork</h2>
+        <Link
+          href="/dashboard/groundwork"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[#f0ede8] px-3 py-1 text-xs font-medium text-[#6a6a7a] transition hover:bg-[#e8e6e1] hover:text-[#1a1a2e]"
+        >
+          See all <FaArrowRight className="text-[8px]" />
+        </Link>
+      </div>
+      {!hydrated ? (
+        <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center text-sm text-[#9a9aaa]">Loading…</div>
+      ) : !has ? (
+        <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center">
+          <FaClipboardList className="mx-auto text-3xl text-[#d5d3cd]" />
+          <p className="mt-3 text-sm text-[#9a9aaa]">No groundwork yet — scope a project before talking to a contractor.</p>
+          <button
+            onClick={startNew}
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#c08a5a] px-4 py-2 text-sm font-medium text-white hover:bg-[#a87445]"
+          >
+            <FaPlus className="text-xs" /> Start Your First Groundwork
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <Link
+            href={complete ? "/groundwork/bathroom/summary" : "/groundwork/bathroom"}
+            className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#c08a5a]/40 hover:shadow-md"
+          >
+            <div className="relative h-52 w-full overflow-hidden bg-[#f6f3ed]">
+              {photo ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={photo} alt={title} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <FaClipboardList className="text-3xl text-[#d5d3cd]" />
+                </div>
+              )}
+              {complete && (
+                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#3a3a4a] shadow-sm">
+                  <FaCircleCheck className="text-[#c08a5a]" /> Ready for contractor
+                </span>
+              )}
+            </div>
+            <div className="p-3.5">
+              <p className="font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">{title}</p>
+              <p className="mt-0.5 text-xs text-[#9a9aaa]">{complete ? "Completed " + new Date(groundwork.completedAt!).toLocaleDateString() : "In progress"}</p>
+            </div>
+          </Link>
+          <button
+            onClick={startNew}
+            className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-8 text-center transition hover:border-[#c08a5a]/40 hover:shadow-sm"
+          >
+            <FaPlus className="text-lg text-[#9a9aaa]" />
+            <span className="text-sm font-medium text-[#6a6a7a]">New Groundwork</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

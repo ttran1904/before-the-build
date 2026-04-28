@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
+import { FaSpinner } from "react-icons/fa6";
 import {
   useGroundworkStore,
   getOpenItems,
@@ -50,6 +51,48 @@ export default function GroundworkSummaryPage() {
     () => useGroundworkStore.persist.hasHydrated(),
     () => false
   );
+  const printRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const exportPDF = async () => {
+    if (!printRef.current) return;
+    setExporting(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#faf8f3",
+        logging: false,
+        imageTimeout: 15000,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      let heightLeft = pdfHeight;
+      let position = 0;
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
+      const slug = (projectTypeLabel(state.projectType) ?? "bathroom-groundwork")
+        .toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      pdf.save(slug + "-groundwork.pdf");
+    } catch (e) {
+      console.error("PDF export failed:", e);
+      alert("PDF export failed. Try Print → Save as PDF instead.");
+    }
+    setExporting(false);
+  };
+
   if (!hydrated) return null;
 
   const openItems = getOpenItems(state);
@@ -71,16 +114,17 @@ export default function GroundworkSummaryPage() {
               Edit answers
             </Link>
             <button
-              onClick={() => window.print()}
-              className="rounded-full bg-[#c08a5a] px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445]"
+              onClick={exportPDF}
+              disabled={exporting}
+              className="inline-flex items-center gap-2 rounded-full bg-[#c08a5a] px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] disabled:opacity-60"
             >
-              Download PDF
+              {exporting ? <><FaSpinner className="animate-spin" /> Exporting…</> : "Download PDF"}
             </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl space-y-10 px-6 py-12">
+      <main ref={printRef} className="mx-auto w-full max-w-3xl space-y-10 px-6 py-12">
         <section>
           <h1 className="font-serif text-4xl text-[#1a1a2e]">
             Contractor-ready scope

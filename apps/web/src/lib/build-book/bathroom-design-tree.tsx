@@ -21,7 +21,7 @@ import { useBuildBookStore, type ItemSource } from "@/lib/build-book/store";
 export const BUILD_BOOK_TABS: WizardTab[] = [
   { id: "style", label: "Style" },
   { id: "items", label: "Items" },
-  { id: "visualize", label: "Visualize" },
+  { id: "mockup", label: "Mockup" },
 ];
 
 /** Decision tree for the Build Book design intake. Reads/writes
@@ -103,7 +103,7 @@ export function buildBookBathroomTree(): QuestionNode<any>[] {
 
   const photos: QuestionNode<string[]> = {
     id: "photos",
-    tab: "visualize",
+    tab: "mockup",
     question: "Upload a photo of your current bathroom.",
     helper: "We use this to render your design over your real space.",
     initial: () => get().photos,
