@@ -46,6 +46,10 @@ These instructions apply to the entire repository.
 - Do not hardcode API keys; use environment variables (for example SERPAPI_API_KEY).
 
 ## Git Workflow And Commits
+- **Auto-commit policy:** whenever you finish a meaningful unit of work that touches files (a feature, a fix, a refactor, a doc update), commit it for me without waiting to be asked. Default to committing.
+  - If the change is large, risky, touches many unrelated areas, or you are uncertain it is correct, do NOT auto-commit — instead summarize the diff and ask me to review before committing.
+  - If lint/type-check/tests fail, do NOT commit. Fix or surface the failures first.
+  - Never push unless I explicitly say so.
 - You are allowed to stage files and create commits when asked.
 - Use clear, scoped commit messages, preferably conventional style:
   - feat(scope): ...
