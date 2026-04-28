@@ -6,6 +6,8 @@ import Image from "next/image";
 import { FaBookOpen, FaPlus, FaTrash, FaCheck, FaSpinner } from "react-icons/fa6";
 import { loadBuildBooks, deleteBuildBook, loadWizardState, cleanupEmptyBuildBooks } from "@/lib/supabase-sync";
 import { useWizardStore } from "@/lib/store";
+import { useGroundworkStore } from "@/lib/groundwork/store";
+import { importLegacyProjectIntoGroundwork } from "@/lib/groundwork/import-from-legacy";
 
 interface BuildBookEntry {
   id: string;
@@ -55,6 +57,7 @@ function ProgressTimeline({ currentStep }: { currentStep: number }) {
 export default function BuildBooksPage() {
   const router = useRouter();
   const resetWizard = useWizardStore((s) => s.reset);
+  const resetGroundwork = useGroundworkStore((s) => s.reset);
   const [buildBooks, setBuildBooks] = useState<BuildBookEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -87,6 +90,7 @@ export default function BuildBooksPage() {
 
   const handleNewBuildBook = () => {
     resetWizard();
+    resetGroundwork();
     router.push("/start");
   };
 
@@ -95,6 +99,12 @@ export default function BuildBooksPage() {
     if (remote) {
       resetWizard();
       useWizardStore.setState(remote);
+      // Mirror what we can into the new Groundwork store so the
+      // saved project shows up populated in the new flow.
+      resetGroundwork();
+      importLegacyProjectIntoGroundwork(remote);
+      router.push("/groundwork/bathroom/summary");
+      return;
     }
     router.push("/start");
   };

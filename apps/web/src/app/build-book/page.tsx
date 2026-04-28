@@ -271,7 +271,7 @@ export default function BuildBookPage() {
             <p className="mt-0.5 text-sm text-[#6a6a7a]">{dateStr}</p>
           </div>
           <Link
-            href="/start"
+            href="/groundwork/bathroom/summary"
             className="inline-flex items-center gap-2 rounded-lg bg-[#d4a24c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c4922c] transition print:hidden"
           >
             <FaPen className="text-xs" /> Edit Project
@@ -700,7 +700,7 @@ export default function BuildBookPage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold text-[#1a1a2e]">Project Timeline</h2>
                   <Link
-                    href="/start/timeline"
+                    href="/renovate/bathroom/timeline"
                     className="inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#234a31] transition print:hidden"
                   >
                     <FaCalendarDays className="text-xs" /> Open Full Timeline
