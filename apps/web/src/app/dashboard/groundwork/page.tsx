@@ -54,17 +54,17 @@ export default function GroundworkDashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1a2e]">Groundwork</h1>
+          <h1 className="text-2xl font-bold text-[#1a1a2e]">Groundwork Scope</h1>
           <p className="mt-1 text-sm text-[#6a6a7a]">
             Scope every project end-to-end before talking to a contractor.
-            Each Groundwork is a contractor-ready brief.
+            Each Groundwork Scope is a contractor-ready brief.
           </p>
         </div>
         <button
           onClick={startNew}
           className="inline-flex items-center gap-2 rounded-lg bg-[#c08a5a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#a87445]"
         >
-          <FaPlus className="text-xs" /> New Groundwork
+          <FaPlus className="text-xs" /> New Groundwork Scope
         </button>
       </div>
 
@@ -76,10 +76,10 @@ export default function GroundworkDashboardPage() {
         <div className="rounded-2xl border border-dashed border-[#d5d3cd] bg-white p-16 text-center">
           <FaClipboardList className="mx-auto text-4xl text-[#d5d3cd]" />
           <h3 className="mt-4 text-lg font-semibold text-[#1a1a2e]">
-            No groundwork yet
+            No Groundwork Scope yet
           </h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-[#6a6a7a]">
-            Groundwork captures everything a contractor needs to bid your
+            Groundwork Scope captures everything a contractor needs to bid your
             project — scope, budget range, fixtures, photos, open items.
             Start one to get a clean brief in a few minutes.
           </p>
@@ -87,7 +87,7 @@ export default function GroundworkDashboardPage() {
             onClick={startNew}
             className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#c08a5a] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#a87445]"
           >
-            <FaPlus className="text-xs" /> Start Your First Groundwork
+            <FaPlus className="text-xs" /> Start Your First Groundwork Scope
           </button>
         </div>
       ) : (
@@ -99,7 +99,7 @@ export default function GroundworkDashboardPage() {
           >
             <FaPlus className="text-xl text-[#9a9aaa]" />
             <span className="text-sm font-medium text-[#6a6a7a]">
-              New Groundwork
+              New Groundwork Scope
             </span>
           </button>
         </div>
@@ -109,7 +109,7 @@ export default function GroundworkDashboardPage() {
 }
 
 function GroundworkCard({ state }: { state: GroundworkBathroomState }) {
-  const title = projectTypeLabel(state.projectType) ?? "Bathroom Groundwork";
+  const title = projectTypeLabel(state.projectType) ?? "Bathroom Groundwork Scope";
   const complete = state.completedAt !== null;
   const photo = state.photos[0];
 

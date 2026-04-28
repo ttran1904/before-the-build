@@ -33,7 +33,7 @@ export default function StartPage() {
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-sm text-[#6a6a7a]">
             Pick the layer that fits where you are. They work great on their
-            own — Groundwork to talk to your builder, Build Book to nail down
+            own — Groundwork Scope to talk to your builder, Build Book to nail down
             the design.
           </p>
         </div>
@@ -41,7 +41,7 @@ export default function StartPage() {
         <div className="mt-12 grid gap-6 md:grid-cols-2">
           <ProductCard
             href="/groundwork/bathroom"
-            tag="Groundwork"
+            tag="Groundwork Scope"
             price="From $399"
             title="Define the project clearly enough that contractors bid the same thing."
             bullets={[
@@ -52,7 +52,7 @@ export default function StartPage() {
               "Contractor-ready scope summary (PDF)",
             ]}
             icon={<FaClipboardList className="text-2xl text-[#c08a5a]" />}
-            cta="Start Groundwork"
+            cta="Start Groundwork Scope"
           />
           <ProductCard
             href="/build-book/bathroom/design"

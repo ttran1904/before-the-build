@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  FaHouse, FaBookOpen, FaCompass, FaTableCellsLarge, FaGear, FaClipboardList,
+  FaHouse, FaBookOpen, FaCompass, FaTableCellsLarge, FaGear, FaClipboardList, FaCircleQuestion,
 } from "react-icons/fa6";
 import type { IconType } from "react-icons";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -22,9 +22,10 @@ export default function DashboardLayout({
         <nav className="flex flex-col gap-0.5">
           <NavItem href="/dashboard" label="Home" icon={FaHouse} />
           <NavItem href="/explore" label="Explore" icon={FaCompass} />
-          <NavItem href="/dashboard/groundwork" label="Groundwork" icon={FaClipboardList} />
+          <NavItem href="/dashboard/groundwork" label="Groundwork Scope" icon={FaClipboardList} />
           <NavItem href="/dashboard/build-books" label="Build Books" icon={FaBookOpen} />
           <NavItem href="/dashboard/idea-boards" label="Idea Boards" icon={FaTableCellsLarge} />
+          <NavItem href="/dashboard/guide" label="Guide" icon={FaCircleQuestion} />
         </nav>
 
         <div className="mt-auto space-y-1">

@@ -19,7 +19,7 @@ export default function GroundworkBathroomPage() {
       tabs={GROUNDWORK_TABS}
       nodes={nodes}
       startId="project-type"
-      brandTitle="Groundwork · Bathroom"
+      brandTitle="Groundwork Scope · Bathroom"
       backHref="/dashboard"
       onFinish={() => {
         markComplete();

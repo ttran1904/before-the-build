@@ -104,7 +104,7 @@ export default function GroundworkSummaryPage() {
       <header className="border-b border-[#ece9e3] bg-white">
         <div className="mx-auto flex h-14 w-full max-w-4xl items-center px-6">
           <div className="flex-1 text-sm font-semibold tracking-wide text-[#1a1a2e]">
-            Groundwork · Bathroom
+            Groundwork Scope · Bathroom
           </div>
           <div className="flex items-center gap-4 text-sm">
             <Link
