@@ -10,4 +10,4 @@ dist/
 ios/
 android/
 supabase/.temp/
-supabase/migrations/*
+# supabase/migrations/* (removed: migrations should be tracked)
