@@ -2,6 +2,14 @@
 
 import { useMemo, useState } from "react";
 import {
+  FaThLarge,
+  FaPalette,
+  FaStore,
+  FaCouch,
+  FaClock,
+  FaLightbulb,
+} from "react-icons/fa";
+import {
   STORES,
   STORE_CATEGORY_ORDER,
   getStoreLogoUrl,
@@ -14,6 +22,15 @@ interface StoreSelectorProps {
 }
 
 type Filter = "All" | StoreCategory;
+
+const FILTER_ICON: Record<Filter, React.ReactNode> = {
+  "All":                       <FaThLarge />,
+  "Curated for you":           <FaPalette />,
+  "Big-box & DIY":             <FaStore />,
+  "Modern furniture & decor":  <FaCouch />,
+  "Vintage & artisan":         <FaClock />,
+  "Lighting specialists":      <FaLightbulb />,
+};
 
 function storeInitials(name: string): string {
   return name
@@ -46,7 +63,7 @@ function StoreTile({ store, onSelect }: { store: Store; onSelect: (s: Store) => 
             src={logoUrl!}
             alt={`${store.name} logo`}
             onError={() => setLogoFailed(true)}
-            className="max-h-[60%] max-w-[75%] object-contain"
+            className="max-h-[65%] max-w-[80%] object-contain"
           />
         ) : (
           <span className="text-xl font-bold tracking-tight text-[#1a1a2e]">
@@ -81,33 +98,39 @@ export default function StoreSelector({ onSelect }: StoreSelectorProps) {
 
   return (
     <div>
-      <div className="mb-3">
+      {/* Header */}
+      <div className="mb-4 text-center">
         <h2 className="text-lg font-semibold text-[#1a1a2e]">Pick a store</h2>
         <p className="text-xs text-[#7a7a8a]">
           Browse curated bathroom items by retailer.
         </p>
       </div>
 
-      <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
+      {/* Centered, rounded-square filter chips with icons */}
+      <div className="mb-5 flex flex-wrap justify-center gap-2">
         {filters.map((f) => {
           const active = f === filter;
           return (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`flex-shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+              className={`flex items-center gap-2 whitespace-nowrap rounded-xl border px-3.5 py-2 text-xs font-semibold transition ${
                 active
-                  ? "border-[#2d5a3d] bg-[#2d5a3d] text-white"
+                  ? "border-[#2d5a3d] bg-[#2d5a3d] text-white shadow-sm"
                   : "border-[#e8e6e1] bg-white text-[#4a4a5a] hover:border-[#2d5a3d] hover:text-[#2d5a3d]"
               }`}
             >
+              <span className={`text-sm ${active ? "text-white" : "text-[#7a7a8a]"}`}>
+                {FILTER_ICON[f]}
+              </span>
               {f}
             </button>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
+      {/* True grid: wraps onto multiple rows. Caps out at ~5 cols on big screens. */}
+      <div className="mx-auto grid max-w-4xl grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {visibleStores.map((store) => (
           <StoreTile key={store.id} store={store} onSelect={onSelect} />
         ))}

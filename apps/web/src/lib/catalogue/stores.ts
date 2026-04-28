@@ -78,6 +78,7 @@ export const STORES: Store[] = [
     name: "Home Depot",
     tagline: "Browse curated bathroom collections — vanities, tile, fixtures.",
     domain: "homedepot.com",
+    logo: "/images/stores/homedepot.png",
     accent: "#fdecd3",
     category: "Big-box & DIY",
     status: "live",
@@ -89,6 +90,7 @@ export const STORES: Store[] = [
     name: "Pottery Barn",
     tagline: "Transitional, farmhouse, and coastal bath furnishings.",
     domain: "potterybarn.com",
+    logo: "/images/stores/potterybarn.ico",
     accent: "#f1ead9",
     category: "Modern furniture & decor",
     status: "coming_soon",
@@ -114,6 +116,7 @@ export const STORES: Store[] = [
     name: "West Elm",
     tagline: "Modern and mid-century bath pieces with a designer edge.",
     domain: "westelm.com",
+    logo: "/images/stores/westelm.ico",
     accent: "#e7e3da",
     category: "Modern furniture & decor",
     status: "coming_soon",
@@ -139,6 +142,7 @@ export const STORES: Store[] = [
     name: "Crate & Barrel",
     tagline: "Polished, contemporary bath accents and storage.",
     domain: "crateandbarrel.com",
+    logo: "/images/stores/crateandbarrel.png",
     accent: "#ece7df",
     category: "Modern furniture & decor",
     status: "coming_soon",
@@ -163,6 +167,7 @@ export const STORES: Store[] = [
     name: "CB2",
     tagline: "Crate & Barrel's modern, edgier sister — sleek bath accents.",
     domain: "cb2.com",
+    logo: "/images/stores/cb2.ico",
     accent: "#e4e2dc",
     category: "Modern furniture & decor",
     status: "coming_soon",
@@ -189,6 +194,7 @@ export const STORES: Store[] = [
     name: "Rejuvenation",
     tagline: "Vintage-inspired lighting, hardware, and plumbing fixtures.",
     domain: "rejuvenation.com",
+    logo: "/images/stores/rejuvenation.ico",
     accent: "#ead9c7",
     category: "Vintage & artisan",
     status: "coming_soon",
@@ -216,6 +222,7 @@ export const STORES: Store[] = [
     name: "Visual Comfort & Co.",
     tagline: "Premium decorative lighting from designer collaborations.",
     domain: "visualcomfort.com",
+    logo: "/images/stores/visualcomfort.ico",
     accent: "#f3ecdc",
     category: "Lighting specialists",
     status: "coming_soon",
@@ -237,15 +244,12 @@ export const STORES: Store[] = [
 ];
 
 /**
- * Resolve the best logo URL for a store. Prefers an explicit `logo` if set,
- * otherwise uses Clearbit's free logo CDN (no API key required) keyed off
- * the brand `domain`. Returns `null` for stores without either (e.g. our
- * in-house designer).
+ * Resolve the logo URL for a store. Returns the explicit `logo` if set
+ * (typically a local file under `/public/images/stores/`), otherwise null
+ * (e.g. our in-house designer doesn't have a logo and falls back to initials).
  */
 export function getStoreLogoUrl(store: Store): string | null {
-  if (store.logo) return store.logo;
-  if (store.domain) return `https://logo.clearbit.com/${store.domain}`;
-  return null;
+  return store.logo ?? null;
 }
 
 export const STORE_CATEGORY_ORDER: StoreCategory[] = [
