@@ -87,7 +87,7 @@ export default function BuildBooksPage() {
 
   const handleNewBuildBook = () => {
     resetWizard();
-    router.push("/renovate/bathroom");
+    router.push("/start");
   };
 
   const handleOpenBuildBook = async (projectId: string) => {
@@ -96,7 +96,7 @@ export default function BuildBooksPage() {
       resetWizard();
       useWizardStore.setState(remote);
     }
-    router.push("/renovate/bathroom");
+    router.push("/start");
   };
 
   return (

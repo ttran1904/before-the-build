@@ -112,7 +112,7 @@ export default function VisualizePage() {
       {/* Header */}
       <header className="border-b border-[#e8e6e1] bg-white px-6 py-3">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between">
-          <Link href="/renovate/bathroom" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
+          <Link href="/build-book" className="flex items-center gap-2 text-sm text-[#6a6a7a] hover:text-[#1a1a2e]">
             <FaArrowLeft className="text-xs" /> Back to Questionnaire
           </Link>
           <div className="flex items-center gap-4">
