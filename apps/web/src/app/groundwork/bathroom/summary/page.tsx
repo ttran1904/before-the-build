@@ -9,6 +9,10 @@ import {
   FaCircleQuestion,
   FaTriangleExclamation,
   FaCircleInfo,
+  FaPencil,
+  FaHouse,
+  FaClock,
+  FaWallet,
 } from "react-icons/fa6";
 import {
   FaToilet,
@@ -70,38 +74,51 @@ const SCOPE_LABELS: Record<string, string> = {
 const lbl = (v: string | null) => (v ? SCOPE_LABELS[v] ?? v : "—");
 
 /** Map a fixture/scope status string -> color + icon for the chip. */
+const TONES = {
+  keep: "border border-[#d6e3d8] bg-[#eef3ee] text-[#2d5a3d]",
+  change: "border border-[#ecd6bc] bg-[#f6e4d4] text-[#8a4a1a]",
+  changeBig: "border border-[#e2bf94] bg-[#f4d6b8] text-[#6a3a08]",
+  unsure: "border border-[#ecdfa9] bg-[#fbf2d9] text-[#7a5a1a]",
+} as const;
+
 function statusChip(v: string | null) {
   switch (v) {
     case "keep":
-      return { label: "Keep", icon: FaCircleCheck, cls: "bg-[#eef3ee] text-[#234a31]" };
-    case "replace":
-      return { label: "Replace", icon: FaArrowRotateRight, cls: "bg-[#f0ede8] text-[#1a1a2e]" };
-    case "relocate":
-      return { label: "Relocate", icon: FaArrowsLeftRight, cls: "bg-[#fbeede] text-[#7a4a18]" };
-    case "unsure":
-      return { label: "Unsure", icon: FaCircleQuestion, cls: "bg-[#f3efe7] text-[#6a6a7a]" };
-    case "paint_only":
-      return { label: "Paint only", icon: FaPaintRoller, cls: "bg-[#f0ede8] text-[#1a1a2e]" };
-    case "new_tile":
-      return { label: "New tile", icon: FaThLarge, cls: "bg-[#f0ede8] text-[#1a1a2e]" };
-    case "wallpaper":
-      return { label: "Wallpaper", icon: FaPaintRoller, cls: "bg-[#f0ede8] text-[#1a1a2e]" };
+      return { label: "Keep", icon: FaCircleCheck, cls: TONES.keep };
     case "none":
-      return { label: "No changes", icon: FaCircleCheck, cls: "bg-[#eef3ee] text-[#234a31]" };
+      return { label: "No changes", icon: FaCircleCheck, cls: TONES.keep };
+
+    case "replace":
+      return { label: "Replace", icon: FaArrowRotateRight, cls: TONES.change };
+    case "new_tile":
+      return { label: "Replace · new tile", icon: FaThLarge, cls: TONES.change };
+    case "wallpaper":
+      return { label: "Replace · wallpaper", icon: FaPaintRoller, cls: TONES.change };
+    case "paint_only":
+      return { label: "Refresh · paint", icon: FaPaintRoller, cls: TONES.change };
     case "new_outlets":
-      return { label: "New outlets", icon: FaBolt, cls: "bg-[#f0ede8] text-[#1a1a2e]" };
+      return { label: "Add outlets", icon: FaBolt, cls: TONES.change };
     case "new_fixtures":
-      return { label: "New fixtures", icon: FaBolt, cls: "bg-[#f0ede8] text-[#1a1a2e]" };
-    case "major":
-      return { label: "Major work", icon: FaBolt, cls: "bg-[#fbeede] text-[#7a4a18]" };
+      return { label: "New fixtures", icon: FaBolt, cls: TONES.change };
     case "door":
-      return { label: "Door only", icon: FaTools, cls: "bg-[#f0ede8] text-[#1a1a2e]" };
+      return { label: "Move door", icon: FaTools, cls: TONES.change };
+
+    case "relocate":
+      return { label: "Relocate", icon: FaArrowsLeftRight, cls: TONES.changeBig };
+    case "major":
+      return { label: "Major rework", icon: FaBolt, cls: TONES.changeBig };
     case "wall":
-      return { label: "One wall", icon: FaTools, cls: "bg-[#fbeede] text-[#7a4a18]" };
+      return { label: "Move one wall", icon: FaTools, cls: TONES.changeBig };
     case "full_layout":
-      return { label: "Full layout", icon: FaTools, cls: "bg-[#fbeede] text-[#7a4a18]" };
+      return { label: "Full layout change", icon: FaTools, cls: TONES.changeBig };
+    case "structural":
+      return { label: "Structural", icon: FaTools, cls: TONES.changeBig };
+
+    case "unsure":
+      return { label: "Unsure — confirm onsite", icon: FaCircleQuestion, cls: TONES.unsure };
+
     default:
-      return { label: lbl(v), icon: FaCircleQuestion, cls: "bg-[#f3efe7] text-[#6a6a7a]" };
+      return { label: lbl(v), icon: FaCircleQuestion, cls: TONES.unsure };
   }
 }
 
@@ -198,11 +215,19 @@ export default function GroundworkSummaryPage() {
             <div className="flex-1 text-sm font-semibold tracking-wide text-[#1a1a2e]">
               Groundwork Scope · Bathroom
             </div>
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 text-sm">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 rounded-full bg-[#f0ede8] px-4 py-1.5 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#e8e6e1]"
+              >
+                <FaHouse className="text-[10px]" />
+                Back to Dashboard
+              </Link>
               <Link
                 href="/groundwork/bathroom"
-                className="rounded-full bg-[#f0ede8] px-4 py-1.5 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#e8e6e1]"
+                className="inline-flex items-center gap-2 rounded-full bg-[#f0ede8] px-4 py-1.5 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#e8e6e1]"
               >
+                <FaPencil className="text-[10px]" />
                 Edit answers
               </Link>
               <button
@@ -228,16 +253,15 @@ export default function GroundworkSummaryPage() {
             <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
-                  Contractor-ready scope
+                  Bathroom · Groundwork
                 </p>
                 <h1 className="mt-2 font-serif text-4xl text-[#1a1a2e]">
+                  Contractor-ready Scope Report
+                </h1>
+                <p className="mt-1 text-sm font-medium text-[#3a3a4a]">
                   {projectTypeLabel(state.projectType)}
                   <span className="text-[#9a9aaa]"> · </span>
                   {lbl(state.bathroomKind)}
-                </h1>
-                <p className="mt-2 max-w-xl text-sm text-[#6a6a7a]">
-                  Share this with bidders so every contractor is pricing the
-                  same project — not different interpretations.
                 </p>
               </div>
               <div className="rounded-2xl bg-[#f8f7f4] px-6 py-5 text-right">
@@ -257,16 +281,8 @@ export default function GroundworkSummaryPage() {
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Fact icon={bathroomIcon} k="Bathroom" v={lbl(state.bathroomKind)} />
               <Fact icon={FaTools} k="Project" v={projectTypeLabel(state.projectType)} />
-              <Fact
-                icon={FaCircleInfo}
-                k="Urgency"
-                v={lbl(state.urgency)}
-              />
-              <Fact
-                icon={FaCircleInfo}
-                k="Homeowner budget"
-                v={lbl(state.budgetTier)}
-              />
+              <Fact icon={FaClock} k="Urgency" v={lbl(state.urgency)} />
+              <Fact icon={FaWallet} k="Homeowner budget" v={lbl(state.budgetTier)} />
             </div>
 
             {state.goals.length > 0 && (
@@ -284,6 +300,14 @@ export default function GroundworkSummaryPage() {
                 ))}
               </div>
             )}
+
+            <div className="mt-6 flex items-start gap-3 rounded-xl border border-[#ece9e3] bg-[#faf8f3] px-4 py-3">
+              <FaCircleInfo className="mt-0.5 flex-none text-[#c08a5a]" />
+              <p className="text-xs leading-relaxed text-[#3a3a4a]">
+                <span className="font-semibold text-[#1a1a2e]">Send this exact report to every contractor.</span>{" "}
+                It locks down the scope so each bid prices the <em>same</em> project — apples-to-apples — instead of each contractor guessing and giving you a different interpretation.
+              </p>
+            </div>
           </section>
 
           {/* ── Scope cards: each fixture/element with status chip ── */}
@@ -303,16 +327,14 @@ export default function GroundworkSummaryPage() {
           {/* ── Open items + Assumption log ───────────────────────── */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Callout
-              title="Open items"
-              subtitle="Ask each contractor to confirm these"
+              title="Ask each contractor to confirm these"
               icon={FaTriangleExclamation}
               tone="warn"
               items={openItems}
               emptyText="Nothing flagged — every scope question was answered."
             />
             <Callout
-              title="Assumption log"
-              subtitle="What this estimate assumes"
+              title="What this estimate already assumes"
               icon={FaCircleInfo}
               tone="info"
               items={assumptions}
@@ -406,18 +428,18 @@ function ScopeCard({ item }: { item: ScopeCardItem }) {
   const ChipIcon = chip.icon;
   return (
     <div className="rounded-2xl border border-[#ece9e3] bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f0ede8] text-[#1a1a2e]">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[#f0ede8] text-[#1a1a2e]">
           <Icon className="text-lg" />
         </div>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${chip.cls}`}
-        >
-          <ChipIcon className="text-[10px]" />
-          {chip.label}
-        </span>
+        <p className="flex-1 text-sm font-semibold text-[#1a1a2e]">{item.label}</p>
       </div>
-      <p className="mt-3 text-sm font-semibold text-[#1a1a2e]">{item.label}</p>
+      <span
+        className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold ${chip.cls}`}
+      >
+        <ChipIcon className="text-[10px]" />
+        {chip.label}
+      </span>
     </div>
   );
 }
@@ -458,14 +480,14 @@ function CostTable({ breakdown }: { breakdown: ReturnType<typeof getCostBreakdow
           {groups.map((g) => (
             <Group key={g.name} group={g} />
           ))}
-          <tr className="border-t border-[#ece9e3] bg-[#faf8f3]">
-            <td className="px-5 py-3 text-sm font-semibold text-[#1a1a2e]">
+          <tr className="border-t-2 border-[#1a1a2e] bg-[#e8e6e1]">
+            <td className="px-5 py-3 text-sm font-bold uppercase tracking-wider text-[#1a1a2e]">
               Subtotal
             </td>
-            <td className="px-5 py-3 text-xs text-[#6a6a7a]">
+            <td className="px-5 py-3 text-xs text-[#3a3a4a]">
               Materials + labor + permits
             </td>
-            <td className="px-5 py-3 text-right font-semibold text-[#1a1a2e]">
+            <td className="px-5 py-3 text-right text-sm font-bold text-[#1a1a2e]">
               {fmtRange(breakdown.subtotalLow, breakdown.subtotalHigh)}
             </td>
           </tr>
@@ -502,29 +524,29 @@ function Group({
 }) {
   return (
     <>
-      <tr className="border-t border-[#ece9e3] bg-white">
+      <tr className="border-t-[3px] border-[#1a1a2e] bg-[#1a1a2e]">
         <td
           colSpan={3}
-          className="px-5 pt-4 pb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#6a6a7a]"
+          className="px-5 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white"
         >
           {group.name}
         </td>
       </tr>
       {group.rows.map((r) => (
         <tr key={r.item} className="border-t border-[#f1ede5]">
-          <td className="px-5 py-3 font-medium text-[#1a1a2e]">{r.item}</td>
+          <td className="py-3 pl-10 pr-5 font-medium text-[#1a1a2e]">{r.item}</td>
           <td className="px-5 py-3 text-[#6a6a7a]">{r.description}</td>
           <td className="px-5 py-3 text-right text-[#1a1a2e]">
             {fmtRange(r.low, r.high)}
           </td>
         </tr>
       ))}
-      <tr className="bg-[#faf8f3]">
-        <td className="px-5 py-2 text-xs font-semibold uppercase tracking-wider text-[#6a6a7a]">
+      <tr className="border-t border-[#ece9e3] bg-[#f0ede8]">
+        <td className="py-2.5 pl-10 pr-5 text-xs font-bold uppercase tracking-wider text-[#1a1a2e]">
           {group.name} subtotal
         </td>
-        <td />
-        <td className="px-5 py-2 text-right text-xs font-semibold text-[#1a1a2e]">
+        <td className="bg-[#f0ede8]" />
+        <td className="px-5 py-2.5 text-right text-sm font-bold text-[#1a1a2e]">
           {fmtRange(group.low, group.high)}
         </td>
       </tr>
@@ -534,14 +556,12 @@ function Group({
 
 function Callout({
   title,
-  subtitle,
   icon: Icon,
   tone,
   items,
   emptyText,
 }: {
   title: string;
-  subtitle: string;
   icon: IconType;
   tone: "warn" | "info";
   items: string[];
@@ -549,7 +569,7 @@ function Callout({
 }) {
   const palette =
     tone === "warn"
-      ? { bar: "bg-[#c08a5a]", chip: "bg-[#fbeede] text-[#7a4a18]", border: "border-[#ece9e3]" }
+      ? { bar: "bg-[#c08a5a]", chip: "bg-[#f6e4d4] text-[#8a4a1a]", border: "border-[#ece9e3]" }
       : { bar: "bg-[#2d5a3d]", chip: "bg-[#eef3ee] text-[#234a31]", border: "border-[#ece9e3]" };
   return (
     <section
@@ -557,10 +577,7 @@ function Callout({
     >
       <div className={`flex items-center gap-3 ${palette.chip} px-5 py-3`}>
         <Icon className="text-base" />
-        <div>
-          <p className="text-sm font-semibold leading-tight">{title}</p>
-          <p className="text-[11px] opacity-80">{subtitle}</p>
-        </div>
+        <p className="text-sm font-semibold leading-tight">{title}</p>
       </div>
       <div className="px-5 py-4">
         {items.length === 0 ? (
