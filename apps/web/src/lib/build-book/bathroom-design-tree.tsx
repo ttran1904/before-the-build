@@ -87,11 +87,10 @@ export function buildBookBathroomTree(): QuestionNode<any>[] {
     initial: () => get().itemSource,
     commit: (v) => setField("itemSource", v),
     next: () => "photos",
-    hideNext: true,
-    render: ({ value, onAdvance }) => (
+    render: ({ value, onChange }) => (
       <TileSelect
         value={value}
-        onAdvance={(v) => onAdvance(v as ItemSource)}
+        onChange={(v) => onChange(v as ItemSource)}
         options={[
           { id: "ideas", label: "From My Ideas", icon: FaImages },
           { id: "catalogue", label: "Browse Catalogue", icon: FaSwatchbook },

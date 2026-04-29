@@ -56,11 +56,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     initial: () => get().projectType,
     commit: (v) => v && setKey("projectType", v),
     next: () => "bathroom-kind",
-    hideNext: true,
-    render: ({ value, onAdvance }) => (
+    render: ({ value, onChange }) => (
       <TileSelect
         value={value}
-        onAdvance={(v) => onAdvance(v as ProjectType)}
+        onChange={(v) => onChange(v as ProjectType)}
         options={[
           { id: "cosmetic_refresh", label: "Cosmetic Refresh", icon: FaPaintRoller },
           { id: "pull_and_replace", label: "Pull & Replace", icon: FaScrewdriverWrench },
@@ -79,11 +78,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     initial: () => get().bathroomKind,
     commit: (v) => v && setKey("bathroomKind", v),
     next: () => "goals",
-    hideNext: true,
-    render: ({ value, onAdvance }) => (
+    render: ({ value, onChange }) => (
       <TileSelect
         value={value}
-        onAdvance={(v) => onAdvance(v as BathroomKind)}
+        onChange={(v) => onChange(v as BathroomKind)}
         options={[
           { id: "half_bath", label: "Half Bath", icon: FaToilet },
           { id: "three_quarter", label: "3/4 Bath", icon: FaShower },
@@ -127,11 +125,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     initial: () => get().urgency,
     commit: (v) => v && setKey("urgency", v),
     next: () => "budget",
-    hideNext: true,
-    render: ({ value, onAdvance }) => (
+    render: ({ value, onChange }) => (
       <TileSelect
         value={value}
-        onAdvance={(v) => onAdvance(v as Urgency)}
+        onChange={(v) => onChange(v as Urgency)}
         options={[
           { id: "asap", label: "ASAP", icon: FaWandMagicSparkles },
           { id: "soonish", label: "Soonish", icon: FaCalendarDays },
@@ -149,11 +146,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     initial: () => get().budgetTier,
     commit: (v) => v && setKey("budgetTier", v),
     next: () => "vanity",
-    hideNext: true,
-    render: ({ value, onAdvance }) => (
+    render: ({ value, onChange }) => (
       <PillSelect
         value={value}
-        onAdvance={(v) => onAdvance(v as BudgetTier)}
+        onChange={(v) => onChange(v as BudgetTier)}
         options={[
           { id: "above_100k", label: "Above $100,000" },
           { id: "50_to_100k", label: "$50,000 – $100,000" },
@@ -192,11 +188,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     initial: () => get()[storeKey],
     commit: (v) => v && setKey(storeKey, v),
     next: () => nextId,
-    hideNext: true,
-    render: ({ value, onAdvance }) => (
+    render: ({ value, onChange }) => (
       <TileSelect
         value={value}
-        onAdvance={(v) => onAdvance(v as FixtureChange)}
+        onChange={(v) => onChange(v as FixtureChange)}
         options={fixtureOptions.map((o) => ({
           ...o,
           icon: o.id === "unsure" ? FaCircleQuestion : icon,
@@ -220,11 +215,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     initial: () => get().walls,
     commit: (v) => v && setKey("walls", v),
     next: () => "lighting",
-    hideNext: true,
-    render: ({ value, onAdvance }) => (
+    render: ({ value, onChange }) => (
       <TileSelect
         value={value}
-        onAdvance={(v) => onAdvance(v as WallChange)}
+        onChange={(v) => onChange(v as WallChange)}
         options={[
           { id: "paint_only", label: "Paint Only", icon: FaPaintRoller },
           { id: "new_tile", label: "New Tile", icon: FaScrewdriverWrench },
@@ -246,11 +240,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     initial: () => get().electrical,
     commit: (v) => v && setKey("electrical", v),
     next: () => "layout",
-    hideNext: true,
-    render: ({ value, onAdvance }) => (
+    render: ({ value, onChange }) => (
       <TileSelect
         value={value}
-        onAdvance={(v) => onAdvance(v as ElectricalChange)}
+        onChange={(v) => onChange(v as ElectricalChange)}
         options={[
           { id: "none", label: "None", icon: FaWandMagicSparkles },
           { id: "new_outlets", label: "New Outlets", icon: FaScrewdriverWrench },
@@ -269,11 +262,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     initial: () => get().layout,
     commit: (v) => v && setKey("layout", v),
     next: () => "photos-current",
-    hideNext: true,
-    render: ({ value, onAdvance }) => (
+    render: ({ value, onChange }) => (
       <TileSelect
         value={value}
-        onAdvance={(v) => onAdvance(v as LayoutChange)}
+        onChange={(v) => onChange(v as LayoutChange)}
         options={[
           { id: "none", label: "No Changes", icon: FaWandMagicSparkles },
           { id: "door", label: "Door Only", icon: FaScrewdriverWrench },

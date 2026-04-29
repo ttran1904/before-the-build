@@ -9,11 +9,11 @@ import type { AnswerOption } from "./types";
 export function TileSelect({
   options,
   value,
-  onAdvance,
+  onChange,
 }: {
   options: AnswerOption[];
   value: string | null;
-  onAdvance: (v: string) => void;
+  onChange: (v: string) => void;
 }) {
   return (
     <div className="mt-12 flex flex-wrap justify-center gap-8">
@@ -23,7 +23,7 @@ export function TileSelect({
         return (
           <button
             key={o.id}
-            onClick={() => onAdvance(o.id)}
+            onClick={() => onChange(o.id)}
             className={`group flex h-32 w-32 flex-col items-center justify-center rounded-full border transition ${
               selected
                 ? "border-[#1a1a2e] bg-[#f1ede5]"
@@ -50,11 +50,11 @@ export function TileSelect({
 export function PillSelect({
   options,
   value,
-  onAdvance,
+  onChange,
 }: {
   options: AnswerOption[];
   value: string | null;
-  onAdvance: (v: string) => void;
+  onChange: (v: string) => void;
 }) {
   return (
     <div className="mt-10 flex flex-col items-center gap-3">
@@ -63,7 +63,7 @@ export function PillSelect({
         return (
           <button
             key={o.id}
-            onClick={() => onAdvance(o.id)}
+            onClick={() => onChange(o.id)}
             className={`w-72 rounded-md px-6 py-5 text-sm transition ${
               selected
                 ? "bg-[#1a1a2e] text-white"
