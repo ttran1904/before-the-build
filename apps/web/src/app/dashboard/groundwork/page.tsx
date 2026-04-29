@@ -28,7 +28,6 @@ export default function GroundworkDashboardPage() {
   const router = useRouter();
   const reset = useGroundworkStore((s) => s.reset);
   const loadFrom = useGroundworkStore((s) => s.loadFrom);
-  const localProjectId = useGroundworkStore((s) => s.projectId);
 
   const [scopes, setScopes] = useState<GroundworkScopeRow[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -88,14 +87,8 @@ export default function GroundworkDashboardPage() {
     router.push(row.completed_at ? "/groundwork/bathroom/summary" : "/groundwork/bathroom");
   };
 
-  const localState = useGroundworkStore.getState();
-  const hasLocalDraft =
-    !localProjectId &&
-    (localState.projectType !== null ||
-      localState.bathroomKind !== null ||
-      localState.budgetTier !== null ||
-      localState.goals.length > 0 ||
-      localState.photos.length > 0);
+  // Local draft is auto-saved to Supabase via GroundworkAutosave;
+  // the dashboard only renders Supabase rows.
 
   return (
     <div className="space-y-6">
@@ -129,7 +122,7 @@ export default function GroundworkDashboardPage() {
 
       {!loaded ? (
         <SkeletonTileRow count={3} />
-      ) : scopes.length === 0 && !hasLocalDraft ? (
+      ) : scopes.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[#d5d3cd] bg-white p-16 text-center">
           <FaClipboardList className="mx-auto text-4xl text-[#d5d3cd]" />
           <h3 className="mt-4 text-lg font-semibold text-[#1a1a2e]">
@@ -161,35 +154,6 @@ export default function GroundworkDashboardPage() {
               onDelete={() => handleDelete(row.id)}
             />
           ))}
-          {hasLocalDraft && (
-            <button
-              onClick={() => router.push("/groundwork/bathroom")}
-              className="group relative overflow-hidden rounded-2xl border border-[#e8e6e1] bg-white text-left shadow-sm transition hover:border-[#c08a5a]/40 hover:shadow-md"
-            >
-              <div className="relative h-40 w-full overflow-hidden bg-[#f6f3ed]">
-                {localState.photos[0] ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={localState.photos[0]} alt="Draft" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <FaClipboardList className="text-4xl text-[#d5d3cd]" />
-                  </div>
-                )}
-                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#c08a5a] shadow-sm">
-                  Draft
-                </span>
-              </div>
-              <div className="p-4">
-                <h3 className="text-sm font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">
-                  {projectTypeLabel(localState.projectType) ?? "Bathroom Groundwork Scope"}
-                </h3>
-                <p className="mt-0.5 text-xs text-[#9a9aaa]">In progress · not yet saved</p>
-                <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#c08a5a]">
-                  Continue <FaArrowRight className="text-[10px]" />
-                </p>
-              </div>
-            </button>
-          )}
           <button
             onClick={startNew}
             className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#d5d3cd] bg-white p-8 text-center transition hover:border-[#c08a5a]/40 hover:shadow-sm"

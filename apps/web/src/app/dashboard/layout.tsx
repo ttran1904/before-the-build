@@ -38,7 +38,7 @@ export default function DashboardLayout({
           <SectionLabel className="mt-4">Your projects</SectionLabel>
           <NavItem href="/dashboard/groundwork" label="Groundwork Scope" icon={FaClipboardList} />
           <NavItem href="/dashboard/build-books" label="Build Books" icon={FaBookOpen} />
-          <NavItem href="/dashboard/idea-boards" label="Idea Boards" icon={FaTableCellsLarge} />
+          <NavItem href="/dashboard/idea-boards" label="Ideas" icon={FaTableCellsLarge} />
 
           <SectionLabel className="mt-4">Help</SectionLabel>
           <NavItem href="/dashboard/guide" label="Guide" icon={FaCircleQuestion} />

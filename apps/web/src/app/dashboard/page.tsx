@@ -230,7 +230,7 @@ export default function DashboardPage() {
               See all <FaArrowRight className="text-[8px]" />
             </Link>
           </div>
-          {buildBooksLoaded && buildBooks.length > 0 && (
+          {buildBooksLoaded && (
             <button
               onClick={handleNewBuildBook}
               className="inline-flex items-center gap-1.5 rounded-full bg-[#2d5a3d] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#234a31] hover:shadow"
@@ -355,14 +355,13 @@ export default function DashboardPage() {
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <button
               onClick={handleNewBuildBook}
-              className="group flex h-52 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-6 text-center transition hover:border-[#2d5a3d]/40 hover:shadow-sm"
+              className="group flex h-[19rem] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-6 text-center transition hover:border-[#2d5a3d]/40 hover:shadow-sm"
             >
               <FaBookOpen className="text-2xl text-[#d5d3cd] transition group-hover:text-[#2d5a3d]" />
               <span className="text-sm font-semibold text-[#1a1a2e]">Start your first Build Book</span>
-              <span className="text-xs text-[#9a9aaa]">Design layer — moodboard, mockup, items</span>
             </button>
           </div>
         )}
@@ -372,7 +371,7 @@ export default function DashboardPage() {
       {/* Idea Boards */}
       <div>
         <div className="mb-4 flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-[#1a1a2e]">Idea Boards</h2>
+          <h2 className="text-lg font-semibold text-[#1a1a2e]">Ideas</h2>
           <Link
             href="/dashboard/idea-boards"
             className="inline-flex items-center gap-1.5 rounded-full bg-[#f0ede8] px-3 py-1 text-xs font-medium text-[#6a6a7a] transition hover:bg-[#e8e6e1] hover:text-[#1a1a2e]"
@@ -624,7 +623,6 @@ function GroundworkHomeSection() {
   const router = useRouter();
   const loadFrom = useGroundworkStore((st) => st.loadFrom);
   const resetGroundwork = useGroundworkStore((st) => st.reset);
-  const localProjectId = useGroundworkStore((st) => st.projectId);
 
   const [scopes, setScopes] = useState<GroundworkScopeRow[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -676,16 +674,8 @@ function GroundworkHomeSection() {
     router.push(row.completed_at ? "/groundwork/bathroom/summary" : "/groundwork/bathroom");
   };
 
-  // If the local in-progress draft hasn't been saved yet (no projectId),
-  // surface it as a pseudo-card so the user can pick it back up.
-  const localState = useGroundworkStore.getState();
-  const hasLocalDraft =
-    !localProjectId &&
-    (localState.projectType !== null ||
-      localState.bathroomKind !== null ||
-      localState.budgetTier !== null ||
-      localState.goals.length > 0 ||
-      localState.photos.length > 0);
+  // Draft state lives in localStorage and auto-saves to Supabase via
+  // GroundworkAutosave. The dashboard only renders rows from Supabase.
 
   return (
     <div>
@@ -699,7 +689,7 @@ function GroundworkHomeSection() {
             See all <FaArrowRight className="text-[8px]" />
           </Link>
         </div>
-        {(scopes.length > 0 || hasLocalDraft) && (
+        {loaded && (
           <button
             onClick={startNew}
             className="inline-flex items-center gap-1.5 rounded-full bg-[#c08a5a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#a8754a] hover:shadow"
@@ -710,11 +700,11 @@ function GroundworkHomeSection() {
       </div>
       {!loaded ? (
         <SkeletonTileRow count={2} className="grid grid-cols-1 gap-5 sm:grid-cols-2" />
-      ) : scopes.length === 0 && !hasLocalDraft ? (
-        <div className="grid grid-cols-1 gap-5">
+      ) : scopes.length === 0 ? (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <button
             onClick={startNew}
-            className="group flex h-52 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-6 text-center transition hover:border-[#c08a5a]/40 hover:shadow-sm"
+            className="group flex h-[19rem] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-6 text-center transition hover:border-[#c08a5a]/40 hover:shadow-sm"
           >
             <FaClipboardList className="text-2xl text-[#d5d3cd] transition group-hover:text-[#c08a5a]" />
             <span className="text-sm font-semibold text-[#1a1a2e]">Start your first Groundwork Scope</span>
@@ -735,32 +725,6 @@ function GroundworkHomeSection() {
               onDelete={() => handleDeleteScope(row.id)}
             />
           ))}
-          {hasLocalDraft && (
-            <button
-              onClick={() => router.push("/groundwork/bathroom")}
-              className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#e8e6e1] bg-white text-left transition hover:border-[#c08a5a]/40 hover:shadow-md"
-            >
-              <div className="relative h-52 w-full overflow-hidden bg-[#f6f3ed]">
-                {localState.photos[0] ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={localState.photos[0]} alt="Draft" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <FaClipboardList className="text-3xl text-[#d5d3cd]" />
-                  </div>
-                )}
-                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#c08a5a] shadow-sm">
-                  Draft
-                </span>
-              </div>
-              <div className="p-3.5">
-                <p className="font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">
-                  {projectTypeLabel(localState.projectType) ?? "Bathroom Groundwork Scope"}
-                </p>
-                <p className="mt-0.5 text-xs text-[#9a9aaa]">In progress · not yet saved</p>
-              </div>
-            </button>
-          )}
         </div>
       )}
     </div>

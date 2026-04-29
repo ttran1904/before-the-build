@@ -1,56 +1,42 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useGroundworkStore, type GroundworkBathroomState } from "@/lib/groundwork/store";
-import { saveGroundworkScope, groundworkHasContent } from "@/lib/groundwork/sync";
+import { useBuildBookStore, type BuildBookBathroomState } from "@/lib/build-book/store";
+import { saveBuildBookV2, buildBookHasContent } from "@/lib/build-book/sync";
 
-function signatureOf(s: GroundworkBathroomState): string {
+function signatureOf(s: BuildBookBathroomState): string {
   return JSON.stringify({
-    projectType: s.projectType,
-    bathroomKind: s.bathroomKind,
-    goals: s.goals,
-    urgency: s.urgency,
-    budgetTier: s.budgetTier,
-    vanity: s.vanity,
-    toilet: s.toilet,
-    showerTub: s.showerTub,
-    flooring: s.flooring,
-    walls: s.walls,
-    lighting: s.lighting,
-    electrical: s.electrical,
-    layout: s.layout,
-    notes: s.notes,
+    styles: s.styles,
+    inspirationLinks: s.inspirationLinks,
+    itemSource: s.itemSource,
     photos: s.photos,
-    floorPlan: s.floorPlan,
     completedAt: s.completedAt,
   });
 }
 
-export function GroundworkAutosave() {
+export function BuildBookAutosave() {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlight = useRef(false);
   const lastSavedSig = useRef<string | null>(null);
 
   useEffect(() => {
-    // Start with no signature so the first run always attempts to push
-    // whatever is sitting in localStorage up to Supabase.
     lastSavedSig.current = null;
 
     const flush = async () => {
       if (inFlight.current) return;
-      const state = useGroundworkStore.getState();
-      if (!groundworkHasContent(state)) return;
+      const state = useBuildBookStore.getState();
+      if (!buildBookHasContent(state)) return;
 
       const sig = signatureOf(state);
       if (sig === lastSavedSig.current) return;
 
       inFlight.current = true;
       try {
-        const result = await saveGroundworkScope(state, state.projectId);
+        const result = await saveBuildBookV2(state, state.projectId);
         if (result) {
           lastSavedSig.current = sig;
           if (state.projectId !== result.projectId) {
-            useGroundworkStore.setState({ projectId: result.projectId });
+            useBuildBookStore.setState({ projectId: result.projectId });
           }
         }
       } finally {
@@ -63,10 +49,9 @@ export function GroundworkAutosave() {
       timer.current = setTimeout(flush, delay);
     };
 
-    // Rescue any localStorage draft as soon as we mount.
     trigger(0);
 
-    const unsub = useGroundworkStore.subscribe(() => trigger());
+    const unsub = useBuildBookStore.subscribe(() => trigger());
 
     const onVisibility = () => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") {

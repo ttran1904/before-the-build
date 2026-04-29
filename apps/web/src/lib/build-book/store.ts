@@ -25,6 +25,8 @@ export interface BuildBookBathroomState {
 
   // Bookkeeping
   completedAt: string | null;
+  /** Supabase project_id this draft is bound to. null = not yet saved. */
+  projectId: string | null;
 }
 
 interface Actions {
@@ -34,6 +36,7 @@ interface Actions {
   ) => void;
   reset: () => void;
   markComplete: () => void;
+  loadFrom: (data: Partial<BuildBookBathroomState>, projectId: string | null) => void;
 }
 
 const initial: BuildBookBathroomState = {
@@ -42,6 +45,7 @@ const initial: BuildBookBathroomState = {
   itemSource: null,
   photos: [],
   completedAt: null,
+  projectId: null,
 };
 
 export const useBuildBookStore = create<BuildBookBathroomState & Actions>()(
@@ -52,6 +56,7 @@ export const useBuildBookStore = create<BuildBookBathroomState & Actions>()(
         set({ [key]: value } as Partial<BuildBookBathroomState>),
       reset: () => set({ ...initial }),
       markComplete: () => set({ completedAt: new Date().toISOString() }),
+      loadFrom: (data, projectId) => set({ ...initial, ...data, projectId }),
     }),
     {
       name: "btb:buildbook:bathroom",
