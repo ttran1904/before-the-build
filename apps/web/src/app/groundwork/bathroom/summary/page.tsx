@@ -30,7 +30,7 @@ import {
   useGroundworkStore,
   getOpenItems,
   getAssumptions,
-  getRealisticCostRange,
+
   projectTypeLabel,
 } from "@/lib/groundwork/store";
 import {
@@ -86,36 +86,36 @@ function statusChip(v: string | null) {
     case "keep":
       return { label: "Keep", icon: FaCircleCheck, cls: TONES.keep };
     case "none":
-      return { label: "No changes", icon: FaCircleCheck, cls: TONES.keep };
+      return { label: "Keep", icon: FaCircleCheck, cls: TONES.keep };
 
     case "replace":
       return { label: "Replace", icon: FaArrowRotateRight, cls: TONES.change };
     case "new_tile":
-      return { label: "Replace · new tile", icon: FaThLarge, cls: TONES.change };
+      return { label: "Replace", icon: FaThLarge, cls: TONES.change };
     case "wallpaper":
-      return { label: "Replace · wallpaper", icon: FaPaintRoller, cls: TONES.change };
+      return { label: "Replace", icon: FaPaintRoller, cls: TONES.change };
     case "paint_only":
-      return { label: "Refresh · paint", icon: FaPaintRoller, cls: TONES.change };
+      return { label: "Repaint", icon: FaPaintRoller, cls: TONES.change };
     case "new_outlets":
-      return { label: "Add outlets", icon: FaBolt, cls: TONES.change };
+      return { label: "Add", icon: FaBolt, cls: TONES.change };
     case "new_fixtures":
-      return { label: "New fixtures", icon: FaBolt, cls: TONES.change };
+      return { label: "Replace", icon: FaBolt, cls: TONES.change };
     case "door":
-      return { label: "Move door", icon: FaTools, cls: TONES.change };
+      return { label: "Move", icon: FaTools, cls: TONES.change };
 
     case "relocate":
       return { label: "Relocate", icon: FaArrowsLeftRight, cls: TONES.changeBig };
     case "major":
-      return { label: "Major rework", icon: FaBolt, cls: TONES.changeBig };
+      return { label: "Major", icon: FaBolt, cls: TONES.changeBig };
     case "wall":
-      return { label: "Move one wall", icon: FaTools, cls: TONES.changeBig };
+      return { label: "Move wall", icon: FaTools, cls: TONES.changeBig };
     case "full_layout":
-      return { label: "Full layout change", icon: FaTools, cls: TONES.changeBig };
+      return { label: "New layout", icon: FaTools, cls: TONES.changeBig };
     case "structural":
       return { label: "Structural", icon: FaTools, cls: TONES.changeBig };
 
     case "unsure":
-      return { label: "Unsure — confirm onsite", icon: FaCircleQuestion, cls: TONES.unsure };
+      return { label: "Unsure", icon: FaCircleQuestion, cls: TONES.unsure };
 
     default:
       return { label: lbl(v), icon: FaCircleQuestion, cls: TONES.unsure };
@@ -183,7 +183,6 @@ export default function GroundworkSummaryPage() {
 
   const openItems = getOpenItems(state);
   const assumptions = getAssumptions(state);
-  const range = getRealisticCostRange(state);
   const breakdown = getCostBreakdown(state);
 
   const scopeItems: ScopeCardItem[] = [
@@ -258,21 +257,16 @@ export default function GroundworkSummaryPage() {
                 <h1 className="mt-2 font-serif text-4xl text-[#1a1a2e]">
                   Contractor-ready Scope Report
                 </h1>
-                <p className="mt-1 text-sm font-medium text-[#3a3a4a]">
-                  {projectTypeLabel(state.projectType)}
-                  <span className="text-[#9a9aaa]"> · </span>
-                  {lbl(state.bathroomKind)}
-                </p>
               </div>
               <div className="rounded-2xl bg-[#f8f7f4] px-6 py-5 text-right">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
                   Realistic cost range
                 </p>
                 <p className="mt-1 font-serif text-3xl text-[#1a1a2e]">
-                  {range.label}
+                  {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
                 </p>
                 <p className="mt-1 text-[11px] text-[#9a9aaa]">
-                  Total project · materials + labor + 20% contingency
+                  Materials + labor + 20% contingency
                 </p>
               </div>
             </div>
@@ -304,8 +298,8 @@ export default function GroundworkSummaryPage() {
             <div className="mt-6 flex items-start gap-3 rounded-xl border border-[#ece9e3] bg-[#faf8f3] px-4 py-3">
               <FaCircleInfo className="mt-0.5 flex-none text-[#c08a5a]" />
               <p className="text-xs leading-relaxed text-[#3a3a4a]">
-                <span className="font-semibold text-[#1a1a2e]">Send this exact report to every contractor.</span>{" "}
-                It locks down the scope so each bid prices the <em>same</em> project — apples-to-apples — instead of each contractor guessing and giving you a different interpretation.
+                <span className="font-semibold text-[#1a1a2e]">Share this with every contractor.</span>{" "}
+                Same scope in, same kind of bid out — no guesswork, no surprise quotes.
               </p>
             </div>
           </section>
