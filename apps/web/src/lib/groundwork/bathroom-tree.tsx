@@ -176,8 +176,6 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
   const fixtureNode = (
     id: string,
     question: string,
-    subjectIcon: typeof FaBath,
-    subjectLabel: string,
     storeKey:
       | "vanity"
       | "toilet"
@@ -189,8 +187,6 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     id,
     tab: "scope",
     question,
-    subjectIcon,
-    subjectLabel,
     initial: () => get()[storeKey],
     commit: (v) => v && setKey(storeKey, v),
     next: () => nextId,
@@ -203,13 +199,13 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     ),
   });
 
-  const vanity = fixtureNode("vanity", "What about the vanity?", FaScrewdriverWrench, "Vanity", "vanity", "toilet");
+  const vanity = fixtureNode("vanity", "What about the vanity?", "vanity", "toilet");
   // ^ id collision with key — fix:
   vanity.id = "vanity";
 
-  const toilet = fixtureNode("toilet", "And the toilet?", FaToilet, "Toilet", "toilet", "shower-tub");
-  const showerTub = fixtureNode("shower-tub", "Shower or tub?", FaShower, "Shower / tub", "showerTub", "flooring");
-  const flooring = fixtureNode("flooring", "Flooring?", FaPaintRoller, "Flooring", "flooring", "walls");
+  const toilet = fixtureNode("toilet", "And the toilet?", "toilet", "shower-tub");
+  const showerTub = fixtureNode("shower-tub", "Shower or tub?", "showerTub", "flooring");
+  const flooring = fixtureNode("flooring", "Flooring?", "flooring", "walls");
 
   const walls: QuestionNode<WallChange | null> = {
     id: "walls",
@@ -233,7 +229,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     ),
   };
 
-  const lighting = fixtureNode("lighting", "Lighting?", FaWandMagicSparkles, "Lighting", "lighting", "electrical");
+  const lighting = fixtureNode("lighting", "Lighting?", "lighting", "electrical");
 
   const electrical: QuestionNode<ElectricalChange | null> = {
     id: "electrical",
