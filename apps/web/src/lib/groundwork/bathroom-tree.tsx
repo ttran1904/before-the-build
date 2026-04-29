@@ -19,6 +19,9 @@ import {
   FaChartLine,
   FaUpRightAndDownLeftFromCenter,
   FaCircleQuestion,
+  FaLock,
+  FaArrowsRotate,
+  FaArrowsUpDownLeftRight,
 } from "react-icons/fa6";
 
 import { TileSelect, PillSelect, ChipMulti, LongText, PhotoUpload } from "@/components/wizard/answers";
@@ -164,16 +167,16 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
   /* ── Scope tab — what's changing ───────────────────────────── */
 
   const fixtureOptions = [
-    { id: "keep", label: "Keep" },
-    { id: "replace", label: "Replace" },
-    { id: "relocate", label: "Relocate" },
-    { id: "unsure", label: "Unsure" },
+    { id: "keep", label: "Keep", icon: FaLock },
+    { id: "replace", label: "Replace", icon: FaArrowsRotate },
+    { id: "relocate", label: "Relocate", icon: FaArrowsUpDownLeftRight },
+    { id: "unsure", label: "Unsure", icon: FaCircleQuestion },
   ];
 
   const fixtureNode = (
     id: string,
     question: string,
-    icon: typeof FaBath,
+    _icon: typeof FaBath,
     storeKey:
       | "vanity"
       | "toilet"
@@ -192,10 +195,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
       <TileSelect
         value={value}
         onChange={(v) => onChange(v as FixtureChange)}
-        options={fixtureOptions.map((o) => ({
-          ...o,
-          icon: o.id === "unsure" ? FaCircleQuestion : icon,
-        }))}
+        options={fixtureOptions}
       />
     ),
   });
