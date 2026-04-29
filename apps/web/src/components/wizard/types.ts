@@ -42,4 +42,6 @@ export interface QuestionNode<V = unknown> {
   isValid?: (value: V) => boolean;
   /** Hide the bottom Next button — the renderer will call onAdvance itself. */
   hideNext?: boolean;
+  /** When true, this is the last question — render Generate Scope + loader on advance. */
+  terminal?: boolean;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WizardChrome } from "./WizardChrome";
 import type { QuestionNode, WizardTab } from "./types";
@@ -25,6 +25,7 @@ export function WizardEngine({
   onFinish,
 }: WizardEngineProps) {
   const router = useRouter();
+  const [finishing, setFinishing] = useState(false);
 
   const map = useMemo(
     () => Object.fromEntries(nodes.map((n) => [n.id, n])),
@@ -60,7 +61,7 @@ export function WizardEngine({
     node.commit?.(v);
     const next = resolveNext(node.next(v));
     if (!next) {
-      onFinish();
+      setFinishing(true);
       return;
     }
     setStack([...stack, next]);
@@ -71,7 +72,11 @@ export function WizardEngine({
     else router.push(backHref);
   };
 
-  /** Jump to a previously-visited tab by truncating the stack to the
+  useEffect(() => {
+    if (!finishing) return;
+    const t = setTimeout(() => onFinish(), 1400);
+    return () => clearTimeout(t);
+  }, [finishing, onFinish]);  /** Jump to a previously-visited tab by truncating the stack to the
    *  last node belonging to that tab. */
   const jumpToTab = (tabId: string) => {
     if (tabId === node.tab) return;
@@ -94,6 +99,7 @@ export function WizardEngine({
       backHref={backHref}
       onBack={goBack}
       onAdvance={advance}
+      finishing={finishing}
     />
   );
 }
@@ -107,6 +113,7 @@ function NodeView({
   backHref,
   onBack,
   onAdvance,
+  finishing,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   node: QuestionNode<any>;
@@ -117,6 +124,7 @@ function NodeView({
   backHref: string;
   onBack: () => void;
   onAdvance: (v: unknown) => void;
+  finishing?: boolean;
 }) {
   const [value, setValue] = useState<unknown>(() => node.initial());
   const isValid = node.isValid ? node.isValid(value) : true;
@@ -133,6 +141,8 @@ function NodeView({
       onNext={() => onAdvance(value)}
       nextDisabled={!isValid}
       hideNext={node.hideNext === true}
+      nextLabel={node.terminal ? "Generate Scope" : "Next"}
+      finishing={finishing}
     >
       <div>
         <h1 className="font-serif text-3xl leading-snug text-[#1a1a2e] sm:text-[34px]">

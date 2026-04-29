@@ -19,6 +19,10 @@ interface WizardChromeProps {
   nextDisabled?: boolean;
   /** Hide the bottom Next button (e.g. when the answer auto-advances on click). */
   hideNext?: boolean;
+  /** When true, replace question area with a centered loading state. */
+  finishing?: boolean;
+  /** Loading label shown while finishing. */
+  finishingLabel?: string;
   children: ReactNode;
 }
 
@@ -34,6 +38,8 @@ export function WizardChrome({
   nextLabel = "Next",
   nextDisabled = false,
   hideNext = false,
+  finishing = false,
+  finishingLabel = "Generating your scope…",
   children,
 }: WizardChromeProps) {
   const visited = new Set(visitedTabs);
@@ -83,11 +89,22 @@ export function WizardChrome({
       </header>
 
       {/* ── Centered question area (autosaves silently) ───────── */}
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pb-12 pt-12">
-        {children}
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-stretch justify-center px-6 pb-12 pt-12">
+        {finishing ? (
+          <div className="flex flex-col items-center gap-6 py-16 text-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#e8e6e1] border-t-[#c08a5a]" />
+            <p className="font-serif text-2xl text-[#1a1a2e]">{finishingLabel}</p>
+            <p className="text-sm text-[#6a6a7a]">
+              Compiling your answers into a contractor-ready scope.
+            </p>
+          </div>
+        ) : (
+          children
+        )}
       </main>
 
       {/* ── Step navigation: Back (left) · Next (right) ─────────── */}
+      {!finishing && (
       <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 pb-12">
         {onBack ? (
           <button
@@ -111,6 +128,7 @@ export function WizardChrome({
           <span />
         )}
       </div>
+      )}
     </div>
   );
 }

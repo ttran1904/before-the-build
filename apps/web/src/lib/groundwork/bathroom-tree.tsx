@@ -307,6 +307,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
 
   const notes: QuestionNode<string> = {
     id: "notes",
+    terminal: true,
     tab: "photos",
     question: "Anything else the contractor should know?",
     helper: "Constraints, history, things you've already had quoted — anything.",
