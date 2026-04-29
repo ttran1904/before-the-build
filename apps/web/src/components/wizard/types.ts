@@ -44,4 +44,8 @@ export interface QuestionNode<V = unknown> {
   hideNext?: boolean;
   /** When true, this is the last question — render Generate Scope + loader on advance. */
   terminal?: boolean;
+  /** Optional subject icon shown above the question (e.g. a vanity icon). */
+  subjectIcon?: IconType;
+  /** Optional subject label shown beside the subject icon (e.g. "VANITY"). */
+  subjectLabel?: string;
 }

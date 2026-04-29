@@ -145,6 +145,18 @@ function NodeView({
       finishing={finishing}
     >
       <div>
+        {node.subjectIcon && (
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f0ede8] text-xl text-[#1a1a2e] shadow-sm ring-1 ring-[#d5d3cd]">
+              <node.subjectIcon />
+            </div>
+            {node.subjectLabel && (
+              <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#6a6a7a]">
+                {node.subjectLabel}
+              </span>
+            )}
+          </div>
+        )}
         <h1 className="font-serif text-3xl leading-snug text-[#1a1a2e] sm:text-[34px]">
           {node.question}
         </h1>

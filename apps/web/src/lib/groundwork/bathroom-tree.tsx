@@ -176,7 +176,8 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
   const fixtureNode = (
     id: string,
     question: string,
-    _icon: typeof FaBath,
+    subjectIcon: typeof FaBath,
+    subjectLabel: string,
     storeKey:
       | "vanity"
       | "toilet"
@@ -188,6 +189,8 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     id,
     tab: "scope",
     question,
+    subjectIcon,
+    subjectLabel,
     initial: () => get()[storeKey],
     commit: (v) => v && setKey(storeKey, v),
     next: () => nextId,
@@ -200,13 +203,13 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     ),
   });
 
-  const vanity = fixtureNode("vanity", "What about the vanity?", FaScrewdriverWrench, "vanity", "toilet");
+  const vanity = fixtureNode("vanity", "What about the vanity?", FaScrewdriverWrench, "Vanity", "vanity", "toilet");
   // ^ id collision with key — fix:
   vanity.id = "vanity";
 
-  const toilet = fixtureNode("toilet", "And the toilet?", FaToilet, "toilet", "shower-tub");
-  const showerTub = fixtureNode("shower-tub", "Shower or tub?", FaShower, "showerTub", "flooring");
-  const flooring = fixtureNode("flooring", "Flooring?", FaPaintRoller, "flooring", "walls");
+  const toilet = fixtureNode("toilet", "And the toilet?", FaToilet, "Toilet", "toilet", "shower-tub");
+  const showerTub = fixtureNode("shower-tub", "Shower or tub?", FaShower, "Shower / tub", "showerTub", "flooring");
+  const flooring = fixtureNode("flooring", "Flooring?", FaPaintRoller, "Flooring", "flooring", "walls");
 
   const walls: QuestionNode<WallChange | null> = {
     id: "walls",
@@ -230,7 +233,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     ),
   };
 
-  const lighting = fixtureNode("lighting", "Lighting?", FaWandMagicSparkles, "lighting", "electrical");
+  const lighting = fixtureNode("lighting", "Lighting?", FaWandMagicSparkles, "Lighting", "lighting", "electrical");
 
   const electrical: QuestionNode<ElectricalChange | null> = {
     id: "electrical",
