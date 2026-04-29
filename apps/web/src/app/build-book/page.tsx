@@ -271,7 +271,7 @@ export default function BuildBookPage() {
             <p className="mt-0.5 text-sm text-[#6a6a7a]">{dateStr}</p>
           </div>
           <Link
-            href="/renovate/bathroom"
+            href="/groundwork/bathroom/summary"
             className="inline-flex items-center gap-2 rounded-lg bg-[#d4a24c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c4922c] transition print:hidden"
           >
             <FaPen className="text-xs" /> Edit Project
@@ -758,7 +758,7 @@ export default function BuildBookPage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold text-[#1a1a2e]">Find a Contractor</h2>
                   <Link
-                    href="/renovate/bathroom?step=contractor-search"
+                    href="/start"
                     className="inline-flex items-center gap-2 rounded-lg bg-[#d4a24c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c4922c] transition print:hidden"
                   >
                     <FaHelmetSafety className="text-xs" /> Search Contractors
@@ -788,7 +788,7 @@ export default function BuildBookPage() {
                     Search for vetted, top-rated contractors in your area who specialize in bathroom renovations. Compare ratings, reviews, and get quotes.
                   </p>
                   <Link
-                    href="/renovate/bathroom?step=contractor-search"
+                    href="/start"
                     className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#d4a24c] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c4922c] transition print:hidden"
                   >
                     <FaHelmetSafety className="text-xs" /> Search Contractors

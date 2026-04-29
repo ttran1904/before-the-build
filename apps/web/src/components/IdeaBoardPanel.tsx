@@ -358,7 +358,7 @@ export default function IdeaBoardPanel({ open, onClose }: IdeaBoardPanelProps) {
               </p>
             )}
             <Link
-              href="/renovate/bathroom"
+              href="/start"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d5a3d] py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
             >
               Create a Build Book

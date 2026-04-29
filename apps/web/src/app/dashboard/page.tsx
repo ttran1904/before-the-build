@@ -1,11 +1,17 @@
 "use client";
 
+import * as React from "react";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen, FaTrash, FaArrowsRotate } from "react-icons/fa6";
+import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaClipboardList, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen, FaTrash } from "react-icons/fa6";
 import { useIdeaBoardStore, useWizardStore } from "@/lib/store";
+import { useGroundworkStore, projectTypeLabel } from "@/lib/groundwork/store";
+import { formatDateTime } from "@/lib/datetime";
+import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
+import { SkeletonTileRow } from "@/components/SkeletonTileRow";
+
 import { loadBuildBooks, loadWizardState, deleteBuildBook, cleanupEmptyBuildBooks } from "@/lib/supabase-sync";
 
 interface BuildBookEntry {
@@ -94,7 +100,7 @@ export default function DashboardPage() {
   /** Start a brand-new build book (reset wizard state, navigate) */
   const handleNewBuildBook = () => {
     resetWizard();
-    router.push("/renovate/bathroom");
+    router.push("/start");
   };
 
   /** Open an existing build book (load its project data into the store, navigate) */
@@ -173,49 +179,67 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header row with Explore Ideas button */}
-      <div className="flex items-start justify-between">
+      <WelcomeModal />
+      {/* Header row with action cluster */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[#1a1a2e]">Welcome back!</h1>
-          <p className="mt-1 text-[#6a6a7a]">Your renovation journey at a glance.</p>
+          <p className="mt-1 max-w-xl text-[#6a6a7a]">
+            Two simple steps to a renovation you&apos;ll love — pick up wherever you left off.
+          </p>
         </div>
-        <Link
-          href="/explore"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234a31]"
-        >
-          <FaCompass className="text-sm" /> Explore Ideas
-        </Link>
+        <div className="flex flex-none items-center gap-2.5">
+          <Link
+            href="/dashboard/guide"
+            className="inline-flex items-center gap-2 rounded-full border border-[#e0d9c9] bg-[#fdfaf2] px-4 py-2.5 text-sm font-semibold text-[#6b5733] shadow-sm transition hover:-translate-y-0.5 hover:border-[#c08a5a]/50 hover:bg-[#f9f3e3] hover:text-[#1a1a2e] hover:shadow"
+            title="New here? Read the 2-minute guide"
+          >
+            <span aria-hidden>✨</span>
+            <span className="hidden md:inline">2-minute guide</span>
+            <span className="md:hidden">Guide</span>
+          </Link>
+          <Link
+            href="/explore"
+            className="inline-flex items-center gap-2 rounded-full bg-[#2d5a3d] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#234a31] hover:shadow"
+          >
+            <FaCompass className="text-sm" /> Explore Ideas
+          </Link>
+        </div>
       </div>
+
+      {/* Product hero — first-time orientation */}
+      <ProductHeroStrip />
+
+      {/* Two-column work area: Groundwork (left) + Build Books (right) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <GroundworkHomeSection />
 
       {/* Build Books */}
       <div>
-        <div className="mb-4 flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-[#1a1a2e]">Build Books</h2>
-          <Link
-            href="/dashboard/build-books"
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#f0ede8] px-3 py-1 text-xs font-medium text-[#6a6a7a] transition hover:bg-[#e8e6e1] hover:text-[#1a1a2e]"
-          >
-            See all <FaArrowRight className="text-[8px]" />
-          </Link>
-          <button
-            onClick={() => {
-              setBuildBooksLoaded(false);
-              loadBuildBooks().then((books) => { setBuildBooks(books); setBuildBooksLoaded(true); }).catch(() => setBuildBooksLoaded(true));
-            }}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[#9a9aaa] transition hover:bg-[#e8e6e1] hover:text-[#2d5a3d]"
-            title="Refresh build books"
-          >
-            <FaArrowsRotate className="text-xs" />
-          </button>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-[#1a1a2e]">Build Books</h2>
+            <Link
+              href="/dashboard/build-books"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#f0ede8] px-3 py-1 text-xs font-medium text-[#6a6a7a] transition hover:bg-[#e8e6e1] hover:text-[#1a1a2e]"
+            >
+              See all <FaArrowRight className="text-[8px]" />
+            </Link>
+          </div>
+          {buildBooksLoaded && buildBooks.length > 0 && (
+            <button
+              onClick={handleNewBuildBook}
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#2d5a3d] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#234a31] hover:shadow"
+            >
+              <FaPlus className="text-[10px]" /> New Build Book
+            </button>
+          )}
         </div>
         {!buildBooksLoaded ? (
-          <div className="rounded-xl border border-[#e8e6e1] bg-white p-12 text-center">
-            <FaSpinner className="mx-auto animate-spin text-2xl text-[#2d5a3d]" />
-            <p className="mt-3 text-sm text-[#9a9aaa]">Loading your build books…</p>
-          </div>
+          <SkeletonTileRow count={2} className="grid grid-cols-1 gap-5 sm:grid-cols-2" />
         ) : buildBooksLoaded && buildBooks.length > 0 ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {buildBooks.slice(0, 3).map((bb) => {
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {buildBooks.slice(0, 4).map((bb) => {
               // Build collage images: Render > uploaded original > Moodboard
               // If render exists, exclude moodboard
               const renderImg = bb.mockupImage;
@@ -318,33 +342,27 @@ export default function DashboardPage() {
                     {bb.name}
                   </p>
                   <p className="mt-0.5 text-xs text-[#9a9aaa]">
-                    Updated {new Date(bb.updatedAt).toLocaleDateString()}
+                    Updated {formatDateTime(bb.updatedAt)}
                   </p>
                 </div>
                 </div>
               </div>
               );
             })}
-            <button
-              onClick={handleNewBuildBook}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-8 text-center transition hover:border-[#2d5a3d]/30 hover:shadow-sm"
-            >
-              <FaPlus className="text-lg text-[#9a9aaa]" />
-              <span className="text-sm font-medium text-[#6a6a7a]">New Build Book</span>
-            </button>
           </div>
         ) : (
-          <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center">
-            <FaBookOpen className="mx-auto text-3xl text-[#d5d3cd]" />
-            <p className="mt-3 text-sm text-[#9a9aaa]">No build books yet.</p>
+          <div className="grid grid-cols-1 gap-5">
             <button
               onClick={handleNewBuildBook}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#2d5a3d] px-4 py-2 text-sm font-medium text-white hover:bg-[#234a31]"
+              className="group flex h-52 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-6 text-center transition hover:border-[#2d5a3d]/40 hover:shadow-sm"
             >
-              <FaPlus className="text-xs" /> Start Your First Build Book
+              <FaBookOpen className="text-2xl text-[#d5d3cd] transition group-hover:text-[#2d5a3d]" />
+              <span className="text-sm font-semibold text-[#1a1a2e]">Start your first Build Book</span>
+              <span className="text-xs text-[#9a9aaa]">Design layer — moodboard, mockup, items</span>
             </button>
           </div>
         )}
+      </div>
       </div>
 
       {/* Idea Boards */}
@@ -596,3 +614,146 @@ export default function DashboardPage() {
 }
 
 
+
+
+function GroundworkHomeSection() {
+  const router = useRouter();
+  const groundwork = useGroundworkStore();
+  const resetGroundwork = useGroundworkStore((s) => s.reset);
+  const hydrated = React.useSyncExternalStore(
+    (cb) => useGroundworkStore.persist.onFinishHydration(cb),
+    () => useGroundworkStore.persist.hasHydrated(),
+    () => false
+  );
+  const has =
+    groundwork.projectType !== null ||
+    groundwork.bathroomKind !== null ||
+    groundwork.budgetTier !== null ||
+    groundwork.goals.length > 0 ||
+    groundwork.photos.length > 0;
+  const startNew = () => {
+    resetGroundwork();
+    router.push("/groundwork/bathroom");
+  };
+  const title = projectTypeLabel(groundwork.projectType) ?? "Bathroom Groundwork Scope";
+  const complete = groundwork.completedAt !== null;
+  const photo = groundwork.photos[0];
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-[#1a1a2e]">Groundwork Scope</h2>
+          <Link
+            href="/dashboard/groundwork"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#f0ede8] px-3 py-1 text-xs font-medium text-[#6a6a7a] transition hover:bg-[#e8e6e1] hover:text-[#1a1a2e]"
+          >
+            See all <FaArrowRight className="text-[8px]" />
+          </Link>
+        </div>
+        {has && (
+          <button
+            onClick={startNew}
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#c08a5a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#a8754a] hover:shadow"
+          >
+            <FaPlus className="text-[10px]" /> New Groundwork
+          </button>
+        )}
+      </div>
+      {!hydrated ? (
+        <SkeletonTileRow count={2} className="grid grid-cols-1 gap-5 sm:grid-cols-2" />
+      ) : !has ? (
+        <div className="grid grid-cols-1 gap-5">
+          <button
+            onClick={startNew}
+            className="group flex h-52 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d5d3cd] bg-white p-6 text-center transition hover:border-[#c08a5a]/40 hover:shadow-sm"
+          >
+            <FaClipboardList className="text-2xl text-[#d5d3cd] transition group-hover:text-[#c08a5a]" />
+            <span className="text-sm font-semibold text-[#1a1a2e]">Start your first Groundwork Scope</span>
+            <span className="text-xs text-[#9a9aaa]">Contractor-ready brief in a few minutes</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <Link
+            href={complete ? "/groundwork/bathroom/summary" : "/groundwork/bathroom"}
+            className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#c08a5a]/40 hover:shadow-md"
+          >
+            <div className="relative h-52 w-full overflow-hidden bg-[#f6f3ed]">
+              {photo ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={photo} alt={title} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <FaClipboardList className="text-3xl text-[#d5d3cd]" />
+                </div>
+              )}
+              {complete && (
+                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#3a3a4a] shadow-sm">
+                  <FaCircleCheck className="text-[#c08a5a]" /> Ready for contractor
+                </span>
+              )}
+            </div>
+            <div className="p-3.5">
+              <p className="font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">{title}</p>
+              <p className="mt-0.5 text-xs text-[#9a9aaa]">{complete ? "Completed " + formatDateTime(groundwork.completedAt) : "In progress"}</p>
+            </div>
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function ProductHeroStrip() {
+  return (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <Link
+        href="/dashboard/groundwork"
+        className="group relative flex items-start gap-4 overflow-hidden rounded-2xl border border-[#ece9e3] bg-white p-5 transition hover:-translate-y-0.5 hover:border-[#c08a5a]/40 hover:shadow-md"
+      >
+        <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#c08a5a] to-[#e0b585]" />
+        <div className="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-[#f6f3ed]">
+          <FaClipboardList className="text-xl text-[#c08a5a]" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-[#f6f3ed] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#c08a5a]">
+              Step 1
+            </span>
+            <h3 className="text-sm font-bold text-[#1a1a2e]">Groundwork Scope</h3>
+          </div>
+          <p className="mt-1.5 text-sm leading-relaxed text-[#6a6a7a]">
+            Lock in the must-haves so every contractor bids on the <em>same</em> project — no surprises later.
+          </p>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#c08a5a] transition group-hover:gap-2">
+            Open Groundwork <FaArrowRight className="text-[10px]" />
+          </span>
+        </div>
+      </Link>
+      <Link
+        href="/dashboard/build-books"
+        className="group relative flex items-start gap-4 overflow-hidden rounded-2xl border border-[#ece9e3] bg-white p-5 transition hover:-translate-y-0.5 hover:border-[#2d5a3d]/40 hover:shadow-md"
+      >
+        <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#2d5a3d] to-[#5a8a6a]" />
+        <div className="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-[#eef3ee]">
+          <FaBookOpen className="text-xl text-[#2d5a3d]" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-[#eef3ee] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#2d5a3d]">
+              Step 2
+            </span>
+            <h3 className="text-sm font-bold text-[#1a1a2e]">Build Book</h3>
+          </div>
+          <p className="mt-1.5 text-sm leading-relaxed text-[#6a6a7a]">
+            Picture the finished room — moodboard, a mockup of <em>your</em> bathroom, items list, all in one shareable book.
+          </p>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#2d5a3d] transition group-hover:gap-2">
+            Open Build Book <FaArrowRight className="text-[10px]" />
+          </span>
+        </div>
+      </Link>
+    </div>
+  );
+}
