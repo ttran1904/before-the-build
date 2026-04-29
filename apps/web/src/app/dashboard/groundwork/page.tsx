@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { SkeletonTileRow } from "@/components/SkeletonTileRow";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -69,9 +70,7 @@ export default function GroundworkDashboardPage() {
       </div>
 
       {!hydrated ? (
-        <div className="rounded-2xl border border-dashed border-[#d5d3cd] bg-white p-16 text-center text-sm text-[#9a9aaa]">
-          Loading…
-        </div>
+        <SkeletonTileRow />
       ) : !hasDraft(state) ? (
         <div className="rounded-2xl border border-dashed border-[#d5d3cd] bg-white p-16 text-center">
           <FaClipboardList className="mx-auto text-4xl text-[#d5d3cd]" />

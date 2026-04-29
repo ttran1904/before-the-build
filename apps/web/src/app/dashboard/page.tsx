@@ -9,6 +9,7 @@ import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaClipboardList, FaPi
 import { useIdeaBoardStore, useWizardStore } from "@/lib/store";
 import { useGroundworkStore, projectTypeLabel } from "@/lib/groundwork/store";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
+import { SkeletonTileRow } from "@/components/SkeletonTileRow";
 
 import { loadBuildBooks, loadWizardState, deleteBuildBook, cleanupEmptyBuildBooks } from "@/lib/supabase-sync";
 
@@ -220,10 +221,7 @@ export default function DashboardPage() {
           </button>
         </div>
         {!buildBooksLoaded ? (
-          <div className="rounded-xl border border-[#e8e6e1] bg-white p-12 text-center">
-            <FaSpinner className="mx-auto animate-spin text-2xl text-[#2d5a3d]" />
-            <p className="mt-3 text-sm text-[#9a9aaa]">Loading your build books…</p>
-          </div>
+          <SkeletonTileRow />
         ) : buildBooksLoaded && buildBooks.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {buildBooks.slice(0, 3).map((bb) => {
@@ -643,7 +641,7 @@ function GroundworkHomeSection() {
         </Link>
       </div>
       {!hydrated ? (
-        <div className="rounded-xl border border-[#e8e6e1] bg-white p-8 text-center text-sm text-[#9a9aaa]">Loading…</div>
+        <SkeletonTileRow />
       ) : !has ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <button

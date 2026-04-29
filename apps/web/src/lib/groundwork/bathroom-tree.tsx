@@ -53,7 +53,6 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     id: "project-type",
     tab: "project",
     question: "What best describes your bathroom project?",
-    helper: "Pick the closest match — we'll narrow things down next.",
     initial: () => get().projectType,
     commit: (v) => v && setKey("projectType", v),
     next: () => "bathroom-kind",

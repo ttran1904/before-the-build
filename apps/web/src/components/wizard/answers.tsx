@@ -16,7 +16,7 @@ export function TileSelect({
   onAdvance: (v: string) => void;
 }) {
   return (
-    <div className="mt-12 flex flex-wrap justify-end gap-8">
+    <div className="mt-12 flex flex-wrap justify-center gap-8">
       {options.map((o) => {
         const Icon = o.icon;
         const selected = value === o.id;
@@ -57,7 +57,7 @@ export function PillSelect({
   onAdvance: (v: string) => void;
 }) {
   return (
-    <div className="mt-10 flex flex-col items-end gap-3">
+    <div className="mt-10 flex flex-col items-center gap-3">
       {options.map((o) => {
         const selected = value === o.id;
         return (

@@ -22,3 +22,19 @@ body {
 html {
   color-scheme: light;
 }
+
+/* Shimmer skeleton for loading tiles */
+@keyframes btb-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.btb-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f1ede5 0%,
+    #faf8f3 50%,
+    #f1ede5 100%
+  );
+  background-size: 200% 100%;
+  animation: btb-shimmer 1.6s ease-in-out infinite;
+}
