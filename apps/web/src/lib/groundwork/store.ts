@@ -80,6 +80,8 @@ export interface GroundworkBathroomState {
 
   // Bookkeeping
   completedAt: string | null;
+  /** Supabase project_id this draft is bound to. null = not yet saved. */
+  projectId: string | null;
 }
 
 interface Actions {
@@ -89,6 +91,7 @@ interface Actions {
   ) => void;
   reset: () => void;
   markComplete: () => void;
+  loadFrom: (data: GroundworkBathroomState, projectId: string) => void;
 }
 
 const initial: GroundworkBathroomState = {
@@ -109,6 +112,7 @@ const initial: GroundworkBathroomState = {
   floorPlan: [],
   notes: "",
   completedAt: null,
+  projectId: null,
 };
 
 export const useGroundworkStore = create<GroundworkBathroomState & Actions>()(
@@ -119,6 +123,7 @@ export const useGroundworkStore = create<GroundworkBathroomState & Actions>()(
         set({ [key]: value } as Partial<GroundworkBathroomState>),
       reset: () => set({ ...initial }),
       markComplete: () => set({ completedAt: new Date().toISOString() }),
+      loadFrom: (data, projectId) => set({ ...data, projectId }),
     }),
     {
       name: "btb:groundwork:bathroom",

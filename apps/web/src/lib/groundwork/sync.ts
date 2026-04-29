@@ -6,9 +6,7 @@ import type { GroundworkBathroomState } from "@/lib/groundwork/store";
 
 const supabase = createSupabaseBrowserClient();
 
-/** True when the user has touched ANY scope-defining field. We intentionally
- *  ignore `notes` / `photos` / `floorPlan` here so an empty draft with just an
- *  uploaded photo still saves — but a brand-new untouched store does not. */
+/** True when the user has touched ANY scope-defining field. */
 export function groundworkHasContent(s: GroundworkBathroomState): boolean {
   return (
     s.projectType !== null ||
@@ -30,7 +28,7 @@ export function groundworkHasContent(s: GroundworkBathroomState): boolean {
   );
 }
 
-interface GroundworkScopeRow {
+export interface GroundworkScopeRow {
   id: string;
   project_id: string;
   data: GroundworkBathroomState;
@@ -43,12 +41,12 @@ interface GroundworkScopeRow {
   updated_at: string;
 }
 
-/** Upsert the active groundwork scope for the user's bathroom project.
- *  Returns null if the wizard is empty (we deliberately don't create a row). */
+/** Upsert the active groundwork scope. Returns the project_id it bound to,
+ *  so the local store can persist that id and keep updating the same row. */
 export async function saveGroundworkScope(
   state: GroundworkBathroomState,
   existingProjectId?: string | null,
-): Promise<string | null> {
+): Promise<{ id: string; projectId: string } | null> {
   if (!groundworkHasContent(state)) return null;
 
   const {
@@ -80,7 +78,7 @@ export async function saveGroundworkScope(
     console.error("[saveGroundworkScope] upsert failed:", error);
     return null;
   }
-  return data?.id ?? null;
+  return data ? { id: data.id, projectId: ids.projectId } : null;
 }
 
 /** Load the most recently updated groundwork scope for the current user. */
@@ -101,4 +99,54 @@ export async function loadLatestGroundworkScope(): Promise<GroundworkScopeRow | 
     return null;
   }
   return (data as GroundworkScopeRow) ?? null;
+}
+
+/** Load every groundwork scope for the current user, newest first. */
+export async function loadAllGroundworkScopes(): Promise<GroundworkScopeRow[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from("groundwork_scopes")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("has_content", true)
+    .order("updated_at", { ascending: false });
+  if (error) {
+    console.warn("[loadAllGroundworkScopes] failed:", error);
+    return [];
+  }
+  return (data as GroundworkScopeRow[]) ?? [];
+}
+
+/** Load one scope by project_id. */
+export async function loadGroundworkScopeByProjectId(
+  projectId: string,
+): Promise<GroundworkScopeRow | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from("groundwork_scopes")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("project_id", projectId)
+    .maybeSingle();
+  if (error) {
+    console.warn("[loadGroundworkScopeByProjectId] failed:", error);
+    return null;
+  }
+  return (data as GroundworkScopeRow) ?? null;
+}
+
+/** Delete a groundwork scope by id. */
+export async function deleteGroundworkScope(id: string): Promise<boolean> {
+  const { error } = await supabase.from("groundwork_scopes").delete().eq("id", id);
+  if (error) {
+    console.warn("[deleteGroundworkScope] failed:", error);
+    return false;
+  }
+  return true;
 }

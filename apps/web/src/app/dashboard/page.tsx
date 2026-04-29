@@ -8,6 +8,7 @@ import Image from "next/image";
 import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaClipboardList, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen, FaTrash } from "react-icons/fa6";
 import { useIdeaBoardStore, useWizardStore } from "@/lib/store";
 import { useGroundworkStore, projectTypeLabel } from "@/lib/groundwork/store";
+import { loadAllGroundworkScopes, type GroundworkScopeRow } from "@/lib/groundwork/sync";
 import { formatDateTime } from "@/lib/datetime";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { SkeletonTileRow } from "@/components/SkeletonTileRow";
@@ -618,26 +619,51 @@ export default function DashboardPage() {
 
 function GroundworkHomeSection() {
   const router = useRouter();
-  const groundwork = useGroundworkStore();
-  const resetGroundwork = useGroundworkStore((s) => s.reset);
-  const hydrated = React.useSyncExternalStore(
-    (cb) => useGroundworkStore.persist.onFinishHydration(cb),
-    () => useGroundworkStore.persist.hasHydrated(),
-    () => false
-  );
-  const has =
-    groundwork.projectType !== null ||
-    groundwork.bathroomKind !== null ||
-    groundwork.budgetTier !== null ||
-    groundwork.goals.length > 0 ||
-    groundwork.photos.length > 0;
+  const loadFrom = useGroundworkStore((st) => st.loadFrom);
+  const resetGroundwork = useGroundworkStore((st) => st.reset);
+  const localProjectId = useGroundworkStore((st) => st.projectId);
+
+  const [scopes, setScopes] = useState<GroundworkScopeRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const refresh = React.useCallback(async () => {
+    const rows = await loadAllGroundworkScopes().catch(() => [] as GroundworkScopeRow[]);
+    setScopes(rows);
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  // Re-fetch when the user comes back to the tab (covers post-edit returns).
+  useEffect(() => {
+    const onFocus = () => { void refresh(); };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refresh]);
+
   const startNew = () => {
     resetGroundwork();
     router.push("/groundwork/bathroom");
   };
-  const title = projectTypeLabel(groundwork.projectType) ?? "Bathroom Groundwork Scope";
-  const complete = groundwork.completedAt !== null;
-  const photo = groundwork.photos[0];
+
+  const openScope = (row: GroundworkScopeRow) => {
+    loadFrom(row.data, row.project_id);
+    router.push(row.completed_at ? "/groundwork/bathroom/summary" : "/groundwork/bathroom");
+  };
+
+  // If the local in-progress draft hasn't been saved yet (no projectId),
+  // surface it as a pseudo-card so the user can pick it back up.
+  const localState = useGroundworkStore.getState();
+  const hasLocalDraft =
+    !localProjectId &&
+    (localState.projectType !== null ||
+      localState.bathroomKind !== null ||
+      localState.budgetTier !== null ||
+      localState.goals.length > 0 ||
+      localState.photos.length > 0);
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -650,7 +676,7 @@ function GroundworkHomeSection() {
             See all <FaArrowRight className="text-[8px]" />
           </Link>
         </div>
-        {has && (
+        {(scopes.length > 0 || hasLocalDraft) && (
           <button
             onClick={startNew}
             className="inline-flex items-center gap-1.5 rounded-full bg-[#c08a5a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#a8754a] hover:shadow"
@@ -659,9 +685,9 @@ function GroundworkHomeSection() {
           </button>
         )}
       </div>
-      {!hydrated ? (
+      {!loaded ? (
         <SkeletonTileRow count={2} className="grid grid-cols-1 gap-5 sm:grid-cols-2" />
-      ) : !has ? (
+      ) : scopes.length === 0 && !hasLocalDraft ? (
         <div className="grid grid-cols-1 gap-5">
           <button
             onClick={startNew}
@@ -674,33 +700,72 @@ function GroundworkHomeSection() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Link
-            href={complete ? "/groundwork/bathroom/summary" : "/groundwork/bathroom"}
-            className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#e8e6e1] bg-white transition hover:border-[#c08a5a]/40 hover:shadow-md"
-          >
-            <div className="relative h-52 w-full overflow-hidden bg-[#f6f3ed]">
-              {photo ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={photo} alt={title} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <FaClipboardList className="text-3xl text-[#d5d3cd]" />
-                </div>
-              )}
-              {complete && (
-                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#3a3a4a] shadow-sm">
-                  <FaCircleCheck className="text-[#c08a5a]" /> Ready for contractor
+          {scopes.slice(0, 4).map((row) => (
+            <GroundworkScopeCard key={row.id} row={row} onOpen={() => openScope(row)} />
+          ))}
+          {hasLocalDraft && (
+            <button
+              onClick={() => router.push("/groundwork/bathroom")}
+              className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#e8e6e1] bg-white text-left transition hover:border-[#c08a5a]/40 hover:shadow-md"
+            >
+              <div className="relative h-52 w-full overflow-hidden bg-[#f6f3ed]">
+                {localState.photos[0] ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={localState.photos[0]} alt="Draft" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <FaClipboardList className="text-3xl text-[#d5d3cd]" />
+                  </div>
+                )}
+                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#c08a5a] shadow-sm">
+                  Draft
                 </span>
-              )}
-            </div>
-            <div className="p-3.5">
-              <p className="font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">{title}</p>
-              <p className="mt-0.5 text-xs text-[#9a9aaa]">{complete ? "Completed " + formatDateTime(groundwork.completedAt) : "In progress"}</p>
-            </div>
-          </Link>
+              </div>
+              <div className="p-3.5">
+                <p className="font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">
+                  {projectTypeLabel(localState.projectType) ?? "Bathroom Groundwork Scope"}
+                </p>
+                <p className="mt-0.5 text-xs text-[#9a9aaa]">In progress · not yet saved</p>
+              </div>
+            </button>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function GroundworkScopeCard({ row, onOpen }: { row: GroundworkScopeRow; onOpen: () => void }) {
+  const title = projectTypeLabel(row.data.projectType) ?? "Bathroom Groundwork Scope";
+  const complete = row.completed_at !== null;
+  const photo = row.data.photos?.[0];
+  return (
+    <button
+      onClick={onOpen}
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#e8e6e1] bg-white text-left transition hover:border-[#c08a5a]/40 hover:shadow-md"
+    >
+      <div className="relative h-52 w-full overflow-hidden bg-[#f6f3ed]">
+        {photo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={photo} alt={title} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <FaClipboardList className="text-3xl text-[#d5d3cd]" />
+          </div>
+        )}
+        {complete && (
+          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#3a3a4a] shadow-sm">
+            <FaCircleCheck className="text-[#c08a5a]" /> Ready for contractor
+          </span>
+        )}
+      </div>
+      <div className="p-3.5">
+        <p className="font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">{title}</p>
+        <p className="mt-0.5 text-xs text-[#9a9aaa]">
+          {complete ? "Completed " + formatDateTime(row.completed_at!) : "Updated " + formatDateTime(row.updated_at)}
+        </p>
+      </div>
+    </button>
   );
 }
 

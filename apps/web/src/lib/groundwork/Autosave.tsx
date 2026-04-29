@@ -46,8 +46,14 @@ export function GroundworkAutosave() {
 
         inFlight.current = true;
         try {
-          const id = await saveGroundworkScope(state);
-          if (id) lastSavedSig.current = sig;
+          const result = await saveGroundworkScope(state, state.projectId);
+          if (result) {
+            lastSavedSig.current = sig;
+            // Bind the local draft to its server row so subsequent saves update it.
+            if (state.projectId !== result.projectId) {
+              useGroundworkStore.setState({ projectId: result.projectId });
+            }
+          }
         } finally {
           inFlight.current = false;
         }

@@ -91,6 +91,7 @@ export function importLegacyProjectIntoGroundwork(
   }
 
   const next: GroundworkBathroomState = {
+    projectId: null,
     projectType,
     bathroomKind,
     goals: legacy.goals ?? [],
