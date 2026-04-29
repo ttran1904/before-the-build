@@ -271,7 +271,7 @@ export default function BuildBookPage() {
             <p className="mt-0.5 text-sm text-[#6a6a7a]">{dateStr}</p>
           </div>
           <Link
-            href="/groundwork/bathroom/summary"
+            href="/build-book/bathroom/design"
             className="inline-flex items-center gap-2 rounded-lg bg-[#d4a24c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c4922c] transition print:hidden"
           >
             <FaPen className="text-xs" /> Edit Project
