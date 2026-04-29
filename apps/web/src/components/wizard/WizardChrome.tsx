@@ -45,7 +45,7 @@ export function WizardChrome({
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-6">
           <Link
             href={backHref}
-            className="flex flex-none items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#6a6a7a] transition hover:bg-[#f1ede5] hover:text-[#1a1a2e]"
+            className="flex flex-none items-center gap-2 rounded-full bg-[#f0ede8] px-4 py-1.5 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#e8e6e1]"
           >
             <FaArrowLeft className="text-xs" />
             <span>Dashboard</span>
@@ -61,7 +61,7 @@ export function WizardChrome({
                 active
                   ? "font-semibold text-[#1a1a2e]"
                   : accessible
-                  ? "text-[#3a3a4a] hover:text-[#1a1a2e] cursor-pointer"
+                  ? "text-[#4a4a5a] hover:text-[#1a1a2e] cursor-pointer"
                   : "text-[#bdbab0] cursor-not-allowed"
               }`;
               return accessible && !active && onTabClick ? (
@@ -92,9 +92,9 @@ export function WizardChrome({
         {onBack ? (
           <button
             onClick={onBack}
-            className="rounded-full px-6 py-3 text-sm font-medium text-[#6a6a7a] transition hover:bg-[#f1ede5] hover:text-[#1a1a2e]"
+            className="rounded-full bg-[#e8e6e1] px-8 py-3 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#d5d3cd]"
           >
-            ← Back
+            Back
           </button>
         ) : (
           <span />

@@ -26,8 +26,8 @@ export function TileSelect({
             onClick={() => onChange(o.id)}
             className={`group flex h-32 w-32 flex-col items-center justify-center rounded-full border transition ${
               selected
-                ? "border-[#1a1a2e] bg-[#f1ede5]"
-                : "border-transparent bg-[#f6f3ed] hover:bg-[#ece8df]"
+                ? "border-[#1a1a2e] bg-[#e8e6e1]"
+                : "border-transparent bg-[#f0ede8] hover:bg-[#e8e6e1]"
             }`}
           >
             {Icon && (
@@ -67,7 +67,7 @@ export function PillSelect({
             className={`w-72 rounded-md px-6 py-5 text-sm transition ${
               selected
                 ? "bg-[#1a1a2e] text-white"
-                : "bg-[#f3efe7] text-[#3a3a4a] hover:bg-[#e8e3d8]"
+                : "bg-[#f0ede8] text-[#1a1a2e] hover:bg-[#e8e6e1]"
             }`}
           >
             {o.label}
