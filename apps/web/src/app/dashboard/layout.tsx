@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FaHouse, FaBookOpen, FaCompass, FaTableCellsLarge, FaGear, FaClipboardList, FaCircleQuestion, FaLeaf,
+  FaHouse, FaBookOpen, FaCompass, FaTableCellsLarge, FaGear, FaClipboardList, FaCircleQuestion, FaLeaf, FaTag,
 } from "react-icons/fa6";
 import type { IconType } from "react-icons";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -42,6 +42,7 @@ export default function DashboardLayout({
 
           <SectionLabel className="mt-4">Help</SectionLabel>
           <NavItem href="/dashboard/guide" label="Guide" icon={FaCircleQuestion} />
+          <NavItem href="/dashboard/plans" label="Plans" icon={FaTag} />
         </nav>
 
         {/* Footer */}

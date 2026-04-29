@@ -12,7 +12,13 @@ import {
   FaScrewdriverWrench,
   FaUserTie,
   FaUserShield,
+  FaTag,
 } from "react-icons/fa6";
+
+/* ──────────────────────────────────────────────────────────────
+ * Guide page — explains the three layers and the product.
+ * Pricing lives on /dashboard/plans now.
+ * ────────────────────────────────────────────────────────────── */
 
 export default function GuidePage() {
   return (
@@ -29,6 +35,14 @@ export default function GuidePage() {
           help you make the call when bids and decisions get hard. Use any
           layer alone or stack them.
         </p>
+        <div className="flex justify-center pt-2">
+          <Link
+            href="/dashboard/plans"
+            className="inline-flex items-center gap-2 rounded-full border border-[#1a1a2e] px-5 py-2 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#1a1a2e] hover:text-white"
+          >
+            <FaTag className="text-[10px]" /> See plans &amp; pricing
+          </Link>
+        </div>
       </header>
 
       {/* ── Layer 1 · Groundwork ── */}
@@ -46,8 +60,6 @@ export default function GuidePage() {
             icon={<FaClipboardList />}
             tag="Self-serve"
             title="Groundwork Core Scope"
-            price="$399"
-            priceNote="one-time, per project"
             subtitle="Structured intake → contractor-ready scope, delivered in 48 hours."
             purpose="For homeowners who already have a general idea and want help structuring it into a clear, contractor-ready scope."
             deliverables={[
@@ -70,11 +82,7 @@ export default function GuidePage() {
             icon={<FaUserTie />}
             tag="With expert review"
             title="Groundwork Guided Scope"
-            price="$750–$1,500"
-            priceNote="one-time · scaled to project complexity"
             subtitle="Everything in Core, plus a live review call and one round of revisions."
-            featured
-            featuredLabel="Most popular"
             purpose="For more complex renovations where you want validation and iteration before you ask for bids."
             deliverables={[
               "Everything in Core Scope",
@@ -108,8 +116,6 @@ export default function GuidePage() {
             icon={<FaBookOpen />}
             tag="For your design"
             title="Build Book"
-            price="$150"
-            priceNote="one-time, per project"
             subtitle="Moodboard, real-photo AI mockup, and a shareable items list."
             purpose="Lock in the look and the items list so your scope reflects real choices, not vibes."
             deliverables={[
@@ -168,8 +174,6 @@ export default function GuidePage() {
             icon={<FaHelmetSafety />}
             tag="On-demand"
             title="On-Demand Advisor"
-            price="$150 / hour"
-            priceNote="bundles available · pay as you go"
             subtitle="Book an expert at the moments that matter — bids, change orders, decisions."
             purpose="For homeowners who want expert input at specific moments rather than continuous support."
             deliverables={[
@@ -190,8 +194,6 @@ export default function GuidePage() {
             icon={<FaUserShield />}
             tag="Continuous support"
             title="Dedicated Advisor"
-            price="Monthly retainer"
-            priceNote="3-month minimum · auto-renews monthly"
             subtitle="One advisor, start to finish. Calls plus async support across the whole project."
             purpose="For larger renovations where you want consistent oversight from a single person who knows your project."
             deliverables={[
@@ -270,7 +272,7 @@ export default function GuidePage() {
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* FAQ — product, not pricing */}
       <section className="rounded-2xl border border-[#ece9e3] bg-white p-8">
         <h2 className="font-serif text-2xl text-[#1a1a2e]">Frequently asked</h2>
         <div className="mt-4 space-y-3">
@@ -294,6 +296,10 @@ export default function GuidePage() {
             q="What about kitchens and other rooms?"
             a="Bathroom is first. Kitchen and other rooms are coming after we&apos;ve nailed the v1 experience."
           />
+          <Faq
+            q="How much does each layer cost?"
+            a="See the Plans page in the sidebar for one-time pricing and a side-by-side comparison."
+          />
         </div>
       </section>
 
@@ -304,12 +310,20 @@ export default function GuidePage() {
           Pick a starting point. You can always come back and add the other
           layers later.
         </p>
-        <Link
-          href="/start"
-          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#faf8f3]"
-        >
-          Start your first project <FaArrowRight className="text-xs" />
-        </Link>
+        <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/start"
+            className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#faf8f3]"
+          >
+            Start your first project <FaArrowRight className="text-xs" />
+          </Link>
+          <Link
+            href="/dashboard/plans"
+            className="text-sm font-medium text-white/85 underline-offset-4 hover:underline"
+          >
+            View plans &amp; pricing
+          </Link>
+        </div>
       </section>
     </div>
   );
@@ -348,51 +362,28 @@ function ProductCard({
   icon,
   tag,
   title,
-  price,
-  priceNote,
   subtitle,
   purpose,
   deliverables,
   when,
   ctaHref,
   ctaLabel,
-  featured = false,
-  featuredLabel = "Most popular",
 }: {
   accent: string;
   accentBg: string;
   icon: React.ReactNode;
   tag: string;
   title: string;
-  price: string;
-  priceNote: string;
   subtitle: string;
   purpose: string;
   deliverables: string[];
   when: string;
   ctaHref: string;
   ctaLabel: string;
-  featured?: boolean;
-  featuredLabel?: string;
 }) {
   return (
-    <div
-      className={
-        "relative flex flex-col rounded-2xl bg-white p-6 " +
-        (featured ? "border-2 shadow-md" : "border border-[#ece9e3]")
-      }
-      style={featured ? { borderColor: accent } : undefined}
-    >
-      {featured && (
-        <span
-          className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
-          style={{ backgroundColor: accent }}
-        >
-          {featuredLabel}
-        </span>
-      )}
-
-      {/* Header: icon left, tag immediately to the right */}
+    <div className="relative flex flex-col rounded-2xl border border-[#ece9e3] bg-white p-6">
+      {/* Header — icon left, tag immediately to the right */}
       <div className="flex items-center gap-3">
         <div
           className="flex h-12 w-12 flex-none items-center justify-center rounded-xl text-xl"
@@ -410,19 +401,6 @@ function ProductCard({
 
       <h3 className="mt-4 font-serif text-2xl text-[#1a1a2e]">{title}</h3>
       <p className="mt-1 text-sm text-[#6a6a7a]">{subtitle}</p>
-
-      {/* Price block — centered, mid-card */}
-      <div
-        className="mt-5 flex flex-col items-center rounded-xl border px-4 py-4 text-center"
-        style={{ borderColor: accent + "33", backgroundColor: accentBg }}
-      >
-        <span className="font-serif text-4xl font-bold leading-none" style={{ color: accent }}>
-          {price}
-        </span>
-        <span className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
-          {priceNote}
-        </span>
-      </div>
 
       <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
         Purpose
