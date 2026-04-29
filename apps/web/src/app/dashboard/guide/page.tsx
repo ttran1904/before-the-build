@@ -37,6 +37,8 @@ export default function GuidePage() {
           icon={<FaClipboardList />}
           tag="For your contractor"
           title="Groundwork Scope"
+          price="$399"
+          priceNote="one-time, per project"
           subtitle="A contractor-ready brief — so every bid is for the same project."
           purpose="Pin down what is actually changing, what's staying, and what unknowns need a pro to answer."
           deliverables={[
@@ -56,6 +58,8 @@ export default function GuidePage() {
           icon={<FaBookOpen />}
           tag="For your design"
           title="Build Book"
+          price="$150"
+          priceNote="one-time, per project"
           subtitle="The design layer — moodboard, real-photo mockup, items list."
           purpose="Translate vibes and Pinterest pins into a concrete, buildable design."
           deliverables={[
@@ -181,6 +185,8 @@ function ProductCard({
   icon,
   tag,
   title,
+  price,
+  priceNote,
   subtitle,
   purpose,
   deliverables,
@@ -193,6 +199,8 @@ function ProductCard({
   icon: React.ReactNode;
   tag: string;
   title: string;
+  price: string;
+  priceNote: string;
   subtitle: string;
   purpose: string;
   deliverables: string[];
@@ -218,6 +226,14 @@ function ProductCard({
       </div>
       <h3 className="mt-4 font-serif text-2xl text-[#1a1a2e]">{title}</h3>
       <p className="mt-1 text-sm text-[#6a6a7a]">{subtitle}</p>
+
+      <div
+        className="mt-4 flex items-baseline gap-2 rounded-lg px-3 py-2"
+        style={{ backgroundColor: accentBg }}
+      >
+        <span className="text-2xl font-bold" style={{ color: accent }}>{price}</span>
+        <span className="text-xs text-[#6a6a7a]">{priceNote}</span>
+      </div>
 
       <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-[#9a9aaa]">
         Purpose
