@@ -17,7 +17,7 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar — cozy lodge */}
-      <aside className="relative flex w-60 flex-col bg-gradient-to-b from-[#2d5a3d] via-[#264e34] to-[#1f4029] p-5 text-white shadow-[inset_-1px_0_0_rgba(0,0,0,0.15)]">
+      <aside className="sticky top-0 flex h-screen w-60 flex-col bg-gradient-to-b from-[#2d5a3d] via-[#264e34] to-[#1f4029] p-5 text-white shadow-[inset_-1px_0_0_rgba(0,0,0,0.15)]">
         {/* Brand */}
         <Link href="/dashboard" className="mb-8 flex items-center gap-2.5 group">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f9f3e3] text-[#2d5a3d] shadow-sm transition group-hover:rotate-6">
