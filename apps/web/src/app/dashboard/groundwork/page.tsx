@@ -9,6 +9,8 @@ import {
   FaClipboardList,
   FaArrowRight,
   FaCircleCheck,
+  FaTrash,
+  FaSpinner,
 } from "react-icons/fa6";
 
 import {
@@ -17,6 +19,7 @@ import {
 } from "@/lib/groundwork/store";
 import {
   loadAllGroundworkScopes,
+  deleteGroundworkScope,
   type GroundworkScopeRow,
 } from "@/lib/groundwork/sync";
 
@@ -28,6 +31,18 @@ export default function GroundworkDashboardPage() {
 
   const [scopes, setScopes] = useState<GroundworkScopeRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    const ok = await deleteGroundworkScope(id);
+    if (ok) {
+      setScopes((prev) => prev.filter((r) => r.id !== id));
+    }
+    setDeletingId(null);
+    setConfirmDeleteId(null);
+  };
 
   const refresh = useCallback(async () => {
     const rows = await loadAllGroundworkScopes().catch(() => [] as GroundworkScopeRow[]);
@@ -102,7 +117,16 @@ export default function GroundworkDashboardPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {scopes.map((row) => (
-            <ScopeCard key={row.id} row={row} onOpen={() => openScope(row)} />
+            <ScopeCard
+              key={row.id}
+              row={row}
+              onOpen={() => openScope(row)}
+              isConfirming={confirmDeleteId === row.id}
+              isDeleting={deletingId === row.id}
+              onRequestDelete={() => setConfirmDeleteId(row.id)}
+              onCancelDelete={() => setConfirmDeleteId(null)}
+              onDelete={() => handleDelete(row.id)}
+            />
           ))}
           {hasLocalDraft && (
             <button
@@ -148,39 +172,79 @@ export default function GroundworkDashboardPage() {
   );
 }
 
-function ScopeCard({ row, onOpen }: { row: GroundworkScopeRow; onOpen: () => void }) {
+function ScopeCard({
+  row,
+  onOpen,
+  onDelete,
+  isConfirming,
+  isDeleting,
+  onRequestDelete,
+  onCancelDelete,
+}: {
+  row: GroundworkScopeRow;
+  onOpen: () => void;
+  onDelete: () => void;
+  isConfirming: boolean;
+  isDeleting: boolean;
+  onRequestDelete: () => void;
+  onCancelDelete: () => void;
+}) {
   const title = projectTypeLabel(row.data.projectType) ?? "Bathroom Groundwork Scope";
   const complete = row.completed_at !== null;
   const photo = row.data.photos?.[0];
   return (
-    <button
-      onClick={onOpen}
-      className="group relative overflow-hidden rounded-2xl border border-[#e8e6e1] bg-white text-left shadow-sm transition hover:border-[#c08a5a]/40 hover:shadow-md"
-    >
-      <div className="relative h-40 w-full overflow-hidden bg-[#f6f3ed]">
-        {photo ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={photo} alt={title} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <FaClipboardList className="text-4xl text-[#d5d3cd]" />
-          </div>
-        )}
-        {complete && (
-          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#3a3a4a] shadow-sm">
-            <FaCircleCheck className="text-[#c08a5a]" /> Ready for contractor
-          </span>
-        )}
-      </div>
-      <div className="p-4">
-        <h3 className="text-sm font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">{title}</h3>
-        <p className="mt-0.5 text-xs text-[#9a9aaa]">
-          {complete ? "Completed " + formatDateTime(row.completed_at!) : "Updated " + formatDateTime(row.updated_at)}
-        </p>
-        <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#c08a5a]">
-          {complete ? "View brief" : "Continue"} <FaArrowRight className="text-[10px]" />
-        </p>
-      </div>
-    </button>
+    <div className="group relative overflow-hidden rounded-2xl border border-[#e8e6e1] bg-white shadow-sm transition hover:border-[#c08a5a]/40 hover:shadow-md">
+      {isConfirming ? (
+        <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5 rounded-lg border border-red-200 bg-white/95 p-1.5 shadow-lg backdrop-blur-sm">
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            disabled={isDeleting}
+            className="rounded-md bg-red-500 px-2.5 py-1 text-[10px] font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
+          >
+            {isDeleting ? <FaSpinner className="animate-spin text-xs" /> : "Delete"}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onCancelDelete(); }}
+            className="rounded-md bg-[#e8e6e1] px-2.5 py-1 text-[10px] font-semibold text-[#4a4a5a] transition hover:bg-[#d5d3cd]"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRequestDelete(); }}
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#9a9aaa] opacity-0 shadow-sm backdrop-blur-sm transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+          title="Delete groundwork scope"
+        >
+          <FaTrash className="text-xs" />
+        </button>
+      )}
+      <button onClick={onOpen} className="block w-full text-left">
+        <div className="relative h-40 w-full overflow-hidden bg-[#f6f3ed]">
+          {photo ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={photo} alt={title} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <FaClipboardList className="text-4xl text-[#d5d3cd]" />
+            </div>
+          )}
+          {complete && (
+            <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#3a3a4a] shadow-sm">
+              <FaCircleCheck className="text-[#c08a5a]" /> Ready for contractor
+            </span>
+          )}
+        </div>
+        <div className="p-4">
+          <h3 className="text-sm font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">{title}</h3>
+          <p className="mt-0.5 text-xs text-[#9a9aaa]">
+            {complete ? "Completed " + formatDateTime(row.completed_at!) : "Updated " + formatDateTime(row.updated_at)}
+          </p>
+          <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#c08a5a]">
+            {complete ? "View brief" : "Continue"} <FaArrowRight className="text-[10px]" />
+          </p>
+        </div>
+      </button>
+    </div>
   );
 }

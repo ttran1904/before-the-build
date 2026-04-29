@@ -3,325 +3,162 @@ import Link from "next/link";
 import {
   FaClipboardList,
   FaBookOpen,
-  FaArrowRight,
-  FaCheck,
-  FaImage,
-  FaPalette,
-  FaFilePdf,
   FaHelmetSafety,
-  FaScrewdriverWrench,
-  FaUserTie,
-  FaUserShield,
+  FaArrowRight,
   FaTag,
+  FaRegCompass,
+  FaRegLightbulb,
+  FaRegHandshake,
 } from "react-icons/fa6";
 
 /* ──────────────────────────────────────────────────────────────
- * Guide page — explains the three layers and the product.
- * Pricing lives on /dashboard/plans now.
+ * Guide page — the customer’s journey, told as a short story.
+ * Pricing & comparisons live on /dashboard/plans.
  * ────────────────────────────────────────────────────────────── */
 
 export default function GuidePage() {
   return (
-    <div className="mx-auto max-w-6xl space-y-14 pb-16">
-      {/* Hero */}
-      <header className="space-y-3 text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6a6a7a]">
-          The 2-minute guide
+    <div className="mx-auto max-w-5xl space-y-16 pb-20">
+      {/* ── Hero ── */}
+      <header className="space-y-4 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6a6a7a]">
+          Your renovation, step by step
         </p>
-        <h1 className="font-serif text-4xl text-[#1a1a2e]">Three layers we offer</h1>
-        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-[#6a6a7a]">
-          Before the Build is built in three layers — Groundwork to define the
-          project, Build Book to decide the design, and Contractor Advisor to
-          help you make the call when bids and decisions get hard. Use any
-          layer alone or stack them.
+        <h1 className="font-serif text-4xl leading-tight text-[#1a1a2e] sm:text-5xl">
+          You have a renovation in your head.
+          <br />
+          Let’s get it on paper — together.
+        </h1>
+        <p className="mx-auto max-w-2xl text-base leading-relaxed text-[#4a4a5a]">
+          Renovating is a story you’re the main character of. We’re the guide
+          who walks beside you — from the first messy idea, to a plan
+          contractors can actually bid, to the moment the keys are back in
+          your hand.
         </p>
-        <div className="flex justify-center pt-2">
+        <div className="flex flex-wrap justify-center gap-3 pt-3">
+          <Link
+            href="/dashboard/groundwork"
+            className="inline-flex items-center gap-2 rounded-full bg-[#2d5a3d] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#244a32]"
+          >
+            Start the journey <FaArrowRight className="text-[10px]" />
+          </Link>
           <Link
             href="/dashboard/plans"
-            className="inline-flex items-center gap-2 rounded-full border border-[#1a1a2e] px-5 py-2 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#1a1a2e] hover:text-white"
+            className="inline-flex items-center gap-2 rounded-full border border-[#1a1a2e] px-5 py-2.5 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#1a1a2e] hover:text-white"
           >
-            <FaTag className="text-[10px]" /> See plans &amp; pricing
+            <FaTag className="text-[10px]" /> See plans
           </Link>
         </div>
       </header>
 
-      {/* ── Layer 1 · Groundwork ── */}
-      <section className="space-y-4">
-        <LayerHeading
-          eyebrow="Layer 1 · Groundwork"
-          eyebrowColor="#c08a5a"
-          title="Define the project clearly"
-          subtitle="So every contractor bids the same project — not their own interpretation."
-        />
-        <div className="grid gap-6 md:grid-cols-2">
-          <ProductCard
-            accent="#c08a5a"
-            accentBg="#f6f3ed"
-            icon={<FaClipboardList />}
-            tag="Self-serve"
-            title="Groundwork Core Scope"
-            subtitle="Structured intake → contractor-ready scope, delivered in 48 hours."
-            purpose="For homeowners who already have a general idea and want help structuring it into a clear, contractor-ready scope."
-            deliverables={[
-              "Structured intake flow with photos & room details",
-              "What is changing vs. staying",
-              "Plumbing / electrical / layout flags",
-              "Open-items list & assumption log",
-              "Realistic cost range",
-              "Contractor-ready scope summary (PDF)",
-              "Hidden costs & key questions to ask",
-              "48-hour turnaround",
-            ]}
-            when="Before you reach out to contractors, or before you accept a quote."
-            ctaHref="/dashboard/groundwork"
-            ctaLabel="Open Groundwork Scope"
-          />
-          <ProductCard
-            accent="#c08a5a"
-            accentBg="#f6f3ed"
-            icon={<FaUserTie />}
-            tag="With expert review"
-            title="Groundwork Guided Scope"
-            subtitle="Everything in Core, plus a live review call and one round of revisions."
-            purpose="For more complex renovations where you want validation and iteration before you ask for bids."
-            deliverables={[
-              "Everything in Core Scope",
-              "Deeper scope definition & expanded assumption log",
-              "More specific cost range",
-              "One live review call with an expert",
-              "One round of revisions",
-              "Bid comparison template",
-              "Personalized risk flags",
-              "Cost-driver explanations",
-            ]}
-            when="Kitchens, full bathrooms, or anything with real ambiguity you want to resolve before bidding."
-            ctaHref="/dashboard/groundwork?tier=guided"
-            ctaLabel="Open Guided Scope"
-          />
-        </div>
-      </section>
-
-      {/* ── Layer 2 · Build Book ── */}
-      <section className="space-y-4">
-        <LayerHeading
-          eyebrow="Layer 2 · Build Book"
-          eyebrowColor="#2d5a3d"
-          title="Decide the design"
-          subtitle="Translate vibes and Pinterest pins into a concrete, buildable design."
-        />
-        <div className="grid gap-6 md:grid-cols-2">
-          <ProductCard
-            accent="#2d5a3d"
-            accentBg="#eef3ee"
-            icon={<FaBookOpen />}
-            tag="For your design"
-            title="Build Book"
-            subtitle="Moodboard, real-photo AI mockup, and a shareable items list."
-            purpose="Lock in the look and the items list so your scope reflects real choices, not vibes."
-            deliverables={[
-              "Style direction & inspiration",
-              "Real-photo AI mockup of your room",
-              "Moodboard with items checklist",
-              "Catalogue picks & shopping links",
-              "Final shareable Build Book",
-            ]}
-            when="Once you know the scope, or anytime you want to lock in the look."
-            ctaHref="/dashboard/build-books"
-            ctaLabel="Open Build Books"
-          />
-          <div className="flex flex-col justify-between rounded-2xl border border-dashed border-[#c8c5be] bg-[#faf8f3] p-6">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-                Pairs well with
-              </p>
-              <h3 className="mt-2 font-serif text-2xl text-[#1a1a2e]">
-                Groundwork + Build Book
-              </h3>
-              <p className="mt-2 text-sm text-[#6a6a7a]">
-                Most homeowners scope it first, then design it. Both deliverables
-                sit side-by-side in one shareable project — and your contractor
-                sees exactly the same picture you do.
-              </p>
-            </div>
-            <ul className="mt-4 space-y-2">
-              {[
-                "One linked project, two deliverables",
-                "No duplicate data entry",
-                "Share both as a single PDF or live link",
-              ].map((d) => (
-                <li key={d} className="flex items-start gap-2 text-sm text-[#1a1a2e]">
-                  <FaCheck className="mt-1 flex-none text-[10px] text-[#2d5a3d]" />
-                  <span>{d}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Layer 3 · Contractor Advisor ── */}
-      <section className="space-y-4">
-        <LayerHeading
-          eyebrow="Layer 3 · Contractor Advisor"
-          eyebrowColor="#1a1a2e"
-          title="A real contractor on your side of the table"
-          subtitle="Independent, experienced contractors who help you review bids, evaluate change orders, and sanity-check decisions during construction."
-        />
-        <div className="grid gap-6 md:grid-cols-2">
-          <ProductCard
-            accent="#1a1a2e"
-            accentBg="#ece9e3"
-            icon={<FaHelmetSafety />}
-            tag="On-demand"
-            title="On-Demand Advisor"
-            subtitle="Book an expert at the moments that matter — bids, change orders, decisions."
-            purpose="For homeowners who want expert input at specific moments rather than continuous support."
-            deliverables={[
-              "A consistent advisor matched to your project",
-              "Schedule calls only when you need them",
-              "Bid review — inclusions, exclusions, red flags",
-              "Change-order review & pricing sanity checks",
-              "Help preparing the right contractor questions",
-              "3-call & 5-call discounted bundles",
-            ]}
-            when="Bid comparison, change orders, or when you hit a decision you don't want to make alone."
-            ctaHref="/dashboard/advisor"
-            ctaLabel="Talk to an advisor"
-          />
-          <ProductCard
-            accent="#1a1a2e"
-            accentBg="#ece9e3"
-            icon={<FaUserShield />}
-            tag="Continuous support"
-            title="Dedicated Advisor"
-            subtitle="One advisor, start to finish. Calls plus async support across the whole project."
-            purpose="For larger renovations where you want consistent oversight from a single person who knows your project."
-            deliverables={[
-              "Dedicated advisor who builds context over time",
-              "Scheduled calls + async messaging & email",
-              "Continuous oversight of contractor behavior",
-              "Faster decisions — no re-explaining each time",
-              "All On-Demand use cases included",
-              "30-day cancellation notice after the initial term",
-            ]}
-            when="Whole-home or larger renovations where decisions show up weekly and continuity matters."
-            ctaHref="/dashboard/advisor?tier=dedicated"
-            ctaLabel="Request a dedicated advisor"
-          />
-        </div>
-      </section>
-
-      {/* How they fit together */}
-      <section className="rounded-2xl border border-[#ece9e3] bg-white p-8">
-        <h2 className="font-serif text-2xl text-[#1a1a2e]">How the layers fit together</h2>
-        <p className="mt-2 max-w-2xl text-sm text-[#6a6a7a]">
-          Most people start with Groundwork to get clear, then move into
-          Build Book once they know the budget and constraints, and bring in a
-          Contractor Advisor when bids land or decisions get hard.
+      {/* ── Journey strip ── */}
+      <section className="rounded-3xl border border-[#ece9e3] bg-[#faf8f3] p-8">
+        <p className="mb-5 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6a6a7a]">
+          Your three chapters
         </p>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <FlowStep
-            num="1"
-            icon={<FaClipboardList className="text-[#c08a5a]" />}
-            title="Scope it"
-            body="Walk the Groundwork wizard. Get a contractor-ready brief and a cost range."
+        <ol className="grid gap-6 md:grid-cols-3">
+          <Step
+            num="01"
+            color="#c08a5a"
+            icon={<FaRegCompass />}
+            title="Find your footing"
+            blurb="Turn the renovation in your head into a brief contractors can bid the same way."
           />
-          <FlowStep
-            num="2"
-            icon={<FaPalette className="text-[#2d5a3d]" />}
-            title="Design it"
-            body="Open a Build Book. Pin inspiration, generate a mockup, build your items list."
+          <Step
+            num="02"
+            color="#2d5a3d"
+            icon={<FaRegLightbulb />}
+            title="See the room"
+            blurb="Lock in the look — finishes, fixtures, layout — so design decisions stop spiraling."
           />
-          <FlowStep
-            num="3"
-            icon={<FaHelmetSafety className="text-[#1a1a2e]" />}
-            title="Build it"
-            body="Bring an advisor onto your side of the table for bids and change orders."
+          <Step
+            num="03"
+            color="#1a1a2e"
+            icon={<FaRegHandshake />}
+            title="Stand your ground"
+            blurb="Bring an experienced contractor onto your side of the table when bids and changes get hard."
           />
-        </div>
+        </ol>
       </section>
 
-      {/* What you'll see — mock screenshot placeholders */}
-      <section className="space-y-4">
-        <h2 className="font-serif text-2xl text-[#1a1a2e]">What you&apos;ll see</h2>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Mockshot
-            label="Groundwork wizard"
-            caption="One question at a time. The app hand-holds you through scope."
-            tint="#f6f3ed"
-            icon={<FaClipboardList className="text-3xl text-[#c08a5a]/60" />}
-          />
-          <Mockshot
-            label="Build Book mockup"
-            caption="Upload a photo of your room, get a designed render back."
-            tint="#eef3ee"
-            icon={<FaImage className="text-3xl text-[#2d5a3d]/60" />}
-          />
-          <Mockshot
-            label="Contractor PDF"
-            caption="Groundwork exports a tidy brief contractors can bid against."
-            tint="#f6f3ed"
-            icon={<FaFilePdf className="text-3xl text-[#c08a5a]/60" />}
-          />
-          <Mockshot
-            label="Items checklist"
-            caption="Build Book tracks every fixture, finish, and link in one place."
-            tint="#eef3ee"
-            icon={<FaScrewdriverWrench className="text-3xl text-[#2d5a3d]/60" />}
-          />
-        </div>
-      </section>
+      {/* ── Chapter 1 ── */}
+      <Chapter
+        chapterLabel="Chapter 1"
+        chapterColor="#c08a5a"
+        chapterBg="#f6f3ed"
+        icon={<FaClipboardList />}
+        sceneSetting="It’s late. You’ve got tabs open, a Pinterest board, three bids that look nothing alike, and a quiet feeling that you’re about to make an expensive mistake."
+        heading="You know what you want — but no one’s bidding the same thing."
+        story={[
+          "Every contractor walks the room and writes down what they think you want. Different scopes. Different assumptions. Different prices. You can’t tell who’s honest and who’s lowballing.",
+          "Groundwork is the part of the story where you stop guessing. We walk you through a structured intake — what’s changing, what’s staying, the plumbing, the layout, the must-haves — and turn it into one clean brief every contractor reads the same way.",
+        ]}
+        outcome="By the end of this chapter, you have a contractor-ready scope, a realistic cost range, and a list of the questions that protect you from surprise change orders."
+        productName="Groundwork"
+        productHref="/dashboard/groundwork"
+        productCta="Begin Groundwork"
+      />
 
-      {/* FAQ — product, not pricing */}
-      <section className="rounded-2xl border border-[#ece9e3] bg-white p-8">
-        <h2 className="font-serif text-2xl text-[#1a1a2e]">Frequently asked</h2>
-        <div className="mt-4 space-y-3">
-          <Faq
-            q="Do I need all three layers?"
-            a="No. Each works alone. The most common path is Core or Guided Scope first, then Build Book, then an Advisor when bids or change orders show up."
-          />
-          <Faq
-            q="What's the difference between Core and Guided Scope?"
-            a="Core is a fast, structured self-serve flow that produces a contractor-ready scope in 48 hours. Guided adds a live expert review call, one round of revisions, deeper risk flags, and a bid comparison template."
-          />
-          <Faq
-            q="When should I add a Contractor Advisor?"
-            a="On-Demand is great for one-off moments — comparing bids, reviewing a change order, or pricing sanity checks. Dedicated makes sense for larger projects where decisions come up every week."
-          />
-          <Faq
-            q="Can I share my Build Book with my contractor?"
-            a="Yes — every Build Book has a shareable link, and you can export it as a PDF."
-          />
-          <Faq
-            q="What about kitchens and other rooms?"
-            a="Bathroom is first. Kitchen and other rooms are coming after we&apos;ve nailed the v1 experience."
-          />
-          <Faq
-            q="How much does each layer cost?"
-            a="See the Plans page in the sidebar for one-time pricing and a side-by-side comparison."
-          />
-        </div>
-      </section>
+      {/* ── Chapter 2 ── */}
+      <Chapter
+        chapterLabel="Chapter 2"
+        chapterColor="#2d5a3d"
+        chapterBg="#eef3ee"
+        icon={<FaBookOpen />}
+        sceneSetting="The scope is locked. Now the question shifts: what does this room actually look like? Tile? Vanity? Lighting? Every choice talks to every other choice."
+        heading="Now you can see it — before a single tile is cut."
+        story={[
+          "Without a visual, design decisions stretch on for weeks and cost you sleep. With one, the whole project clicks: contractors order the right things, your spouse stops second-guessing, and you stop saving 400 bookmarks you’ll never use.",
+          "Build Book is where the project becomes real. A moodboard you actually trust, a render that shows the finished room, and a tidy PDF that walks the contractor through every finish on the wall.",
+        ]}
+        outcome="By the end of this chapter, you have a design you’re proud of, written down clearly enough that nobody — including you — can re-litigate it later."
+        productName="Build Book"
+        productHref="/dashboard/build-books"
+        productCta="Open Build Book"
+      />
 
-      {/* Footer CTA */}
-      <section className="rounded-2xl bg-[#1a1a2e] p-8 text-center text-white">
-        <h2 className="font-serif text-2xl">Ready when you are.</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-white/70">
-          Pick a starting point. You can always come back and add the other
-          layers later.
+      {/* ── Chapter 3 ── */}
+      <Chapter
+        chapterLabel="Chapter 3"
+        chapterColor="#1a1a2e"
+        chapterBg="#eef0f4"
+        icon={<FaHelmetSafety />}
+        sceneSetting="Bids land. Change orders show up. The contractor explains something in five sentences you can’t quite parse. You wish you had someone to call."
+        heading="Bids land. Decisions get hard. You shouldn’t face them alone."
+        story={[
+          "Most homeowners only renovate a handful of times in their lives. Contractors do it every week. That gap is where money quietly leaks out — through change orders, vague exclusions, and \"trust me\" pricing.",
+          "Contractor Advisor puts an experienced contractor on your side of the table. Book them by the hour for the moments that matter, or keep one on retainer through the whole project so nothing gets decided without a second pair of eyes.",
+        ]}
+        outcome="By the end of this chapter, you have a pro reading every bid, every change order, and every \"we ran into something\" call — translating contractor-speak into clear next steps."
+        productName="Contractor Advisor"
+        productHref="/dashboard/plans"
+        productCta="Bring an advisor in"
+      />
+
+      {/* ── Closing ── */}
+      <section className="overflow-hidden rounded-3xl border border-[#ece9e3] bg-gradient-to-br from-[#faf8f3] via-white to-[#f6f3ed] p-10 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6a6a7a]">
+          The ending you came here for
         </p>
-        <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <h2 className="mt-3 font-serif text-3xl text-[#1a1a2e]">
+          A renovation you trust — start to finish.
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#4a4a5a]">
+          Pick the chapter you’re in. Use one layer alone, or stack them. We’ll
+          walk with you for as much of the story as you want.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link
-            href="/start"
-            className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#faf8f3]"
+            href="/dashboard/groundwork"
+            className="inline-flex items-center gap-2 rounded-full bg-[#2d5a3d] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#244a32]"
           >
-            Start your first project <FaArrowRight className="text-xs" />
+            Start with Groundwork <FaArrowRight className="text-[10px]" />
           </Link>
           <Link
             href="/dashboard/plans"
-            className="text-sm font-medium text-white/85 underline-offset-4 hover:underline"
+            className="inline-flex items-center gap-2 rounded-full border border-[#1a1a2e] px-6 py-2.5 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#1a1a2e] hover:text-white"
           >
-            View plans &amp; pricing
+            Compare plans
           </Link>
         </div>
       </section>
@@ -329,177 +166,117 @@ export default function GuidePage() {
   );
 }
 
-/* ────────────────────────────────────────────────────────────── */
+/* ── Building blocks ── */
 
-function LayerHeading({
-  eyebrow,
-  eyebrowColor,
-  title,
-  subtitle,
-}: {
-  eyebrow: string;
-  eyebrowColor: string;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div>
-      <span
-        className="text-[11px] font-semibold uppercase tracking-[0.2em]"
-        style={{ color: eyebrowColor }}
-      >
-        {eyebrow}
-      </span>
-      <h2 className="mt-2 font-serif text-3xl text-[#1a1a2e]">{title}</h2>
-      <p className="mt-1 max-w-2xl text-sm text-[#6a6a7a]">{subtitle}</p>
-    </div>
-  );
-}
-
-function ProductCard({
-  accent,
-  accentBg,
-  icon,
-  tag,
-  title,
-  subtitle,
-  purpose,
-  deliverables,
-  when,
-  ctaHref,
-  ctaLabel,
-}: {
-  accent: string;
-  accentBg: string;
-  icon: React.ReactNode;
-  tag: string;
-  title: string;
-  subtitle: string;
-  purpose: string;
-  deliverables: string[];
-  when: string;
-  ctaHref: string;
-  ctaLabel: string;
-}) {
-  return (
-    <div className="relative flex flex-col rounded-2xl border border-[#ece9e3] bg-white p-6">
-      {/* Header — icon left, tag immediately to the right */}
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-12 w-12 flex-none items-center justify-center rounded-xl text-xl"
-          style={{ backgroundColor: accentBg, color: accent }}
-        >
-          {icon}
-        </div>
-        <span
-          className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
-          style={{ backgroundColor: accentBg, color: accent }}
-        >
-          {tag}
-        </span>
-      </div>
-
-      <h3 className="mt-4 font-serif text-2xl text-[#1a1a2e]">{title}</h3>
-      <p className="mt-1 text-sm text-[#6a6a7a]">{subtitle}</p>
-
-      <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
-        Purpose
-      </p>
-      <p className="mt-1 text-sm text-[#1a1a2e]">{purpose}</p>
-
-      <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
-        What you get
-      </p>
-      <ul className="mt-2 space-y-1.5">
-        {deliverables.map((d) => (
-          <li key={d} className="flex items-start gap-2 text-sm text-[#1a1a2e]">
-            <FaCheck className="mt-1 flex-none text-[10px]" style={{ color: accent }} />
-            <span>{d}</span>
-          </li>
-        ))}
-      </ul>
-
-      <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
-        When to use
-      </p>
-      <p className="mt-1 text-sm text-[#1a1a2e]">{when}</p>
-
-      <Link
-        href={ctaHref}
-        className="mt-6 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-        style={{ backgroundColor: accent }}
-      >
-        {ctaLabel} <FaArrowRight className="text-xs" />
-      </Link>
-    </div>
-  );
-}
-
-function FlowStep({
+function Step({
   num,
+  color,
   icon,
   title,
-  body,
+  blurb,
 }: {
   num: string;
+  color: string;
   icon: React.ReactNode;
   title: string;
-  body: string;
+  blurb: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#ece9e3] bg-[#faf8f3] p-5">
-      <div className="flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[11px] font-bold text-[#1a1a2e]">
-          {num}
+    <li className="relative rounded-2xl border border-[#ece9e3] bg-white p-5">
+      <div className="flex items-center gap-3">
+        <span
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-lg"
+          style={{ backgroundColor: color + "1a", color }}
+        >
+          {icon}
         </span>
-        <span className="text-lg">{icon}</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color }}>
+          Step {num}
+        </span>
       </div>
-      <h3 className="mt-3 text-sm font-bold text-[#1a1a2e]">{title}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-[#6a6a7a]">{body}</p>
-    </div>
+      <h3 className="mt-3 font-serif text-lg text-[#1a1a2e]">{title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-[#6a6a7a]">{blurb}</p>
+    </li>
   );
 }
 
-function Mockshot({
-  label,
-  caption,
-  tint,
+function Chapter({
+  chapterLabel,
+  chapterColor,
+  chapterBg,
   icon,
+  sceneSetting,
+  heading,
+  story,
+  outcome,
+  productName,
+  productHref,
+  productCta,
 }: {
-  label: string;
-  caption: string;
-  tint: string;
+  chapterLabel: string;
+  chapterColor: string;
+  chapterBg: string;
   icon: React.ReactNode;
+  sceneSetting: string;
+  heading: string;
+  story: string[];
+  outcome: string;
+  productName: string;
+  productHref: string;
+  productCta: string;
 }) {
   return (
-    <figure className="space-y-2">
-      <div
-        className="flex aspect-video items-center justify-center rounded-xl border border-[#ece9e3]"
-        style={{ backgroundColor: tint }}
-      >
-        <div className="flex flex-col items-center gap-2 text-center">
+    <section className="grid gap-8 md:grid-cols-[260px,1fr]">
+      {/* Left rail */}
+      <aside className="md:sticky md:top-24 md:self-start">
+        <div
+          className="flex h-14 w-14 items-center justify-center rounded-2xl text-2xl"
+          style={{ backgroundColor: chapterBg, color: chapterColor }}
+        >
           {icon}
-          <span className="text-[11px] uppercase tracking-wider text-[#9a9aaa]">
-            Screenshot placeholder
-          </span>
+        </div>
+        <p
+          className="mt-4 text-[11px] font-bold uppercase tracking-[0.22em]"
+          style={{ color: chapterColor }}
+        >
+          {chapterLabel}
+        </p>
+        <p className="mt-1 font-serif text-xl text-[#1a1a2e]">{productName}</p>
+        <Link
+          href={productHref}
+          className="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition"
+          style={{ backgroundColor: chapterColor }}
+        >
+          {productCta} <FaArrowRight className="text-[9px]" />
+        </Link>
+      </aside>
+
+      {/* Story column */}
+      <div className="space-y-5">
+        <p
+          className="rounded-xl border-l-4 px-4 py-3 text-sm italic leading-relaxed text-[#4a4a5a]"
+          style={{ borderColor: chapterColor, backgroundColor: chapterBg + "80" }}
+        >
+          {sceneSetting}
+        </p>
+        <h2 className="font-serif text-2xl leading-snug text-[#1a1a2e] sm:text-3xl">
+          {heading}
+        </h2>
+        {story.map((para, i) => (
+          <p key={i} className="text-sm leading-relaxed text-[#4a4a5a] sm:text-base">
+            {para}
+          </p>
+        ))}
+        <div
+          className="rounded-2xl border p-5"
+          style={{ borderColor: chapterColor + "33", backgroundColor: "white" }}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: chapterColor }}>
+            Where you land
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-[#4a4a5a]">{outcome}</p>
         </div>
       </div>
-      <figcaption>
-        <span className="text-sm font-semibold text-[#1a1a2e]">{label}</span>
-        <span className="block text-xs text-[#6a6a7a]">{caption}</span>
-      </figcaption>
-    </figure>
-  );
-}
-
-function Faq({ q, a }: { q: string; a: string }) {
-  return (
-    <details className="group rounded-lg border border-[#ece9e3] bg-[#faf8f3] p-4 open:bg-white">
-      <summary className="cursor-pointer list-none text-sm font-semibold text-[#1a1a2e]">
-        {q}
-        <span className="float-right text-[#9a9aaa] transition group-open:rotate-45">+</span>
-      </summary>
-      <p className="mt-2 text-sm leading-relaxed text-[#6a6a7a]">{a}</p>
-    </details>
+    </section>
   );
 }

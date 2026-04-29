@@ -29,12 +29,12 @@ export default function PlansPage() {
           Plans &amp; pricing
         </p>
         <h1 className="mx-auto mt-3 max-w-3xl font-serif text-4xl text-[#1a1a2e] md:text-5xl">
-          Own your renovation plan — one payment, lifetime project access.
+          Pick the chapter you’re in.
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[#6a6a7a]">
-          No subscriptions on Groundwork or Build Book. Pay once per project
-          and keep everything: your scope, your design, your contractor brief —
-          forever.
+          One payment, lifetime access to your project. No subscriptions on
+          Groundwork or Build Book — pay once and keep every scope, render,
+          and contractor brief, forever.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#6a6a7a]">
           <span className="inline-flex items-center gap-1.5">
