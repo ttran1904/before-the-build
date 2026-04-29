@@ -184,14 +184,14 @@ export function PhotoUpload({
         Drop your image here, or <span className="ml-1 underline">choose files</span> to upload
       </label>
       {value.length > 0 && (
-        <div className="mt-4 grid grid-cols-3 gap-3">
+        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
           {value.map((src, i) => (
             <div key={i} className="group relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={src}
                 alt={`upload-${i}`}
-                className="h-28 w-full rounded-md object-cover"
+                className="aspect-square w-full rounded-lg object-cover"
               />
               <button
                 onClick={() => onChange(value.filter((_, idx) => idx !== i))}

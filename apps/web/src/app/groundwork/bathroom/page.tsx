@@ -7,6 +7,7 @@ import {
   GROUNDWORK_TABS,
   buildGroundworkBathroomTree,
 } from "@/lib/groundwork/bathroom-tree";
+import { GroundworkAutosave } from "@/lib/groundwork/Autosave";
 
 export default function GroundworkBathroomPage() {
   const router = useRouter();
@@ -15,16 +16,19 @@ export default function GroundworkBathroomPage() {
   const nodes = buildGroundworkBathroomTree();
 
   return (
-    <WizardEngine
-      tabs={GROUNDWORK_TABS}
-      nodes={nodes}
-      startId="project-type"
-      brandTitle="Groundwork Scope · Bathroom"
-      backHref="/dashboard"
-      onFinish={() => {
-        markComplete();
-        router.push("/groundwork/bathroom/summary");
-      }}
-    />
+    <>
+      <GroundworkAutosave />
+      <WizardEngine
+        tabs={GROUNDWORK_TABS}
+        nodes={nodes}
+        startId="project-type"
+        brandTitle="Groundwork Scope · Bathroom"
+        backHref="/dashboard"
+        onFinish={() => {
+          markComplete();
+          router.push("/groundwork/bathroom/summary");
+        }}
+      />
+    </>
   );
 }

@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { FaArrowLeft } from "react-icons/fa6";
 import type { WizardTab } from "./types";
 
 interface WizardChromeProps {
   tabs: WizardTab[];
   activeTab: string;
+  /** Tabs the user is allowed to jump back to (already visited). */
+  visitedTabs?: string[];
+  onTabClick?: (tabId: string) => void;
   brandTitle?: string;
   backHref?: string;
   onBack?: () => void;
-  onSaveExit?: () => void;
   onNext?: () => void;
   nextLabel?: string;
   nextDisabled?: boolean;
@@ -22,34 +25,61 @@ interface WizardChromeProps {
 export function WizardChrome({
   tabs,
   activeTab,
+  visitedTabs = [],
+  onTabClick,
   brandTitle,
   backHref = "/dashboard",
   onBack,
-  onSaveExit,
   onNext,
   nextLabel = "Next",
   nextDisabled = false,
   hideNext = false,
   children,
 }: WizardChromeProps) {
+  const visited = new Set(visitedTabs);
+
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      {/* ── Top bar ─────────────────────────────────────────────── */}
+      {/* ── Top bar: Back icon · brand · clickable tab nav ─────── */}
       <header className="border-b border-[#ece9e3] bg-white">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center px-6">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-6">
+          {onBack ? (
+            <button
+              onClick={onBack}
+              aria-label="Back"
+              className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-[#6a6a7a] transition hover:bg-[#f1ede5] hover:text-[#1a1a2e]"
+            >
+              <FaArrowLeft className="text-sm" />
+            </button>
+          ) : (
+            <Link
+              href={backHref}
+              aria-label="Back"
+              className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-[#6a6a7a] transition hover:bg-[#f1ede5] hover:text-[#1a1a2e]"
+            >
+              <FaArrowLeft className="text-sm" />
+            </Link>
+          )}
           <div className="flex-1 text-sm font-semibold tracking-wide text-[#1a1a2e]">
             {brandTitle ?? "Before the Build"}
           </div>
           <nav className="flex gap-10">
             {tabs.map((t) => {
               const active = t.id === activeTab;
-              return (
-                <span
-                  key={t.id}
-                  className={`relative pb-3 pt-3 text-sm transition ${
-                    active ? "font-semibold text-[#1a1a2e]" : "text-[#9a9890]"
-                  }`}
-                >
+              const accessible = active || visited.has(t.id);
+              const className = `relative pb-3 pt-3 text-sm transition ${
+                active
+                  ? "font-semibold text-[#1a1a2e]"
+                  : accessible
+                  ? "text-[#3a3a4a] hover:text-[#1a1a2e] cursor-pointer"
+                  : "text-[#bdbab0] cursor-not-allowed"
+              }`;
+              return accessible && !active && onTabClick ? (
+                <button key={t.id} onClick={() => onTabClick(t.id)} className={className}>
+                  {t.label}
+                </button>
+              ) : (
+                <span key={t.id} className={className} aria-current={active ? "step" : undefined}>
                   {t.label}
                   {active && (
                     <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#1a1a2e]" />
@@ -62,41 +92,7 @@ export function WizardChrome({
         </div>
       </header>
 
-      {/* ── Sub-bar: Back / Save & Exit ─────────────────────────── */}
-      <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 pt-8 text-sm">
-        {onBack ? (
-          <button
-            onClick={onBack}
-            className="text-[#6a6a7a] transition hover:text-[#1a1a2e]"
-          >
-            &lt; Back
-          </button>
-        ) : (
-          <Link
-            href={backHref}
-            className="text-[#6a6a7a] transition hover:text-[#1a1a2e]"
-          >
-            &lt; Back
-          </Link>
-        )}
-        {onSaveExit ? (
-          <button
-            onClick={onSaveExit}
-            className="text-[#6a6a7a] underline transition hover:text-[#1a1a2e]"
-          >
-            Save &amp; Exit
-          </button>
-        ) : (
-          <Link
-            href={backHref}
-            className="text-[#6a6a7a] underline transition hover:text-[#1a1a2e]"
-          >
-            Save &amp; Exit
-          </Link>
-        )}
-      </div>
-
-      {/* ── Centered question area ──────────────────────────────── */}
+      {/* ── Centered question area (autosaves silently) ───────── */}
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pb-12 pt-12">
         {children}
       </main>

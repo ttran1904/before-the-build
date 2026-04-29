@@ -8,6 +8,7 @@ import Image from "next/image";
 import { FaBookOpen, FaCompass, FaTableCellsLarge, FaPlus, FaClipboardList, FaPinterest, FaSpinner, FaCheck, FaCircleCheck, FaArrowRight, FaTrashCan, FaPen, FaTrash, FaArrowsRotate } from "react-icons/fa6";
 import { useIdeaBoardStore, useWizardStore } from "@/lib/store";
 import { useGroundworkStore, projectTypeLabel } from "@/lib/groundwork/store";
+import { formatDateTime } from "@/lib/datetime";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { SkeletonTileRow } from "@/components/SkeletonTileRow";
 
@@ -327,7 +328,7 @@ export default function DashboardPage() {
                     {bb.name}
                   </p>
                   <p className="mt-0.5 text-xs text-[#9a9aaa]">
-                    Updated {new Date(bb.updatedAt).toLocaleDateString()}
+                    Updated {formatDateTime(bb.updatedAt)}
                   </p>
                 </div>
                 </div>
@@ -676,7 +677,7 @@ function GroundworkHomeSection() {
             </div>
             <div className="p-3.5">
               <p className="font-semibold text-[#1a1a2e] group-hover:text-[#c08a5a]">{title}</p>
-              <p className="mt-0.5 text-xs text-[#9a9aaa]">{complete ? "Completed " + new Date(groundwork.completedAt!).toLocaleDateString() : "In progress"}</p>
+              <p className="mt-0.5 text-xs text-[#9a9aaa]">{complete ? "Completed " + formatDateTime(groundwork.completedAt) : "In progress"}</p>
             </div>
           </Link>
           <button

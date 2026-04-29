@@ -35,9 +35,18 @@ export function WizardEngine({
   const currentId = stack[stack.length - 1];
   const node = map[currentId];
 
+  // Tabs the user has reached (anywhere on the stack, in order).
+  const visitedTabs = useMemo(() => {
+    const seen: string[] = [];
+    for (const id of stack) {
+      const t = map[id]?.tab;
+      if (t && !seen.includes(t)) seen.push(t);
+    }
+    return seen;
+  }, [stack, map]);
+
   if (!node) return null;
 
-  /** Walk forward from `id` skipping anything `skip()` returns true for. */
   const resolveNext = (startNextId: string | null): string | null => {
     let id = startNextId;
     while (id && map[id]?.skip?.()) {
@@ -62,13 +71,25 @@ export function WizardEngine({
     else router.push(backHref);
   };
 
+  /** Jump to a previously-visited tab by truncating the stack to the
+   *  last node belonging to that tab. */
+  const jumpToTab = (tabId: string) => {
+    if (tabId === node.tab) return;
+    if (!visitedTabs.includes(tabId)) return;
+    let lastIdx = -1;
+    for (let i = 0; i < stack.length; i++) {
+      if (map[stack[i]]?.tab === tabId) lastIdx = i;
+    }
+    if (lastIdx >= 0) setStack(stack.slice(0, lastIdx + 1));
+  };
+
   return (
-    // `key={currentId}` forces NodeView to remount on each transition,
-    // giving us a fresh `value` state per question without an effect.
     <NodeView
       key={currentId}
       node={node}
       tabs={tabs}
+      visitedTabs={visitedTabs}
+      onTabClick={jumpToTab}
       brandTitle={brandTitle}
       backHref={backHref}
       onBack={goBack}
@@ -80,6 +101,8 @@ export function WizardEngine({
 function NodeView({
   node,
   tabs,
+  visitedTabs,
+  onTabClick,
   brandTitle,
   backHref,
   onBack,
@@ -88,6 +111,8 @@ function NodeView({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   node: QuestionNode<any>;
   tabs: WizardTab[];
+  visitedTabs: string[];
+  onTabClick: (tabId: string) => void;
   brandTitle?: string;
   backHref: string;
   onBack: () => void;
@@ -100,6 +125,8 @@ function NodeView({
     <WizardChrome
       tabs={tabs}
       activeTab={node.tab}
+      visitedTabs={visitedTabs}
+      onTabClick={onTabClick}
       brandTitle={brandTitle}
       backHref={backHref}
       onBack={onBack}

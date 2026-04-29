@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { SkeletonTileRow } from "@/components/SkeletonTileRow";
+import { formatDateTime } from "@/lib/datetime";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -143,7 +144,7 @@ function GroundworkCard({ state }: { state: GroundworkBathroomState }) {
         </h3>
         <p className="mt-0.5 text-xs text-[#9a9aaa]">
           {complete
-            ? `Completed ${new Date(state.completedAt!).toLocaleDateString()}`
+            ? `Completed ${formatDateTime(state.completedAt!)}`
             : "In progress"}
         </p>
         <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#c08a5a]">

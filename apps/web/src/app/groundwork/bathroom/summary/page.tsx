@@ -10,6 +10,7 @@ import {
   getRealisticCostRange,
   projectTypeLabel,
 } from "@/lib/groundwork/store";
+import { GroundworkAutosave } from "@/lib/groundwork/Autosave";
 
 const SCOPE_LABELS: Record<string, string> = {
   keep: "Keep",
@@ -100,7 +101,9 @@ export default function GroundworkSummaryPage() {
   const cost = getRealisticCostRange(state);
 
   return (
-    <div className="min-h-screen bg-[#faf8f3]">
+    <>
+      <GroundworkAutosave />
+      <div className="min-h-screen bg-[#faf8f3]">
       <header className="border-b border-[#ece9e3] bg-white">
         <div className="mx-auto flex h-14 w-full max-w-4xl items-center px-6">
           <div className="flex-1 text-sm font-semibold tracking-wide text-[#1a1a2e]">
@@ -247,6 +250,7 @@ export default function GroundworkSummaryPage() {
         </div>
       </main>
     </div>
+    </>
   );
 }
 
