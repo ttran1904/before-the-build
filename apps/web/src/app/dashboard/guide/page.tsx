@@ -209,31 +209,32 @@ function ProductCard({
   ctaLabel: string;
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border border-[#ece9e3] bg-white p-6">
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-xl text-xl"
-          style={{ backgroundColor: accentBg, color: accent }}
-        >
-          {icon}
+    <div className="relative flex flex-col rounded-2xl border border-[#ece9e3] bg-white p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-xl text-xl"
+            style={{ backgroundColor: accentBg, color: accent }}
+          >
+            {icon}
+          </div>
+          <span
+            className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider"
+            style={{ backgroundColor: accentBg, color: accent }}
+          >
+            {tag}
+          </span>
         </div>
-        <span
-          className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ backgroundColor: accentBg, color: accent }}
+        <div
+          className="flex flex-col items-end rounded-xl border px-3 py-1.5 text-right leading-tight"
+          style={{ borderColor: accent + "33", backgroundColor: accentBg }}
         >
-          {tag}
-        </span>
+          <span className="text-xl font-bold" style={{ color: accent }}>{price}</span>
+          <span className="text-[10px] uppercase tracking-wider text-[#9a9aaa]">{priceNote}</span>
+        </div>
       </div>
       <h3 className="mt-4 font-serif text-2xl text-[#1a1a2e]">{title}</h3>
       <p className="mt-1 text-sm text-[#6a6a7a]">{subtitle}</p>
-
-      <div
-        className="mt-4 flex items-baseline gap-2 rounded-lg px-3 py-2"
-        style={{ backgroundColor: accentBg }}
-      >
-        <span className="text-2xl font-bold" style={{ color: accent }}>{price}</span>
-        <span className="text-xs text-[#6a6a7a]">{priceNote}</span>
-      </div>
 
       <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-[#9a9aaa]">
         Purpose
