@@ -126,10 +126,10 @@ export default function GuidePage() {
         sceneSetting="Bids land. Change orders show up. The contractor explains something in five sentences you can’t quite parse. You wish you had someone to call."
         heading="Bids land. Decisions get hard. You shouldn’t face them alone."
         story={[
-          "Most homeowners only renovate a handful of times in their lives. Contractors do it every week. That gap is where money quietly leaks out — through change orders, vague exclusions, and \"trust me\" pricing.",
+          "Most homeowners only renovate a handful of times in their lives. Contractors do it every week. That gap is where money quietly leaks out — through change orders, vague exclusions, and “trust me” pricing.",
           "Contractor Advisor puts an experienced contractor on your side of the table. Book them by the hour for the moments that matter, or keep one on retainer through the whole project so nothing gets decided without a second pair of eyes.",
         ]}
-        outcome="By the end of this chapter, you have a pro reading every bid, every change order, and every \"we ran into something\" call — translating contractor-speak into clear next steps."
+        outcome="By the end of this chapter, you have a pro reading every bid, every change order, and every “we ran into something” call — translating contractor-speak into clear next steps."
         productName="Contractor Advisor"
         productHref="/dashboard/plans"
         productCta="Bring an advisor in"
