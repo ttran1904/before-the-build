@@ -118,12 +118,15 @@ export default function DashboardPage() {
   /** Delete a build book */
   const handleDeleteBuildBook = async (id: string) => {
     setDeletingId(id);
+    const snapshot = buildBooks;
+    setBuildBooks((prev) => prev.filter((b) => b.id !== id));
+    setConfirmDeleteId(null);
     const ok = await deleteBuildBook(id);
-    if (ok) {
-      setBuildBooks((prev) => prev.filter((b) => b.id !== id));
+    if (!ok) {
+      setBuildBooks(snapshot);
+      console.warn("Failed to delete build book; restored.");
     }
     setDeletingId(null);
-    setConfirmDeleteId(null);
   };
 
   const fetchPinterestBoards = useCallback(async () => {
@@ -630,12 +633,20 @@ function GroundworkHomeSection() {
 
   const handleDeleteScope = async (id: string) => {
     setDeletingScopeId(id);
+    // Optimistic remove so the UI updates immediately.
+    const snapshot = scopes;
+    setScopes((prev) => prev.filter((r) => r.id !== id));
+    setConfirmDeleteScopeId(null);
     const ok = await deleteGroundworkScope(id);
-    if (ok) {
-      setScopes((prev) => prev.filter((r) => r.id !== id));
+    if (!ok) {
+      // Revert on failure
+      setScopes(snapshot);
+      console.warn("Failed to delete groundwork scope; restored.");
+    } else {
+      // Re-sync from server to be safe.
+      void refresh();
     }
     setDeletingScopeId(null);
-    setConfirmDeleteScopeId(null);
   };
 
   const refresh = React.useCallback(async () => {

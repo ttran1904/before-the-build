@@ -20,6 +20,7 @@ import {
 import {
   loadAllGroundworkScopes,
   deleteGroundworkScope,
+  deleteAllGroundworkScopesForCurrentUser,
   type GroundworkScopeRow,
 } from "@/lib/groundwork/sync";
 
@@ -36,12 +37,32 @@ export default function GroundworkDashboardPage() {
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
+    const snapshot = scopes;
+    setScopes((prev) => prev.filter((r) => r.id !== id));
+    setConfirmDeleteId(null);
     const ok = await deleteGroundworkScope(id);
-    if (ok) {
-      setScopes((prev) => prev.filter((r) => r.id !== id));
+    if (!ok) {
+      setScopes(snapshot);
+      console.warn("Failed to delete groundwork scope; restored.");
+    } else {
+      void refresh();
     }
     setDeletingId(null);
-    setConfirmDeleteId(null);
+  };
+
+  const [clearingAll, setClearingAll] = useState(false);
+  const handleClearAll = async () => {
+    if (scopes.length === 0) return;
+    const confirmed = window.confirm(
+      `Delete all ${scopes.length} of your Groundwork Scopes? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    setClearingAll(true);
+    setScopes([]);
+    const removed = await deleteAllGroundworkScopesForCurrentUser();
+    console.log(`[GroundworkDashboard] cleared ${removed} scope(s)`);
+    await refresh();
+    setClearingAll(false);
   };
 
   const refresh = useCallback(async () => {
@@ -86,12 +107,24 @@ export default function GroundworkDashboardPage() {
             Each Groundwork Scope is a contractor-ready brief.
           </p>
         </div>
-        <button
-          onClick={startNew}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#c08a5a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#a87445]"
-        >
-          <FaPlus className="text-xs" /> New Groundwork Scope
-        </button>
+        <div className="flex items-center gap-3">
+          {scopes.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              disabled={clearingAll}
+              className="text-xs font-medium text-[#9a9aaa] underline-offset-2 transition hover:text-red-500 hover:underline disabled:opacity-50"
+              title="Delete all your Groundwork Scopes"
+            >
+              {clearingAll ? "Clearing…" : "Clear all"}
+            </button>
+          )}
+          <button
+            onClick={startNew}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#c08a5a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#a87445]"
+          >
+            <FaPlus className="text-xs" /> New Groundwork Scope
+          </button>
+        </div>
       </div>
 
       {!loaded ? (
