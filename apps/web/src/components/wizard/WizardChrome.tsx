@@ -43,23 +43,13 @@ export function WizardChrome({
       {/* ── Top bar: Back icon · brand · clickable tab nav ─────── */}
       <header className="border-b border-[#ece9e3] bg-white">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-6">
-          {onBack ? (
-            <button
-              onClick={onBack}
-              aria-label="Back"
-              className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-[#6a6a7a] transition hover:bg-[#f1ede5] hover:text-[#1a1a2e]"
-            >
-              <FaArrowLeft className="text-sm" />
-            </button>
-          ) : (
-            <Link
-              href={backHref}
-              aria-label="Back"
-              className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-[#6a6a7a] transition hover:bg-[#f1ede5] hover:text-[#1a1a2e]"
-            >
-              <FaArrowLeft className="text-sm" />
-            </Link>
-          )}
+          <Link
+            href={backHref}
+            className="flex flex-none items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#6a6a7a] transition hover:bg-[#f1ede5] hover:text-[#1a1a2e]"
+          >
+            <FaArrowLeft className="text-xs" />
+            <span>Dashboard</span>
+          </Link>
           <div className="flex-1 text-sm font-semibold tracking-wide text-[#1a1a2e]">
             {brandTitle ?? "Before the Build"}
           </div>
@@ -97,9 +87,19 @@ export function WizardChrome({
         {children}
       </main>
 
-      {/* ── Single primary action ───────────────────────────────── */}
-      {!hideNext && (
-        <div className="mx-auto flex w-full max-w-3xl justify-end px-6 pb-12">
+      {/* ── Step navigation: Back (left) · Next (right) ─────────── */}
+      <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 pb-12">
+        {onBack ? (
+          <button
+            onClick={onBack}
+            className="rounded-full px-6 py-3 text-sm font-medium text-[#6a6a7a] transition hover:bg-[#f1ede5] hover:text-[#1a1a2e]"
+          >
+            ← Back
+          </button>
+        ) : (
+          <span />
+        )}
+        {!hideNext ? (
           <button
             onClick={onNext}
             disabled={nextDisabled}
@@ -107,8 +107,10 @@ export function WizardChrome({
           >
             {nextLabel}
           </button>
-        </div>
-      )}
+        ) : (
+          <span />
+        )}
+      </div>
     </div>
   );
 }
