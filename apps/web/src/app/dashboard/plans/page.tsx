@@ -74,9 +74,9 @@ export default function PlansPage() {
             featured
             featuredLabel="Most popular"
             highlights={[
-              "Contractor-ready scope in 48 hours",
+              "Contractor-ready scope",
               "Apples-to-apples bid comparison",
-              "Self-serve, structured intake",
+              "Self-serve",
             ]}
             ctaHref="/dashboard/checkout?plan=core"
             ctaLabel="Get started"
@@ -94,8 +94,8 @@ export default function PlansPage() {
             highlights={[
               "Everything in Core Scope",
               "Live expert review call",
-              "One revision round included",
-              "Personalized risk flags",
+              "1 revision round",
+              "Customized risk flags",
             ]}
             ctaHref="/dashboard/checkout?plan=guided"
             ctaLabel="Get started"
@@ -109,9 +109,9 @@ export default function PlansPage() {
             price="$199"
             priceNote="one-time · per project"
             highlights={[
-              "Curated moodboard for your space",
-              "Real-photo AI mockup of the result",
-              "Shareable, orderable items list",
+              "Curated moodboard",
+              "Real-photo AI mockup",
+              "Shareable order list",
             ]}
             ctaHref="/dashboard/checkout?plan=build-book"
             ctaLabel="Get started"
@@ -214,7 +214,7 @@ export default function PlansPage() {
           />
           <Faq
             q="What's the difference between Core and Guided Scope?"
-            a="Core is fast, structured, self-serve, and produces a contractor-ready scope in 48 hours. Guided adds a live expert review call, one round of revisions, deeper risk flags, and a bid comparison template — built for projects with more ambiguity."
+            a="Core is fast, structured, self-serve, and produces a contractor-ready scope. Guided adds a live expert review call, one round of revisions, deeper risk flags, and a bid comparison template — built for projects with more ambiguity."
           />
           <Faq
             q="Can I upgrade from Core to Guided later?"
@@ -463,7 +463,7 @@ function ComparisonTable() {
         { label: "Live expert review call", core: false, guided: true, book: false },
         { label: "One round of revisions", core: false, guided: true, book: false },
         { label: "Bid comparison template", core: false, guided: true, book: false },
-        { label: "Personalized risk flags", core: false, guided: true, book: false },
+        { label: "Customized risk flags", core: false, guided: true, book: false },
       ],
     },
     {
