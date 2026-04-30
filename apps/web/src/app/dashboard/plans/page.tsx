@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Fragment } from "react";
 import {
   FaClipboardList,
   FaUserTie,
@@ -11,13 +12,7 @@ import {
   FaShieldHalved,
   FaInfinity,
   FaArrowRight,
-  FaFilePdf,
-  FaSackDollar,
-  FaTriangleExclamation,
-  FaLayerGroup,
-  FaVideo,
-  FaPenToSquare,
-  FaScaleBalanced,
+
 } from "react-icons/fa6";
 import type { IconType } from "react-icons";
 
@@ -80,11 +75,13 @@ export default function PlansPage() {
             subtitle="A contractor-ready brief, delivered in 48 hours."
             price="$399"
             priceNote="one-time · per project"
+            featured
+            featuredLabel="Most popular"
             features={[
-              { label: "Contractor-ready Scope PDF", icon: FaFilePdf },
-              { label: "Realistic cost range", icon: FaSackDollar },
-              { label: "Plumbing &amp; layout conflicts flagged", icon: FaTriangleExclamation },
-              { label: "Lifetime access to your scope", icon: FaInfinity },
+              "Contractor-ready Scope PDF",
+              "Realistic cost range",
+              "Plumbing &amp; layout conflicts flagged",
+              "Lifetime access to your scope",
             ]}
             ctaHref="/dashboard/checkout?plan=core"
             ctaLabel="Get instant access"
@@ -99,14 +96,14 @@ export default function PlansPage() {
             price="$1,000"
             priceNote="one-time · typical project"
             featured
-            featuredLabel="Most popular"
+            featuredLabel="Recommended for $10k+ projects"
             features={[
-              { label: "Everything in Core Scope", icon: FaLayerGroup },
-              { label: "Live review call with a renovation expert", icon: FaVideo },
-              { label: "One round of revisions", icon: FaPenToSquare },
-              { label: "Bid comparison template", icon: FaScaleBalanced },
-              { label: "Personalized risk flags &amp; cost-driver notes", icon: FaTriangleExclamation },
-              { label: "Lifetime access to your scope", icon: FaInfinity },
+              "Everything in Core Scope",
+              "Live review call with a renovation expert",
+              "One round of revisions",
+              "Bid comparison template",
+              "Personalized risk flags &amp; cost-driver notes",
+              "Lifetime access to your scope",
             ]}
             ctaHref="/dashboard/checkout?plan=guided"
             ctaLabel="Secure your plan"
@@ -472,63 +469,114 @@ function AdvisorCard({
 }
 
 function ComparisonTable() {
-  const rows: { label: string; core: boolean | string; guided: boolean | string; book: boolean | string }[] = [
-    { label: "Structured intake & scope summary", core: true, guided: true, book: false },
-    { label: "Plumbing / electrical / layout flags", core: true, guided: true, book: false },
-    { label: "Open-items list & assumption log", core: true, guided: true, book: false },
-    { label: "Realistic cost range", core: "Range", guided: "Refined", book: false },
-    { label: "Contractor-ready PDF", core: true, guided: true, book: false },
-    { label: "Live expert review call", core: false, guided: true, book: false },
-    { label: "One round of revisions", core: false, guided: true, book: false },
-    { label: "Bid comparison template", core: false, guided: true, book: false },
-    { label: "Personalized risk flags", core: false, guided: true, book: false },
-    { label: "Style direction & moodboard", core: false, guided: false, book: true },
-    { label: "Real-photo AI mockup", core: false, guided: false, book: true },
-    { label: "Items checklist & shopping links", core: false, guided: false, book: true },
-    { label: "Lifetime access to your project", core: true, guided: true, book: true },
+  type Row = { label: string; core: boolean | string; guided: boolean | string; book: boolean | string };
+  type Group = { category: string; color: string; bg: string; rows: Row[] };
+
+  const groups: Group[] = [
+    {
+      category: "Scope & intake",
+      color: "#c08a5a",
+      bg: "#f6f3ed",
+      rows: [
+        { label: "Structured intake & scope summary", core: true, guided: true, book: false },
+        { label: "Plumbing / electrical / layout flags", core: true, guided: true, book: false },
+        { label: "Open-items list & assumption log", core: true, guided: true, book: false },
+        { label: "Realistic cost range", core: "Range", guided: "Refined", book: false },
+        { label: "Contractor-ready PDF", core: true, guided: true, book: false },
+      ],
+    },
+    {
+      category: "Expert review",
+      color: "#c08a5a",
+      bg: "#f6f3ed",
+      rows: [
+        { label: "Live expert review call", core: false, guided: true, book: false },
+        { label: "One round of revisions", core: false, guided: true, book: false },
+        { label: "Bid comparison template", core: false, guided: true, book: false },
+        { label: "Personalized risk flags", core: false, guided: true, book: false },
+      ],
+    },
+    {
+      category: "Design & visuals",
+      color: "#2d5a3d",
+      bg: "#eef3ee",
+      rows: [
+        { label: "Style direction & moodboard", core: false, guided: false, book: true },
+        { label: "Real-photo AI mockup", core: false, guided: false, book: true },
+        { label: "Items checklist & shopping links", core: false, guided: false, book: true },
+      ],
+    },
+    {
+      category: "Ownership",
+      color: "#1a1a2e",
+      bg: "#eef0f4",
+      rows: [
+        { label: "Lifetime access to your project", core: true, guided: true, book: true },
+      ],
+    },
   ];
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="bg-[#faf8f3] text-left">
-            <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
+          <tr className="bg-[#faf8f3] text-left align-bottom">
+            <th className="px-6 py-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
               Feature
             </th>
-            <th className="px-4 py-4 text-center">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
+            <th className="px-4 py-5 text-center">
+              <div className="inline-block rounded-full bg-[#c08a5a] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white">
+                Most popular
+              </div>
+              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
                 Core Scope
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$399</div>
             </th>
-            <th className="px-4 py-4 text-center">
-              <div className="inline-block rounded-full bg-[#c08a5a] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white">
-                Most popular
+            <th className="px-4 py-5 text-center">
+              <div className="inline-block rounded-full bg-[#c08a5a] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white">
+                Recommended · $10k+
               </div>
-              <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
+              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
                 Guided Scope
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$1,000</div>
             </th>
-            <th className="px-4 py-4 text-center">
+            <th className="px-4 py-5 text-center">
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2d5a3d]">
                 Build Book
               </div>
-              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$150</div>
+              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$199</div>
             </th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => (
-            <tr
-              key={r.label}
-              className={i % 2 === 0 ? "bg-white" : "bg-[#faf8f3]/50"}
-            >
-              <td className="px-6 py-3 text-[#1a1a2e]">{r.label}</td>
-              <Cell value={r.core} accent="#c08a5a" />
-              <Cell value={r.guided} accent="#c08a5a" emphasize />
-              <Cell value={r.book} accent="#2d5a3d" />
-            </tr>
+          {groups.map((g) => (
+            <Fragment key={g.category}>
+              <tr style={{ background: g.bg }}>
+                <td
+                  colSpan={4}
+                  className="px-6 py-2.5 text-[10px] font-bold uppercase tracking-[0.22em]"
+                  style={{ color: g.color }}
+                >
+                  {g.category}
+                </td>
+              </tr>
+              {g.rows.map((r, i) => (
+                <tr
+                  key={r.label}
+                  className={
+                    "border-t border-[#f0ede7] " +
+                    (i % 2 === 0 ? "bg-white" : "bg-[#faf8f3]/40")
+                  }
+                >
+                  <td className="px-6 py-3 text-[#1a1a2e]">{r.label}</td>
+                  <Cell value={r.core} accent="#c08a5a" emphasize />
+                  <Cell value={r.guided} accent="#c08a5a" emphasize />
+                  <Cell value={r.book} accent="#2d5a3d" />
+                </tr>
+              ))}
+            </Fragment>
           ))}
         </tbody>
       </table>

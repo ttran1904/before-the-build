@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   FaArrowRight,
   FaBookOpen,
+  FaCheck,
   FaClipboardList,
   FaHelmetSafety,
   FaRegCompass,
@@ -83,7 +84,12 @@ export default function GuidePage() {
         icon={FaClipboardList}
         heading="Three bids. Three different scopes."
         body="Every contractor walks the room and writes down what they think you want. Groundwork turns it into one clean brief — what's changing, what's staying, the must-haves — that everyone bids the same way."
-        outcome="A contractor-ready scope, a realistic cost range, and the questions that prevent surprise change orders."
+        outcomes={[
+          "Contractor-ready scope PDF",
+          "Realistic cost range",
+          "Questions that prevent change orders",
+          "One brief every contractor reads the same",
+        ]}
         productName="Groundwork"
         productHref="/dashboard/groundwork"
         productCta="Begin Groundwork"
@@ -97,7 +103,12 @@ export default function GuidePage() {
         icon={FaBookOpen}
         heading="See it before a tile is cut."
         body="Without a visual, design choices stretch on for weeks. Build Book gives you a moodboard you trust, a real-photo render of the finished room, and a tidy PDF that walks the contractor through every finish."
-        outcome="A design you're proud of — written down clearly enough that nobody can re-litigate it later."
+        outcomes={[
+          "Moodboard you trust",
+          "Real-photo AI mockup",
+          "Items checklist & shopping links",
+          "Shareable Build Book PDF",
+        ]}
         productName="Build Book"
         productHref="/dashboard/build-books"
         productCta="Open Build Book"
@@ -111,7 +122,12 @@ export default function GuidePage() {
         icon={FaHelmetSafety}
         heading="Bids land. Decisions get hard."
         body="Contractors do this every week — you don't. Contractor Advisor puts an experienced pro on your side: hourly for the moments that matter, or on retainer through the whole project."
-        outcome="A pro reading every bid and change order — translating contractor-speak into clear next steps."
+        outcomes={[
+          "Bid review with red flags called out",
+          "Change-order sanity checks",
+          "Plain-English next steps",
+          "A pro on call when it counts",
+        ]}
         productName="Contractor Advisor"
         productHref="/dashboard/plans"
         productCta="Bring an advisor in"
@@ -188,7 +204,7 @@ function Chapter({
   icon: Icon,
   heading,
   body,
-  outcome,
+  outcomes,
   productName,
   productHref,
   productCta,
@@ -199,7 +215,7 @@ function Chapter({
   icon: IconType;
   heading: string;
   body: string;
-  outcome: string;
+  outcomes: string[];
   productName: string;
   productHref: string;
   productCta: string;
@@ -245,22 +261,31 @@ function Chapter({
           </h2>
           <p className="text-[15px] leading-relaxed text-[#4a4a5a]">{body}</p>
           <div
-            className="flex gap-3 rounded-2xl px-5 py-4"
+            className="rounded-2xl px-5 py-5"
             style={{ background: chapterBg }}
           >
-            <span
-              className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full"
-              style={{ background: chapterColor }}
-            />
-            <p className="text-sm leading-relaxed text-[#4a4a5a]">
-              <span
-                className="mr-2 text-[10px] font-bold uppercase tracking-[0.2em]"
-                style={{ color: chapterColor }}
-              >
-                Where you land
-              </span>
-              {outcome}
+            <p
+              className="text-[10px] font-bold uppercase tracking-[0.22em]"
+              style={{ color: chapterColor }}
+            >
+              Where you land
             </p>
+            <ul className="mt-3 grid gap-x-5 gap-y-2.5 sm:grid-cols-2">
+              {outcomes.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-start gap-2 text-sm text-[#1a1a2e]"
+                >
+                  <span
+                    className="mt-1 flex h-4 w-4 flex-none items-center justify-center rounded-full"
+                    style={{ background: chapterColor }}
+                  >
+                    <FaCheck className="text-[8px] text-white" />
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
