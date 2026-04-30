@@ -11,7 +11,17 @@ import {
   FaShieldHalved,
   FaInfinity,
   FaArrowRight,
+  FaFilePdf,
+  FaSackDollar,
+  FaTriangleExclamation,
+  FaLayerGroup,
+  FaVideo,
+  FaPenToSquare,
+  FaScaleBalanced,
 } from "react-icons/fa6";
+import type { IconType } from "react-icons";
+
+type PlanFeature = string | { label: string; icon: IconType };
 
 /* ──────────────────────────────────────────────────────────────
  * Plans page — high-ticket, ownership-led pricing.
@@ -68,15 +78,13 @@ export default function PlansPage() {
             tag="Self-serve"
             title="Core Scope"
             subtitle="A contractor-ready brief, delivered in 48 hours."
-            price="$400"
+            price="$399"
             priceNote="one-time · per project"
             features={[
-              "Structured intake with photos &amp; details",
-              "What is changing vs. staying",
-              "Plumbing / electrical / layout flags",
-              "Realistic cost range",
-              "Contractor-ready PDF",
-              "Lifetime access to your scope",
+              { label: "Contractor-ready Scope PDF", icon: FaFilePdf },
+              { label: "Realistic cost range", icon: FaSackDollar },
+              { label: "Plumbing &amp; layout conflicts flagged", icon: FaTriangleExclamation },
+              { label: "Lifetime access to your scope", icon: FaInfinity },
             ]}
             ctaHref="/dashboard/groundwork"
             ctaLabel="Get instant access"
@@ -93,12 +101,12 @@ export default function PlansPage() {
             featured
             featuredLabel="Most popular"
             features={[
-              "Everything in Core Scope",
-              "Live review call with a renovation expert",
-              "One round of revisions",
-              "Bid comparison template",
-              "Personalized risk flags &amp; cost-driver notes",
-              "Lifetime access to your scope",
+              { label: "Everything in Core Scope", icon: FaLayerGroup },
+              { label: "Live review call with a renovation expert", icon: FaVideo },
+              { label: "One round of revisions", icon: FaPenToSquare },
+              { label: "Bid comparison template", icon: FaScaleBalanced },
+              { label: "Personalized risk flags &amp; cost-driver notes", icon: FaTriangleExclamation },
+              { label: "Lifetime access to your scope", icon: FaInfinity },
             ]}
             ctaHref="/dashboard/groundwork?tier=guided"
             ctaLabel="Secure your plan"
@@ -110,7 +118,7 @@ export default function PlansPage() {
             tag="For your design"
             title="Build Book"
             subtitle="Moodboard, real-photo AI mockup, and a shareable items list."
-            price="$150"
+            price="$199"
             priceNote="one-time · per project"
             features={[
               "Style direction &amp; inspiration",
@@ -235,7 +243,7 @@ export default function PlansPage() {
           />
           <Faq
             q="Can I upgrade from Core to Guided later?"
-            a="Yes. We credit the full $400 from Core toward Guided if you decide you want expert review afterward."
+            a="Yes. We credit the full $399 from Core toward Guided if you decide you want expert review afterward."
           />
           <Faq
             q="When should I add a Contractor Advisor?"
@@ -299,7 +307,7 @@ function PlanCard({
   subtitle: string;
   price: string;
   priceNote: string;
-  features: string[];
+  features: PlanFeature[];
   ctaHref: string;
   ctaLabel: string;
   featured?: boolean;
@@ -355,12 +363,16 @@ function PlanCard({
       </div>
 
       <ul className="mt-6 space-y-2">
-        {features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm text-[#1a1a2e]">
-            <FaCheck className="mt-1 flex-none text-[10px]" style={{ color: accent }} />
-            <span dangerouslySetInnerHTML={{ __html: f }} />
-          </li>
-        ))}
+        {features.map((f) => {
+          const label = typeof f === "string" ? f : f.label;
+          const Icon: IconType = typeof f === "string" ? FaCheck : f.icon;
+          return (
+            <li key={label} className="flex items-start gap-2 text-sm text-[#1a1a2e]">
+              <Icon className="mt-1 flex-none text-[11px]" style={{ color: accent }} />
+              <span dangerouslySetInnerHTML={{ __html: label }} />
+            </li>
+          );
+        })}
       </ul>
 
       <Link
@@ -393,7 +405,7 @@ function AdvisorCard({
   price: string;
   priceUnit: string;
   priceNote: string;
-  features: string[];
+  features: PlanFeature[];
   ctaHref: string;
   ctaLabel: string;
 }) {
@@ -437,12 +449,16 @@ function AdvisorCard({
       </div>
 
       <ul className="mt-6 space-y-2">
-        {features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm text-[#1a1a2e]">
-            <FaCheck className="mt-1 flex-none text-[10px]" style={{ color: accent }} />
-            <span dangerouslySetInnerHTML={{ __html: f }} />
-          </li>
-        ))}
+        {features.map((f) => {
+          const label = typeof f === "string" ? f : f.label;
+          const Icon: IconType = typeof f === "string" ? FaCheck : f.icon;
+          return (
+            <li key={label} className="flex items-start gap-2 text-sm text-[#1a1a2e]">
+              <Icon className="mt-1 flex-none text-[11px]" style={{ color: accent }} />
+              <span dangerouslySetInnerHTML={{ __html: label }} />
+            </li>
+          );
+        })}
       </ul>
 
       <Link
@@ -483,7 +499,7 @@ function ComparisonTable() {
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
                 Core Scope
               </div>
-              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$400</div>
+              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$399</div>
             </th>
             <th className="px-4 py-4 text-center">
               <div className="inline-block rounded-full bg-[#c08a5a] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white">
