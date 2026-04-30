@@ -6,27 +6,21 @@ import { Suspense, useMemo, useState } from "react";
 import {
   FaArrowLeft,
   FaArrowRight,
-  FaBookOpen,
+  FaCcAmex,
+  FaCcMastercard,
+  FaCcVisa,
   FaCheck,
-  FaClipboardList,
   FaInfinity,
   FaLock,
   FaShieldHalved,
-  FaUserTie,
 } from "react-icons/fa6";
-import type { IconType } from "react-icons";
 
 /* ──────────────────────────────────────────────────────────────
- * Checkout page — scaffolded template.
+ * Checkout — sleek, condensed, payments-first.
  *
- * Today: shows a static order summary based on `?plan=` query
- * param, plus a placeholder "Continue to payment" CTA.
- *
- * TODO(stripe): wire the CTA to a server action that creates a
- * Stripe Checkout Session (or Payment Intent) and redirects.
- *   1. Add STRIPE_SECRET_KEY + NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
- *   2. Create app/api/checkout/route.ts -> stripe.checkout.sessions.create
- *   3. Replace handleContinue() below with a fetch + redirect
+ * TODO(stripe): replace handleSubmit() with a fetch to
+ * /api/checkout (stripe.checkout.sessions.create) and redirect
+ * to the returned session URL.
  * ────────────────────────────────────────────────────────────── */
 
 type PlanId = "core" | "guided" | "build-book";
@@ -34,14 +28,8 @@ type PlanId = "core" | "guided" | "build-book";
 type Plan = {
   id: PlanId;
   name: string;
-  tag: string;
-  subtitle: string;
+  tagline: string;
   priceCents: number;
-  priceLabel: string;
-  priceNote: string;
-  accent: string;
-  accentBg: string;
-  icon: IconType;
   includes: string[];
 };
 
@@ -49,14 +37,8 @@ const PLANS: Record<PlanId, Plan> = {
   core: {
     id: "core",
     name: "Core Scope",
-    tag: "Self-serve",
-    subtitle: "A contractor-ready brief, delivered in 48 hours.",
+    tagline: "Self-serve · 48-hour delivery",
     priceCents: 39900,
-    priceLabel: "$399",
-    priceNote: "one-time · per project",
-    accent: "#c08a5a",
-    accentBg: "#f6f3ed",
-    icon: FaClipboardList,
     includes: [
       "Contractor-ready Scope PDF",
       "Realistic cost range",
@@ -67,15 +49,8 @@ const PLANS: Record<PlanId, Plan> = {
   guided: {
     id: "guided",
     name: "Guided Scope",
-    tag: "With expert review",
-    subtitle:
-      "Everything in Core, plus a live review and one round of revisions.",
+    tagline: "With expert review",
     priceCents: 100000,
-    priceLabel: "$1,000",
-    priceNote: "one-time · typical project",
-    accent: "#c08a5a",
-    accentBg: "#f6f3ed",
-    icon: FaUserTie,
     includes: [
       "Everything in Core Scope",
       "Live review call with a renovation expert",
@@ -88,14 +63,8 @@ const PLANS: Record<PlanId, Plan> = {
   "build-book": {
     id: "build-book",
     name: "Build Book",
-    tag: "For your design",
-    subtitle: "Moodboard, real-photo AI mockup, and a shareable items list.",
+    tagline: "Design pack · per project",
     priceCents: 19900,
-    priceLabel: "$199",
-    priceNote: "one-time · per project",
-    accent: "#2d5a3d",
-    accentBg: "#eef3ee",
-    icon: FaBookOpen,
     includes: [
       "Style direction & inspiration",
       "Real-photo AI mockup of your room",
@@ -113,7 +82,7 @@ function formatUsd(cents: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(cents / 100);
 }
 
@@ -131,21 +100,14 @@ function CheckoutInner() {
   const plan = PLANS[planParam] ?? PLANS[DEFAULT_PLAN];
 
   const [submitting, setSubmitting] = useState(false);
+  const subtotal = plan.priceCents;
+  const total = useMemo(() => formatUsd(subtotal), [subtotal]);
+  const subtotalLabel = useMemo(() => formatUsd(subtotal), [subtotal]);
 
-  const total = useMemo(() => formatUsd(plan.priceCents), [plan.priceCents]);
-  const Icon = plan.icon;
-
-  async function handleContinue() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setSubmitting(true);
-    // TODO(stripe): replace with real Stripe Checkout call.
-    //
-    // const res = await fetch("/api/checkout", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ planId: plan.id }),
-    // });
-    // const { url } = await res.json();
-    // window.location.href = url;
+    // TODO(stripe): POST /api/checkout -> { url } -> window.location.href = url
     await new Promise((r) => setTimeout(r, 600));
     setSubmitting(false);
     alert(
@@ -154,184 +116,255 @@ function CheckoutInner() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-10 pb-20">
-      {/* ── Header ───────────────────────────────────────────── */}
-      <header>
-        <Link
-          href="/dashboard/plans"
-          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#9a9aaa] transition hover:text-[#1a1a2e]"
-        >
-          <FaArrowLeft className="text-[10px]" /> Back to plans
-        </Link>
-        <h1 className="mt-3 font-serif text-4xl text-[#1a1a2e]">Checkout</h1>
-        <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-[#6a6a7a]">
-          Review your plan, then continue to secure payment. One-time payment,
-          lifetime access to your project.
-        </p>
-      </header>
-
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
-        {/* ── Payment panel (Stripe placeholder) ─────────────── */}
-        <section className="rounded-2xl border border-[#ece9e3] bg-white p-8 shadow-sm">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-            <FaLock className="text-[#2d5a3d]" /> Secure payment
-          </div>
-          <h2 className="mt-2 font-serif text-2xl text-[#1a1a2e]">
-            Payment details
-          </h2>
-          <p className="mt-1 text-sm text-[#6a6a7a]">
-            We&rsquo;ll connect Stripe here. For now this is a template.
-          </p>
-
-          {/* Stripe Elements placeholder */}
-          <div className="mt-6 space-y-4">
-            <PlaceholderField label="Email" placeholder="you@example.com" />
-            <PlaceholderField
-              label="Card number"
-              placeholder="1234 1234 1234 1234"
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <PlaceholderField label="Expiry" placeholder="MM / YY" />
-              <PlaceholderField label="CVC" placeholder="123" />
-            </div>
-            <PlaceholderField label="Name on card" placeholder="Full name" />
-            <PlaceholderField label="ZIP / Postal code" placeholder="12345" />
-          </div>
-
-          <div className="mt-6 rounded-xl border border-dashed border-[#ece9e3] bg-[#faf8f3] px-4 py-3 text-xs leading-relaxed text-[#6a6a7a]">
-            <span className="font-semibold text-[#1a1a2e]">
-              Stripe integration pending.
-            </span>{" "}
-            Replace the fields above with Stripe Elements and wire the button
-            below to a Checkout Session.
-          </div>
-
-          <button
-            type="button"
-            onClick={handleContinue}
-            disabled={submitting}
-            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#2d5a3d] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#244a32] disabled:cursor-not-allowed disabled:opacity-60"
+    <div className="-mx-6 -mt-6 min-h-[calc(100vh-3rem)] bg-[#f6f5f1] px-6 pb-16 pt-6 md:-mx-10 md:px-10">
+      <div className="mx-auto max-w-5xl">
+        {/* Top bar */}
+        <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.18em] text-[#6a6a7a]">
+          <Link
+            href="/dashboard/plans"
+            className="inline-flex items-center gap-1.5 transition hover:text-[#1a1a2e]"
           >
-            {submitting ? "Connecting…" : `Pay ${total}`}
-            {!submitting && <FaArrowRight className="text-xs" />}
-          </button>
+            <FaArrowLeft className="text-[9px]" /> Back
+          </Link>
+          <span className="inline-flex items-center gap-1.5">
+            <FaLock className="text-[10px] text-[#2d5a3d]" />
+            Secure checkout
+          </span>
+        </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-[#9a9aaa]">
-            <span className="inline-flex items-center gap-1.5">
-              <FaShieldHalved className="text-[#2d5a3d]" /> 7-day money-back
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <FaInfinity className="text-[#2d5a3d]" /> Lifetime project access
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <FaLock className="text-[#2d5a3d]" /> Encrypted by Stripe
-            </span>
-          </div>
-        </section>
-
-        {/* ── Order summary ──────────────────────────────────── */}
-        <aside className="space-y-6">
-          <div className="rounded-2xl border border-[#ece9e3] bg-white p-8 shadow-sm">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-              Order summary
-            </span>
-
-            <div className="mt-4 flex items-start gap-3">
-              <span
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg"
-                style={{ background: plan.accentBg, color: plan.accent }}
-              >
-                <Icon />
-              </span>
-              <div className="min-w-0">
-                <span
-                  className="inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]"
-                  style={{ background: plan.accentBg, color: plan.accent }}
-                >
-                  {plan.tag}
-                </span>
-                <h3 className="mt-1.5 font-serif text-2xl text-[#1a1a2e]">
-                  {plan.name}
-                </h3>
-                <p className="mt-1 text-sm text-[#6a6a7a]">{plan.subtitle}</p>
-              </div>
-            </div>
-
-            <div
-              className="mt-6 rounded-2xl px-6 py-5 text-center"
-              style={{ background: plan.accentBg }}
-            >
-              <div
-                className="font-serif text-4xl"
-                style={{ color: plan.accent }}
-              >
-                {plan.priceLabel}
-              </div>
-              <div
-                className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em]"
-                style={{ color: plan.accent }}
-              >
-                {plan.priceNote}
-              </div>
-            </div>
-
-            <ul className="mt-6 space-y-2.5 text-sm text-[#4a4a5a]">
-              {plan.includes.map((item) => (
-                <li key={item} className="flex items-start gap-2.5">
-                  <FaCheck
-                    className="mt-1 text-[11px]"
-                    style={{ color: plan.accent }}
-                  />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-6 space-y-2 border-t border-[#ece9e3] pt-5 text-sm">
-              <Row label="Subtotal" value={total} />
-              <Row label="Taxes" value="Calculated at payment" muted />
-              <div className="flex items-baseline justify-between pt-3">
-                <span className="font-serif text-lg text-[#1a1a2e]">
-                  Total due today
-                </span>
-                <span className="font-serif text-2xl text-[#1a1a2e]">
-                  {total}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <p className="px-2 text-center text-xs leading-relaxed text-[#9a9aaa]">
-            Need a different plan?{" "}
-            <Link
-              href="/dashboard/plans"
-              className="font-semibold text-[#2d5a3d] underline-offset-2 hover:underline"
-            >
-              Compare all plans
-            </Link>
-            .
+        {/* Title */}
+        <div className="mt-4 mb-6 flex items-baseline justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#1a1a2e]">
+            Checkout
+          </h1>
+          <p className="hidden text-sm text-[#6a6a7a] sm:block">
+            One-time payment · lifetime project access
           </p>
-        </aside>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-5 lg:grid-cols-[1.1fr_1fr]"
+        >
+          {/* ── Payment column ─────────────────────────────── */}
+          <div className="space-y-5">
+            <Section title="Contact">
+              <Field
+                id="email"
+                label="Email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </Section>
+
+            <Section
+              title="Payment"
+              right={
+                <div className="flex items-center gap-1.5 text-[#9a9aaa]">
+                  <FaCcVisa className="text-xl" />
+                  <FaCcMastercard className="text-xl" />
+                  <FaCcAmex className="text-xl" />
+                </div>
+              }
+            >
+              <Field
+                id="card"
+                label="Card number"
+                placeholder="1234 1234 1234 1234"
+                autoComplete="cc-number"
+                inputMode="numeric"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Field
+                  id="exp"
+                  label="Expiry"
+                  placeholder="MM / YY"
+                  autoComplete="cc-exp"
+                  inputMode="numeric"
+                />
+                <Field
+                  id="cvc"
+                  label="CVC"
+                  placeholder="123"
+                  autoComplete="cc-csc"
+                  inputMode="numeric"
+                />
+              </div>
+              <Field
+                id="name"
+                label="Name on card"
+                placeholder="Full name"
+                autoComplete="cc-name"
+              />
+            </Section>
+
+            <Section title="Billing address">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <Field
+                    id="country"
+                    label="Country"
+                    placeholder="United States"
+                    autoComplete="country-name"
+                  />
+                </div>
+                <Field
+                  id="zip"
+                  label="ZIP"
+                  placeholder="12345"
+                  autoComplete="postal-code"
+                />
+              </div>
+            </Section>
+
+            <p className="text-[11px] leading-relaxed text-[#9a9aaa]">
+              By placing this order you agree to our Terms of Service and
+              Privacy Policy. Payments are processed securely by Stripe.
+            </p>
+          </div>
+
+          {/* ── Order summary column ───────────────────────── */}
+          <aside className="lg:sticky lg:top-6 lg:self-start">
+            <div className="overflow-hidden rounded-xl border border-[#e6e3dc] bg-white">
+              <div className="flex items-center justify-between border-b border-[#eeece6] px-5 py-3">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
+                  Order
+                </span>
+                <Link
+                  href="/dashboard/plans"
+                  className="text-[11px] font-semibold text-[#2d5a3d] hover:underline"
+                >
+                  Change
+                </Link>
+              </div>
+
+              <div className="px-5 py-4">
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-[15px] font-semibold text-[#1a1a2e]">
+                      {plan.name}
+                    </div>
+                    <div className="mt-0.5 text-xs text-[#6a6a7a]">
+                      {plan.tagline}
+                    </div>
+                  </div>
+                  <div className="text-[15px] font-semibold tabular-nums text-[#1a1a2e]">
+                    {subtotalLabel}
+                  </div>
+                </div>
+
+                <ul className="mt-4 space-y-1.5 text-[13px] text-[#4a4a5a]">
+                  {plan.includes.map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <FaCheck className="mt-1 text-[10px] text-[#2d5a3d]" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="space-y-1.5 border-t border-[#eeece6] px-5 py-4 text-sm">
+                <Row label="Subtotal" value={subtotalLabel} />
+                <Row label="Tax" value="Calculated at payment" muted />
+                <div className="mt-3 flex items-baseline justify-between border-t border-[#eeece6] pt-3">
+                  <span className="text-sm font-semibold text-[#1a1a2e]">
+                    Total
+                  </span>
+                  <span className="text-xl font-semibold tabular-nums text-[#1a1a2e]">
+                    {total}
+                  </span>
+                </div>
+              </div>
+
+              <div className="px-5 pb-5">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1a1a2e] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2a2a3e] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? (
+                    "Processing…"
+                  ) : (
+                    <>
+                      Pay {total}
+                      <FaArrowRight className="text-[11px]" />
+                    </>
+                  )}
+                </button>
+
+                <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-[#9a9aaa]">
+                  <span className="inline-flex items-center gap-1">
+                    <FaLock className="text-[10px]" /> Stripe
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <FaShieldHalved className="text-[10px]" /> 7-day refund
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <FaInfinity className="text-[10px]" /> Lifetime access
+                  </span>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </form>
       </div>
     </div>
   );
 }
 
-function PlaceholderField({
-  label,
-  placeholder,
+/* ── Bits ────────────────────────────────────────────────────── */
+
+function Section({
+  title,
+  right,
+  children,
 }: {
-  label: string;
-  placeholder: string;
+  title: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
-    <label className="block">
-      <span className="text-xs font-semibold text-[#1a1a2e]">{label}</span>
+    <section className="rounded-xl border border-[#e6e3dc] bg-white p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[#1a1a2e]">
+          {title}
+        </h2>
+        {right}
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function Field({
+  id,
+  label,
+  type = "text",
+  placeholder,
+  autoComplete,
+  inputMode,
+}: {
+  id: string;
+  label: string;
+  type?: string;
+  placeholder?: string;
+  autoComplete?: string;
+  inputMode?: "numeric" | "text" | "email";
+}) {
+  return (
+    <label htmlFor={id} className="block">
+      <span className="mb-1 block text-[11px] font-medium text-[#6a6a7a]">
+        {label}
+      </span>
       <input
-        type="text"
-        disabled
+        id={id}
+        name={id}
+        type={type}
         placeholder={placeholder}
-        className="mt-1.5 block w-full cursor-not-allowed rounded-lg border border-[#ece9e3] bg-[#faf8f3] px-3.5 py-2.5 text-sm text-[#4a4a5a] placeholder:text-[#9a9aaa] focus:outline-none"
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        className="block w-full rounded-lg border border-[#dedbd2] bg-white px-3 py-2.5 text-sm text-[#1a1a2e] placeholder:text-[#b3b1a8] focus:border-[#2d5a3d] focus:outline-none focus:ring-2 focus:ring-[#2d5a3d]/15"
       />
     </label>
   );
@@ -349,7 +382,11 @@ function Row({
   return (
     <div className="flex items-center justify-between">
       <span className="text-[#6a6a7a]">{label}</span>
-      <span className={muted ? "text-[#9a9aaa]" : "text-[#1a1a2e]"}>
+      <span
+        className={
+          (muted ? "text-[#9a9aaa]" : "text-[#1a1a2e]") + " tabular-nums"
+        }
+      >
         {value}
       </span>
     </div>
