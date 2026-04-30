@@ -787,7 +787,7 @@ export default function Home() {
                   "Hidden costs & key questions to ask",
                   "48-hour turnaround",
                 ]}
-                ctaHref="/sign-in?redirect=/dashboard/groundwork"
+                ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dcore"
                 ctaLabel="Start Core Scope"
               />
 
@@ -813,7 +813,7 @@ export default function Home() {
                   "Personalized risk flags",
                   "Cost-driver explanations",
                 ]}
-                ctaHref="/sign-in?redirect=/dashboard/groundwork?tier=guided"
+                ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dguided"
                 ctaLabel="Start Guided Scope"
               />
             </div>
@@ -851,7 +851,7 @@ export default function Home() {
                   "Catalogue picks & shopping links",
                   "Final shareable Build Book",
                 ]}
-                ctaHref="/sign-in?redirect=/dashboard/build-books"
+                ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dbuild-book"
                 ctaLabel="Start Build Book"
               />
 

@@ -86,7 +86,7 @@ export default function PlansPage() {
               { label: "Plumbing &amp; layout conflicts flagged", icon: FaTriangleExclamation },
               { label: "Lifetime access to your scope", icon: FaInfinity },
             ]}
-            ctaHref="/dashboard/groundwork"
+            ctaHref="/dashboard/checkout?plan=core"
             ctaLabel="Get instant access"
           />
           <PlanCard
@@ -108,7 +108,7 @@ export default function PlansPage() {
               { label: "Personalized risk flags &amp; cost-driver notes", icon: FaTriangleExclamation },
               { label: "Lifetime access to your scope", icon: FaInfinity },
             ]}
-            ctaHref="/dashboard/groundwork?tier=guided"
+            ctaHref="/dashboard/checkout?plan=guided"
             ctaLabel="Secure your plan"
           />
           <PlanCard
@@ -128,7 +128,7 @@ export default function PlansPage() {
               "Final shareable Build Book",
               "Lifetime access to your design",
             ]}
-            ctaHref="/dashboard/build-books"
+            ctaHref="/dashboard/checkout?plan=build-book"
             ctaLabel="Get instant access"
           />
         </div>
@@ -265,7 +265,7 @@ export default function PlansPage() {
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            href="/dashboard/groundwork?tier=guided"
+            href="/dashboard/checkout?plan=guided"
             className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#2d5a3d] transition hover:bg-[#f8f7f4]"
           >
             Get Guided Scope <FaArrowRight className="text-xs" />
