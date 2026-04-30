@@ -141,12 +141,39 @@ export async function loadGroundworkScopeByProjectId(
   return (data as GroundworkScopeRow) ?? null;
 }
 
-/** Delete a groundwork scope by id. */
+/** Delete a groundwork scope by id. Returns true only if a row was actually removed. */
 export async function deleteGroundworkScope(id: string): Promise<boolean> {
-  const { error } = await supabase.from("groundwork_scopes").delete().eq("id", id);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data, error } = await supabase
+    .from("groundwork_scopes")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select("id");
   if (error) {
     console.warn("[deleteGroundworkScope] failed:", error);
     return false;
   }
-  return true;
+  return Array.isArray(data) && data.length > 0;
+}
+
+/** Delete every groundwork scope owned by the current user. Returns the number removed. */
+export async function deleteAllGroundworkScopesForCurrentUser(): Promise<number> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 0;
+  const { data, error } = await supabase
+    .from("groundwork_scopes")
+    .delete()
+    .eq("user_id", user.id)
+    .select("id");
+  if (error) {
+    console.warn("[deleteAllGroundworkScopesForCurrentUser] failed:", error);
+    return 0;
+  }
+  return Array.isArray(data) ? data.length : 0;
 }

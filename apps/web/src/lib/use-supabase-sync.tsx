@@ -11,6 +11,10 @@ import {
   saveBuildBook,
   loadBathroomPhotos,
 } from "@/lib/supabase-sync";
+import { GroundworkAutosave } from "@/lib/groundwork/Autosave";
+import { BuildBookAutosave } from "@/lib/build-book/Autosave";
+import { useBuildBookStore } from "@/lib/build-book/store";
+import { loadLatestBuildBookV2 } from "@/lib/build-book/sync";
 
 const DEBOUNCE_MS = 2000; // Save 2s after last change
 
@@ -124,11 +128,44 @@ export function useSupabaseSync() {
   }, [user, debouncedSaveWizard, debouncedSaveIdeaBoard]);
 }
 
+
+function useBuildBookHydrate() {
+  const { user, loading: authLoading } = useAuth();
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (authLoading || !user || hydrated.current) return;
+    hydrated.current = true;
+    (async () => {
+      const local = useBuildBookStore.getState();
+      const localHasContent =
+        local.styles.length > 0 ||
+        (local.inspirationLinks ?? "").trim().length > 0 ||
+        local.itemSource !== null ||
+        local.photos.length > 0;
+      if (localHasContent) return;
+      const remote = await loadLatestBuildBookV2();
+      if (remote) {
+        useBuildBookStore.getState().loadFrom(remote.data, remote.projectId);
+      }
+    })();
+  }, [user, authLoading]);
+  useEffect(() => {
+    if (!user) hydrated.current = false;
+  }, [user]);
+}
+
 /**
  * Wrapper component to use the hook in the layout.
  * Renders nothing — just runs the sync logic.
  */
 export function SupabaseSyncProvider({ children }: { children: React.ReactNode }) {
   useSupabaseSync();
-  return <>{children}</>;
+  useBuildBookHydrate();
+  return (
+    <>
+      <GroundworkAutosave />
+      <BuildBookAutosave />
+      {children}
+    </>
+  );
 }

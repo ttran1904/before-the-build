@@ -83,12 +83,15 @@ export default function BuildBooksPage() {
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
+    const snapshot = buildBooks;
+    setBuildBooks((prev) => prev.filter((b) => b.id !== id));
+    setConfirmDeleteId(null);
     const ok = await deleteBuildBook(id);
-    if (ok) {
-      setBuildBooks((prev) => prev.filter((b) => b.id !== id));
+    if (!ok) {
+      setBuildBooks(snapshot);
+      console.warn("Failed to delete build book; restored.");
     }
     setDeletingId(null);
-    setConfirmDeleteId(null);
   };
 
   const handleNewBuildBook = () => {

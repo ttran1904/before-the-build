@@ -19,6 +19,7 @@ export function importLegacyProjectIntoBuildBook(
     itemSource: null,
     photos: legacy.mockupBathroomPhotos ?? [],
     completedAt: null,
+    projectId: null,
   };
 
   useBuildBookStore.setState(next);
