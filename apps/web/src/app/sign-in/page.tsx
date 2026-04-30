@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { FaHouse, FaGoogle } from "react-icons/fa6";
+import { FaGoogle } from "react-icons/fa6";
 import { useAuth } from "@/lib/auth-context";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -58,9 +59,15 @@ function SignInContent() {
     <div className="flex min-h-screen items-center justify-center bg-[#f8f7f4]">
       <div className="w-full max-w-md space-y-8 rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-xl shadow-black/5">
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <FaHouse className="text-xl text-[#2d5a3d]" />
-            <span className="text-xl font-bold text-[#1a1a2e]">Before The Build</span>
+          <Link href="/" className="inline-flex items-center justify-center">
+            <Image
+              src="/brand/logo-primary.png"
+              alt="Before The Build"
+              width={646}
+              height={342}
+              priority
+              className="h-16 w-auto"
+            />
           </Link>
           <h1 className="mt-6 text-2xl font-bold text-[#1a1a2e]">Welcome back</h1>
           <p className="mt-2 text-sm text-[#6a6a7a]">Sign in to continue your renovation journey</p>

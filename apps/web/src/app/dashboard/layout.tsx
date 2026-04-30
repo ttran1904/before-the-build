@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FaHouse, FaBookOpen, FaCompass, FaTableCellsLarge, FaGear, FaClipboardList, FaCircleQuestion, FaLeaf, FaTag,
+  FaHouse, FaBookOpen, FaCompass, FaTableCellsLarge, FaGear, FaClipboardList, FaCircleQuestion, FaTag,
 } from "react-icons/fa6";
 import type { IconType } from "react-icons";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -19,14 +20,15 @@ export default function DashboardLayout({
       {/* Sidebar — cozy lodge */}
       <aside className="sticky top-0 flex h-screen w-60 flex-col bg-gradient-to-b from-[#2d5a3d] via-[#264e34] to-[#1f4029] p-5 text-white shadow-[inset_-1px_0_0_rgba(0,0,0,0.15)]">
         {/* Brand */}
-        <Link href="/dashboard" className="mb-8 flex items-center gap-2.5 group">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f9f3e3] text-[#2d5a3d] shadow-sm transition group-hover:rotate-6">
-            <FaLeaf className="text-base" />
-          </span>
-          <span className="flex flex-col leading-tight">
-            <span className="text-[15px] font-bold text-white">Before The Build</span>
-            <span className="text-[10px] font-medium uppercase tracking-wider text-white/50">Renovation, sorted.</span>
-          </span>
+        <Link href="/dashboard" className="mb-6 flex items-center justify-center group">
+          <Image
+            src="/brand/logo-on-green.png"
+            alt="Before The Build"
+            width={646}
+            height={342}
+            priority
+            className="h-14 w-auto transition group-hover:scale-105"
+          />
         </Link>
 
         {/* Primary nav */}

@@ -1,9 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FaHouse } from "react-icons/fa6";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 export default function ResetPasswordPage() {
@@ -53,9 +53,15 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#f8f7f4]">
       <div className="w-full max-w-md space-y-8 rounded-2xl border border-[#e8e6e1] bg-white p-8 shadow-xl shadow-black/5">
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <FaHouse className="text-xl text-[#2d5a3d]" />
-            <span className="text-xl font-bold text-[#1a1a2e]">Before The Build</span>
+          <Link href="/" className="inline-flex items-center justify-center">
+            <Image
+              src="/brand/logo-primary.png"
+              alt="Before The Build"
+              width={646}
+              height={342}
+              priority
+              className="h-16 w-auto"
+            />
           </Link>
           <h1 className="mt-6 text-2xl font-bold text-[#1a1a2e]">Set new password</h1>
           <p className="mt-2 text-sm text-[#6a6a7a]">Enter your new password below</p>

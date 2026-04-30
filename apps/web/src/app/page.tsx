@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-  FaHouse, FaCamera, FaPalette, FaSackDollar, FaBookOpen, FaCheck,
+  FaCamera, FaPalette, FaSackDollar, FaBookOpen, FaCheck,
   FaStar, FaRobot, FaCompass, FaCouch, FaArrowsRotate,
   FaCartShopping, FaCalendarDays, FaShieldHalved, FaCertificate,
   FaRuler,
@@ -104,11 +104,15 @@ export default function Home() {
       {/* ━━━ Top Nav ━━━ */}
       <header className="sticky top-0 z-50 border-b border-[#e8e6e1] bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <FaHouse className="text-xl text-[#2d5a3d]" />
-            <span className="text-xl font-bold tracking-tight text-[#1a1a2e]">
-              Before The Build
-            </span>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/brand/logo-primary.png"
+              alt="Before The Build"
+              width={646}
+              height={342}
+              priority
+              className="h-14 w-auto"
+            />
           </Link>
           <nav className="hidden items-center gap-8 md:flex">
             <Link href="/explore" className="text-sm font-medium text-[#4a4a5a] transition hover:text-[#1a1a2e]">
@@ -1028,9 +1032,14 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             <div>
-              <div className="mb-4 flex items-center gap-2">
-                <FaHouse className="text-lg text-[#2d5a3d]" />
-                <span className="font-bold text-[#1a1a2e]">Before The Build</span>
+              <div className="mb-4 flex items-center">
+                <Image
+                  src="/brand/logo-primary.png"
+                  alt="Before The Build"
+                  width={646}
+                  height={342}
+                  className="h-12 w-auto"
+                />
               </div>
               <p className="text-sm text-[#7a7a8a]">
                 Plan, design, and build your dream renovation with AI.
