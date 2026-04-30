@@ -57,10 +57,7 @@ export default function PlansPage() {
       {/* ── 3-tier recommended (Groundwork + Build Book) ─────── */}
       <section>
         <div className="text-center">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-            Pick a plan
-          </span>
-          <h2 className="mt-2 font-serif text-3xl text-[#1a1a2e]">
+          <h2 className="font-serif text-3xl text-[#1a1a2e]">
             One-time plans for your project
           </h2>
         </div>
@@ -77,12 +74,7 @@ export default function PlansPage() {
             priceNote="one-time · per project"
             featured
             featuredLabel="Most popular"
-            features={[
-              "Contractor-ready Scope PDF",
-              "Realistic cost range",
-              "Plumbing &amp; layout conflicts flagged",
-              "Lifetime access to your scope",
-            ]}
+            overview="Turn your renovation idea into a contractor-ready scope in 48 hours — so every bid comes back apples-to-apples."
             ctaHref="/dashboard/checkout?plan=core"
             ctaLabel="Get instant access"
           />
@@ -97,14 +89,7 @@ export default function PlansPage() {
             priceNote="one-time · typical project"
             featured
             featuredLabel="Recommended for $10k+ projects"
-            features={[
-              "Everything in Core Scope",
-              "Live review call with a renovation expert",
-              "One round of revisions",
-              "Bid comparison template",
-              "Personalized risk flags &amp; cost-driver notes",
-              "Lifetime access to your scope",
-            ]}
+            overview="Everything in Core, plus a live expert review, one revision round, and personalized risk flags for higher-stakes projects."
             ctaHref="/dashboard/checkout?plan=guided"
             ctaLabel="Secure your plan"
           />
@@ -117,14 +102,7 @@ export default function PlansPage() {
             subtitle="Moodboard, real-photo AI mockup, and a shareable items list."
             price="$199"
             priceNote="one-time · per project"
-            features={[
-              "Style direction &amp; inspiration",
-              "Real-photo AI mockup of your room",
-              "Moodboard with items checklist",
-              "Catalogue picks &amp; shopping links",
-              "Final shareable Build Book",
-              "Lifetime access to your design",
-            ]}
+            overview="Lock in the look — a moodboard, real-photo AI mockup, and a shareable items list your contractor can actually order from."
             ctaHref="/dashboard/checkout?plan=build-book"
             ctaLabel="Get instant access"
           />
@@ -141,9 +119,6 @@ export default function PlansPage() {
       <section className="overflow-hidden rounded-3xl border border-[#ece9e3] bg-white">
         <div className="border-b border-[#ece9e3] p-6 text-center">
           <h2 className="font-serif text-2xl text-[#1a1a2e]">Compare what&apos;s included</h2>
-          <p className="mt-1 text-sm text-[#6a6a7a]">
-            Everything is one-time. Nothing renews automatically.
-          </p>
         </div>
         <ComparisonTable />
       </section>
@@ -151,16 +126,9 @@ export default function PlansPage() {
       {/* ── Contractor Advisor — separate layer ──────────────── */}
       <section>
         <div className="text-center">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#1a1a2e]">
-            Add expert support
-          </span>
-          <h2 className="mt-2 font-serif text-3xl text-[#1a1a2e]">
+          <h2 className="font-serif text-3xl text-[#1a1a2e]">
             Bring a contractor onto your side of the table
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-[#6a6a7a]">
-            Optional. Add an experienced contractor as your independent advisor
-            for bid review, change orders, and the moments that matter.
-          </p>
         </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -290,7 +258,7 @@ function PlanCard({
   subtitle,
   price,
   priceNote,
-  features,
+  overview,
   ctaHref,
   ctaLabel,
   featured = false,
@@ -304,7 +272,7 @@ function PlanCard({
   subtitle: string;
   price: string;
   priceNote: string;
-  features: PlanFeature[];
+  overview: string;
   ctaHref: string;
   ctaLabel: string;
   featured?: boolean;
@@ -359,18 +327,12 @@ function PlanCard({
         </span>
       </div>
 
-      <ul className="mt-6 space-y-2">
-        {features.map((f) => {
-          const label = typeof f === "string" ? f : f.label;
-          const Icon: IconType = typeof f === "string" ? FaCheck : f.icon;
-          return (
-            <li key={label} className="flex items-start gap-2 text-sm text-[#1a1a2e]">
-              <Icon className="mt-1 flex-none text-[11px]" style={{ color: accent }} />
-              <span dangerouslySetInnerHTML={{ __html: label }} />
-            </li>
-          );
-        })}
-      </ul>
+      <p className="mt-6 flex-1 text-sm leading-relaxed text-[#4a4a5a]">
+        {overview}
+      </p>
+      <p className="mt-3 text-[11px] font-medium text-[#9a9aaa]">
+        Full feature breakdown in the comparison table below.
+      </p>
 
       <Link
         href={ctaHref}
