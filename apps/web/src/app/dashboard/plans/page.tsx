@@ -69,14 +69,17 @@ export default function PlansPage() {
             icon={<FaClipboardList />}
             tag="Self-serve"
             title="Core Scope"
-            subtitle="A contractor-ready brief, delivered in 48 hours."
             price="$399"
             priceNote="one-time · per project"
             featured
             featuredLabel="Most popular"
-            overview="Turn your renovation idea into a contractor-ready scope in 48 hours — so every bid comes back apples-to-apples."
+            highlights={[
+              "Contractor-ready scope in 48 hours",
+              "Apples-to-apples bid comparison",
+              "Self-serve, structured intake",
+            ]}
             ctaHref="/dashboard/checkout?plan=core"
-            ctaLabel="Get instant access"
+            ctaLabel="Get started"
           />
           <PlanCard
             accent="#c08a5a"
@@ -84,14 +87,18 @@ export default function PlansPage() {
             icon={<FaUserTie />}
             tag="With expert review"
             title="Guided Scope"
-            subtitle="Everything in Core, plus a live review and one round of revisions."
             price="$1,000"
             priceNote="one-time · typical project"
             featured
             featuredLabel="Recommended for $10k+ projects"
-            overview="Everything in Core, plus a live expert review, one revision round, and personalized risk flags for higher-stakes projects."
+            highlights={[
+              "Everything in Core Scope",
+              "Live expert review call",
+              "One revision round included",
+              "Personalized risk flags",
+            ]}
             ctaHref="/dashboard/checkout?plan=guided"
-            ctaLabel="Secure your plan"
+            ctaLabel="Get started"
           />
           <PlanCard
             accent="#2d5a3d"
@@ -99,12 +106,15 @@ export default function PlansPage() {
             icon={<FaBookOpen />}
             tag="For your design"
             title="Build Book"
-            subtitle="Moodboard, real-photo AI mockup, and a shareable items list."
             price="$199"
             priceNote="one-time · per project"
-            overview="Lock in the look — a moodboard, real-photo AI mockup, and a shareable items list your contractor can actually order from."
+            highlights={[
+              "Curated moodboard for your space",
+              "Real-photo AI mockup of the result",
+              "Shareable, orderable items list",
+            ]}
             ctaHref="/dashboard/checkout?plan=build-book"
-            ctaLabel="Get instant access"
+            ctaLabel="Get started"
           />
         </div>
 
@@ -255,10 +265,9 @@ function PlanCard({
   icon,
   tag,
   title,
-  subtitle,
   price,
   priceNote,
-  overview,
+  highlights,
   ctaHref,
   ctaLabel,
   featured = false,
@@ -269,10 +278,9 @@ function PlanCard({
   icon: React.ReactNode;
   tag: string;
   title: string;
-  subtitle: string;
   price: string;
   priceNote: string;
-  overview: string;
+  highlights: string[];
   ctaHref: string;
   ctaLabel: string;
   featured?: boolean;
@@ -312,7 +320,6 @@ function PlanCard({
       </div>
 
       <h3 className="mt-5 font-serif text-2xl text-[#1a1a2e]">{title}</h3>
-      <p className="mt-1 text-sm text-[#6a6a7a]">{subtitle}</p>
 
       {/* Centered mid-card price */}
       <div
@@ -327,12 +334,14 @@ function PlanCard({
         </span>
       </div>
 
-      <p className="mt-6 flex-1 text-sm leading-relaxed text-[#4a4a5a]">
-        {overview}
-      </p>
-      <p className="mt-3 text-[11px] font-medium text-[#9a9aaa]">
-        Full feature breakdown in the comparison table below.
-      </p>
+      <ul className="mt-6 flex-1 space-y-2.5">
+        {highlights.map((h) => (
+          <li key={h} className="flex items-start gap-2 text-sm leading-snug text-[#1a1a2e]">
+            <FaCheck className="mt-1 flex-none text-[11px]" style={{ color: accent }} />
+            <span>{h}</span>
+          </li>
+        ))}
+      </ul>
 
       <Link
         href={ctaHref}
@@ -387,7 +396,6 @@ function AdvisorCard({
         </span>
       </div>
       <h3 className="mt-5 font-serif text-2xl text-[#1a1a2e]">{title}</h3>
-      <p className="mt-1 text-sm text-[#6a6a7a]">{subtitle}</p>
 
       <div
         className="mt-6 flex flex-col items-center rounded-2xl border px-4 py-6 text-center"
