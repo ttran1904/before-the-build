@@ -20,7 +20,7 @@ export default function DashboardLayout({
       {/* Sidebar — cozy lodge */}
       <aside className="sticky top-0 flex h-screen w-60 flex-col bg-gradient-to-b from-[#2d5a3d] via-[#264e34] to-[#1f4029] p-5 text-white shadow-[inset_-1px_0_0_rgba(0,0,0,0.15)]">
         {/* Brand */}
-        <Link href="/dashboard" className="mb-6 flex items-center justify-center group">
+        <Link href="/dashboard" className="mb-6 flex items-center justify-start group">
           <Image
             src="/brand/logo-on-green.png"
             alt="Before The Build"
