@@ -17,7 +17,6 @@ import {
   FaXmark,
   FaChevronLeft,
   FaChevronRight,
-  FaCircleCheck,
   FaCircleInfo,
   FaListCheck,
   FaUserGroup,
@@ -644,7 +643,7 @@ function Cell({
       {typeof value === "string" ? (
         <span className="text-xs font-semibold text-[#1a1a2e]">{value}</span>
       ) : value ? (
-        <FaCircleCheck className="mx-auto text-base" style={{ color: accent }} />
+        <FaCheck className="mx-auto text-sm" style={{ color: accent }} />
       ) : (
         <FaMinus className="mx-auto text-xs text-[#cdcbc4]" />
       )}
