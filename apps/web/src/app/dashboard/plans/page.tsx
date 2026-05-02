@@ -17,6 +17,12 @@ import {
   FaXmark,
   FaChevronLeft,
   FaChevronRight,
+  FaCircleCheck,
+  FaCircleInfo,
+  FaListCheck,
+  FaUserGroup,
+  FaScrewdriverWrench,
+  FaKey,
 } from "react-icons/fa6";
 
 
@@ -37,12 +43,12 @@ export default function PlansPage() {
           Plans &amp; pricing
         </p>
         <h1 className="mx-auto mt-3 max-w-3xl font-serif text-4xl text-[#1a1a2e] md:text-5xl">
-          Pick the chapter you’re in.
+          Compare the 3 Groundwork plans
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[#6a6a7a]">
-          Three ways to get a real contractor&apos;s clarity on your project.
-          Report and Pro are one-time per-room payments. Premium is ongoing
-          monthly support once your build begins.
+          Three ways to get a real contractor&apos;s clarity on your project —
+          from a self-serve scope to a dedicated retired contractor by your
+          side. Report and Pro are one-time per-room; Premium is monthly.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#6a6a7a]">
           <span className="inline-flex items-center gap-1.5">
@@ -59,17 +65,7 @@ export default function PlansPage() {
 
       {/* ── 3 Groundwork plans ───────────────────────────────── */}
       <section>
-        <div className="text-center">
-          <h2 className="font-serif text-3xl text-[#1a1a2e]">
-            Compare the 3 Groundwork plans
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-[14px] text-[#6a6a7a]">
-            Pick the level of support that fits where you are — from a
-            self-serve scope to a dedicated retired contractor by your side.
-          </p>
-        </div>
-
-        <div className="mt-10 grid gap-6 md:grid-cols-3 md:items-stretch">
+        <div className="grid gap-6 md:grid-cols-3 md:items-stretch">
           <PlanCard
             accent="#c08a5a"
             accentBg="#f6f3ed"
@@ -462,58 +458,69 @@ function CallPackCard({
 function ComparisonTable() {
   type Row = {
     label: string;
+    info?: string;
     report: boolean | string;
     pro: boolean | string;
     premium: boolean | string;
   };
-  type Group = { category: string; color: string; bg: string; rows: Row[] };
+  type Group = {
+    category: string;
+    color: string;
+    bg: string;
+    icon: React.ReactNode;
+    rows: Row[];
+  };
 
   const groups: Group[] = [
     {
       category: "Scope & report",
       color: "#c08a5a",
       bg: "#f6f3ed",
+      icon: <FaListCheck />,
       rows: [
-        { label: "Project summary", report: true, pro: true, premium: true },
-        { label: "Existing conditions snapshot", report: true, pro: true, premium: true },
-        { label: "Defined scope (included, excluded, undecided)", report: true, pro: true, premium: true },
+        { label: "Project summary", info: "A 1-page overview a contractor can read in 60 seconds.", report: true, pro: true, premium: true },
+        { label: "Existing conditions snapshot", info: "What\'s already in the room today — finishes, fixtures, known issues.", report: true, pro: true, premium: true },
+        { label: "Defined scope (included, excluded, undecided)", info: "Every line item flagged as in, out, or still TBD so bids stay comparable.", report: true, pro: true, premium: true },
         { label: "Room-by-room breakdown", report: true, pro: true, premium: true },
-        { label: "What to get clear before bidding", report: true, pro: true, premium: true },
+        { label: "What to get clear before bidding", info: "The decisions you should lock in before sending the scope to contractors.", report: true, pro: true, premium: true },
         { label: "Decision checklist", report: true, pro: true, premium: true },
-        { label: "Major variables map", report: true, pro: true, premium: true },
-        { label: "Builder questions to ask", report: true, pro: true, premium: true },
+        { label: "Major variables map", info: "The few choices (layout, plumbing, finishes) that swing the price the most.", report: true, pro: true, premium: true },
+        { label: "Builder questions to ask", info: "Targeted questions that surface a contractor\'s real assumptions.", report: true, pro: true, premium: true },
         { label: "Next-step roadmap", report: true, pro: true, premium: true },
-        { label: "Contractor-ready PDF", report: true, pro: true, premium: true },
+        { label: "Contractor-ready PDF", info: "Single shareable file you can hand directly to any contractor.", report: true, pro: true, premium: true },
       ],
     },
     {
       category: "Pre-bid expert support",
       color: "#1a1a2e",
       bg: "#eef0f4",
+      icon: <FaUserGroup />,
       rows: [
-        { label: "Calls with a real person", report: false, pro: "3 calls", premium: "Unlimited email" },
-        { label: "Bid comparison (upload up to 4 bids)", report: false, pro: true, premium: true },
-        { label: "One round of scope refinement", report: false, pro: true, premium: true },
+        { label: "Calls with a real person", info: "45-min calls with a retired contractor. Used as needed.", report: false, pro: "3 calls", premium: "Unlimited email" },
+        { label: "Bid comparison (upload up to 4 bids)", info: "We line up the bids side-by-side and flag what to question.", report: false, pro: true, premium: true },
+        { label: "One round of scope refinement", info: "Update the scope after walkthroughs or initial contractor feedback.", report: false, pro: true, premium: true },
       ],
     },
     {
       category: "Mid-build ongoing support",
       color: "#2d5a3d",
       bg: "#eef3ee",
+      icon: <FaScrewdriverWrench />,
       rows: [
-        { label: "Dedicated retired contractor", report: false, pro: false, premium: true },
-        { label: "Change-order review", report: false, pro: false, premium: true },
+        { label: "Dedicated retired contractor", info: "The same person across your whole project — no rotating advisors.", report: false, pro: false, premium: true },
+        { label: "Change-order review", info: "We sanity-check change orders before you sign.", report: false, pro: false, premium: true },
         { label: "Decision support mid-build", report: false, pro: false, premium: true },
         { label: "Email support within 24 hours", report: false, pro: false, premium: true },
-        { label: "Ongoing contractor evaluation", report: false, pro: false, premium: true },
+        { label: "Ongoing contractor evaluation", info: "Honest read on how your contractor is performing through the build.", report: false, pro: false, premium: true },
       ],
     },
     {
       category: "Ownership",
       color: "#1a1a2e",
       bg: "#eef0f4",
+      icon: <FaKey />,
       rows: [
-        { label: "Lifetime access to your project", report: true, pro: true, premium: true },
+        { label: "Lifetime access to your project", info: "Your scope and brief stay in your account forever — no expiry.", report: true, pro: true, premium: true },
       ],
     },
   ];
@@ -573,7 +580,10 @@ function ComparisonTable() {
                   className="px-6 py-2.5 text-[10px] font-bold uppercase tracking-[0.22em]"
                   style={{ color: g.color }}
                 >
-                  {g.category}
+                  <span className="inline-flex items-center gap-2">
+                    <span className="text-[13px]">{g.icon}</span>
+                    {g.category}
+                  </span>
                 </td>
               </tr>
               {g.rows.map((r, i) => (
@@ -584,9 +594,27 @@ function ComparisonTable() {
                     (i % 2 === 0 ? "bg-white" : "bg-[#faf8f3]/40")
                   }
                 >
-                  <td className="py-3 pl-12 pr-6 text-[#1a1a2e]">{r.label}</td>
+                  <td className="py-3 pl-12 pr-6 text-[#1a1a2e]">
+                    <span className="inline-flex items-center gap-1.5">
+                      {r.label}
+                      {r.info && (
+                        <span className="group relative inline-flex">
+                          <FaCircleInfo
+                            className="cursor-help text-[11px] text-[#9a9aaa] transition group-hover:text-[#1a1a2e]"
+                            aria-label={r.info}
+                          />
+                          <span
+                            role="tooltip"
+                            className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 translate-y-1 rounded-lg bg-[#1a1a2e] px-3 py-2 text-[11px] font-normal leading-snug text-white opacity-0 shadow-lg transition group-hover:translate-y-0 group-hover:opacity-100"
+                          >
+                            {r.info}
+                          </span>
+                        </span>
+                      )}
+                    </span>
+                  </td>
                   <Cell value={r.report} accent="#2d5a3d" />
-                  <Cell value={r.pro} accent="#2d5a3d" emphasize />
+                  <Cell value={r.pro} accent="#2d5a3d" />
                   <Cell value={r.premium} accent="#2d5a3d" />
                 </tr>
               ))}
@@ -616,7 +644,7 @@ function Cell({
       {typeof value === "string" ? (
         <span className="text-xs font-semibold text-[#1a1a2e]">{value}</span>
       ) : value ? (
-        <FaCheck className="mx-auto text-sm" style={{ color: accent }} />
+        <FaCircleCheck className="mx-auto text-base" style={{ color: accent }} />
       ) : (
         <FaMinus className="mx-auto text-xs text-[#cdcbc4]" />
       )}
