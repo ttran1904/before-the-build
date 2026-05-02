@@ -6,7 +6,7 @@ import {
   FaCartShopping, FaCalendarDays, FaShieldHalved, FaCertificate,
   FaRuler,
   FaClipboardList,
-  FaUserTie, FaUserShield, FaHelmetSafety,
+  FaUserTie, FaHelmetSafety,
 } from "react-icons/fa6";
 
 /* ─── Room scene illustrations ─── */
@@ -737,267 +737,129 @@ export default function Home() {
           {/* Heading */}
           <div className="text-center">
             <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2d5a3d]">
-              Pricing
+              Plans &amp; pricing
             </span>
             <h2 className="mt-3 font-serif text-4xl text-[#1a1a2e] md:text-5xl">
-              Three layers. Pay only for what you need.
+              Three Groundwork plans. Pick the one that fits.
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-[#6a6a7a]">
-              Start with a clear scope, add design when you are ready, and bring
-              an experienced contractor onto your side of the table whenever
-              decisions get hard.
+              From a self-serve scope you can hand a contractor, to a dedicated
+              retired contractor on your side from start to finish.
             </p>
           </div>
 
-          {/* ── Layer 1: Groundwork ── */}
-          <div className="mt-16">
-            <div className="flex items-end justify-between gap-4">
+          <div className="mt-12 grid gap-6 md:grid-cols-3 md:items-stretch">
+            <PlanCard
+              accent="#c08a5a"
+              accentBg="#f6f3ed"
+              icon={<FaClipboardList />}
+              tag="Self-serve"
+              title="Groundwork Report"
+              subtitle="A clear plan before talking to contractors. Built to hand directly to a contractor."
+              price="$399"
+              priceNote="one-time · per room"
+              features={[
+                "Contractor-ready scope PDF",
+                "Defined scope — in, out, undecided",
+                "Decision checklist & builder questions",
+                "Major variables map",
+                "Next-step roadmap",
+              ]}
+              ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dcore"
+              ctaLabel="Get started"
+            />
+
+            <PlanCard
+              accent="#1a1a2e"
+              accentBg="#eef0f4"
+              icon={<FaUserTie />}
+              tag="With expert calls"
+              title="Groundwork Pro"
+              subtitle="A real person to help you think it through before bidding."
+              price="$799"
+              priceNote="one-time · per room"
+              featured
+              featuredLabel="Most popular · $10k+ projects"
+              features={[
+                "Everything in Groundwork Report",
+                "3 calls with a real person",
+                "Bid comparison — upload up to 4 bids",
+                "One round of scope refinement",
+              ]}
+              ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dguided"
+              ctaLabel="Get started"
+            />
+
+            <PlanCard
+              accent="#2d5a3d"
+              accentBg="#eef3ee"
+              icon={<FaHelmetSafety />}
+              tag="Ongoing support"
+              title="Groundwork Premium"
+              subtitle="A dedicated retired contractor on your side once the build has started."
+              price="$500+"
+              priceNote="monthly · based on project size"
+              features={[
+                "Dedicated retired contractor",
+                "Bid, estimate & change-order review",
+                "Decision support mid-build",
+                "Email support within 24 hours",
+                "Ongoing contractor evaluation",
+              ]}
+              ctaHref="/sign-in?redirect=%2Fdashboard%2Fadvisor%3Ftier%3Dpremium"
+              ctaLabel="Request a match"
+            />
+          </div>
+
+          {/* Add-ons strip */}
+          <div className="mt-10 rounded-3xl border border-[#e8e6e1] bg-white p-8">
+            <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
-                  Layer 1 · Groundwork
+                  Add-ons
                 </span>
-                <h3 className="mt-2 font-serif text-3xl text-[#1a1a2e]">
-                  Define the project clearly
+                <h3 className="mt-2 font-serif text-2xl text-[#1a1a2e]">
+                  Occasional Call Support
                 </h3>
                 <p className="mt-1 max-w-xl text-sm text-[#6a6a7a]">
-                  So every contractor bids the same project — not their own
-                  interpretation.
+                  Need help without committing to Premium? Book a single call
+                  or save with a pack.
                 </p>
               </div>
-            </div>
-
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              {/* Groundwork Core */}
-              <PlanCard
-                accent="#c08a5a"
-                accentBg="#f6f3ed"
-                icon={<FaClipboardList />}
-                tag="Self-serve"
-                title="Groundwork Core Scope"
-                subtitle="Structured intake → contractor-ready scope, delivered in 48 hours."
-                price="$399"
-                priceNote="one-time, per project"
-                features={[
-                  "Structured intake flow with photos & room details",
-                  "What is changing vs. staying",
-                  "Plumbing / electrical / layout flags",
-                  "Open-items list & assumption log",
-                  "Realistic cost range",
-                  "Contractor-ready scope summary (PDF)",
-                  "Hidden costs & key questions to ask",
-                  "48-hour turnaround",
-                ]}
-                ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dcore"
-                ctaLabel="Start Core Scope"
-              />
-
-              {/* Groundwork Guided — featured */}
-              <PlanCard
-                accent="#c08a5a"
-                accentBg="#f6f3ed"
-                icon={<FaUserTie />}
-                tag="With expert review"
-                title="Groundwork Guided Scope"
-                subtitle="Everything in Core, plus a live review call and one round of revisions."
-                price="$750–$1,500"
-                priceNote="one-time · scaled to project complexity"
-                featured
-                featuredLabel="Most popular"
-                features={[
-                  "Everything in Core Scope",
-                  "Deeper scope definition & expanded assumption log",
-                  "More specific cost range",
-                  "One live review call with an expert",
-                  "One round of revisions",
-                  "Bid comparison template",
-                  "Personalized risk flags",
-                  "Cost-driver explanations",
-                ]}
-                ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dguided"
-                ctaLabel="Start Guided Scope"
-              />
-            </div>
-          </div>
-
-          {/* ── Layer 2: Build Book ── */}
-          <div className="mt-16">
-            <div>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2d5a3d]">
-                Layer 2 · Build Book
-              </span>
-              <h3 className="mt-2 font-serif text-3xl text-[#1a1a2e]">
-                Decide the design
-              </h3>
-              <p className="mt-1 max-w-xl text-sm text-[#6a6a7a]">
-                Translate vibes and Pinterest pins into a concrete, buildable
-                design.
-              </p>
-            </div>
-
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <PlanCard
-                accent="#2d5a3d"
-                accentBg="#eef3ee"
-                icon={<FaBookOpen />}
-                tag="For your design"
-                title="Build Book"
-                subtitle="Moodboard, real-photo AI mockup, and a shareable items list."
-                price="$150"
-                priceNote="one-time, per project"
-                features={[
-                  "Style direction & inspiration",
-                  "Real-photo AI mockup of your room",
-                  "Moodboard with items checklist",
-                  "Catalogue picks & shopping links",
-                  "Final shareable Build Book",
-                ]}
-                ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dbuild-book"
-                ctaLabel="Start Build Book"
-              />
-
-              {/* Pairing hint card */}
-              <div className="flex flex-col justify-between rounded-3xl border border-dashed border-[#c8c5be] bg-white/60 p-8">
-                <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-                    Pairs well with
-                  </span>
-                  <h4 className="mt-2 font-serif text-2xl text-[#1a1a2e]">
-                    Groundwork + Build Book
-                  </h4>
-                  <p className="mt-2 text-sm text-[#6a6a7a]">
-                    Most homeowners scope it first, then design it. Both
-                    deliverables sit side-by-side in one shareable project — and
-                    your contractor sees exactly the same picture you do.
-                  </p>
-                </div>
-                <ul className="mt-6 space-y-2">
-                  {[
-                    "One linked project, two deliverables",
-                    "No duplicate data entry",
-                    "Share both as a single PDF or live link",
-                  ].map((d) => (
-                    <li key={d} className="flex items-start gap-2 text-sm text-[#1a1a2e]">
-                      <FaCheck className="mt-1 flex-none text-[10px] text-[#2d5a3d]" />
-                      <span>{d}</span>
-                    </li>
-                  ))}
-                </ul>
+              <div className="grid w-full grid-cols-3 gap-3 md:w-auto md:gap-4">
+                {[
+                  { label: "Single call", price: "$59" },
+                  { label: "3-call pack", price: "$149", highlight: true },
+                  { label: "5-call pack", price: "$229" },
+                ].map((c) => (
+                  <div
+                    key={c.label}
+                    className={
+                      "flex flex-col items-center rounded-2xl border px-4 py-3 text-center " +
+                      (c.highlight
+                        ? "border-[#c08a5a] bg-[#f6f3ed]"
+                        : "border-[#ece9e3] bg-[#faf8f3]")
+                    }
+                  >
+                    <span className="font-serif text-2xl font-bold text-[#1a1a2e]">
+                      {c.price}
+                    </span>
+                    <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
+                      {c.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* ── Layer 3: Contractor Advisor ── */}
-          <div className="mt-16">
-            <div>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#1a1a2e]">
-                Layer 3 · Contractor Advisor
-              </span>
-              <h3 className="mt-2 font-serif text-3xl text-[#1a1a2e]">
-                A real contractor on your side of the table
-              </h3>
-              <p className="mt-1 max-w-xl text-sm text-[#6a6a7a]">
-                Independent, experienced contractors who help you review bids,
-                evaluate change orders, and sanity-check decisions during
-                construction.
-              </p>
-            </div>
-
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              {/* On-Demand Advisor */}
-              <PlanCard
-                accent="#1a1a2e"
-                accentBg="#ece9e3"
-                icon={<FaHelmetSafety />}
-                tag="On-demand"
-                title="On-Demand Advisor"
-                subtitle="Book an expert at the moments that matter — bids, change orders, decisions."
-                price="$150 / hour"
-                priceNote="bundles available · pay as you go"
-                features={[
-                  "A consistent advisor matched to your project",
-                  "Schedule calls only when you need them",
-                  "Bid review — inclusions, exclusions, red flags",
-                  "Change-order review & pricing sanity checks",
-                  "Help preparing the right contractor questions",
-                  "3-call & 5-call discounted bundles",
-                ]}
-                ctaHref="/sign-in?redirect=/dashboard/advisor"
-                ctaLabel="Talk to an advisor"
-              />
-
-              {/* Dedicated Advisor */}
-              <PlanCard
-                accent="#1a1a2e"
-                accentBg="#ece9e3"
-                icon={<FaUserShield />}
-                tag="Continuous support"
-                title="Dedicated Advisor"
-                subtitle="One advisor, start to finish. Calls plus async support across the whole project."
-                price="Monthly retainer"
-                priceNote="3-month minimum · auto-renews monthly"
-                features={[
-                  "Dedicated advisor who builds context over time",
-                  "Scheduled calls + async messaging & email",
-                  "Continuous oversight of contractor behavior",
-                  "Faster decisions — no re-explaining each time",
-                  "All On-Demand use cases included",
-                  "30-day cancellation notice after the initial term",
-                ]}
-                ctaHref="/sign-in?redirect=/dashboard/advisor?tier=dedicated"
-                ctaLabel="Request a dedicated advisor"
-              />
-            </div>
-          </div>
-
-          {/* ── Combined offering / bundle stack ── */}
-          <div className="mt-16 rounded-3xl border border-[#e8e6e1] bg-white p-8">
-            <div className="text-center">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-                Combine layers
-              </span>
-              <h3 className="mt-2 font-serif text-2xl text-[#1a1a2e]">
-                Common ways homeowners stack the layers
-              </h3>
-            </div>
-            <div className="mt-8 grid gap-6 md:grid-cols-3">
-              {[
-                {
-                  title: "Just the scope",
-                  body: "Core Scope on its own — perfect for a small bathroom refresh where you already know the look.",
-                  price: "from $399",
-                },
-                {
-                  title: "Scope + advice when needed",
-                  body: "Guided Scope plus an On-Demand Advisor for bid review and the trickier moments.",
-                  price: "from $750 + $150/hr",
-                  highlight: true,
-                },
-                {
-                  title: "Full stack",
-                  body: "Guided Scope, Build Book, and a Dedicated Advisor across the whole project.",
-                  price: "from $900 + retainer",
-                },
-              ].map((b) => (
-                <div
-                  key={b.title}
-                  className={
-                    "flex flex-col rounded-2xl border p-6 " +
-                    (b.highlight
-                      ? "border-[#2d5a3d] bg-[#eef3ee]"
-                      : "border-[#ece9e3] bg-[#faf8f3]")
-                  }
-                >
-                  <div className="font-serif text-lg text-[#1a1a2e]">{b.title}</div>
-                  <p className="mt-2 flex-1 text-sm text-[#6a6a7a]">{b.body}</p>
-                  <div className="mt-4 text-sm font-semibold text-[#1a1a2e]">{b.price}</div>
-                </div>
-              ))}
-            </div>
-            <p className="mt-6 text-center text-xs text-[#9a9aaa]">
-              No subscriptions for Groundwork or Build Book. Advisor retainers
-              are clearly billed monthly with a 3-month minimum.
-            </p>
-          </div>
+          <p className="mt-6 text-center text-xs text-[#9a9aaa]">
+            Report and Pro are one-time per-room payments. Premium is monthly,
+            based on project size.{" "}
+            <Link href="/dashboard/plans" className="underline-offset-2 hover:underline">
+              See full plan comparison →
+            </Link>
+          </p>
         </div>
       </section>
 
