@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   FaClipboardList,
   FaUserTie,
@@ -14,6 +14,9 @@ import {
   FaPhone,
   FaPhoneVolume,
   FaHeadset,
+  FaXmark,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa6";
 
 
@@ -24,6 +27,8 @@ import {
  * ────────────────────────────────────────────────────────────── */
 
 export default function PlansPage() {
+  const [bookOpen, setBookOpen] = useState(false);
+
   return (
     <div className="mx-auto max-w-6xl space-y-16 pb-20">
       {/* ── Hero ─────────────────────────────────────────────── */}
@@ -172,12 +177,13 @@ export default function PlansPage() {
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link
-            href="/dashboard/advisor"
+          <button
+            type="button"
+            onClick={() => setBookOpen(true)}
             className="inline-flex items-center gap-2 rounded-full bg-[#1a1a2e] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2a2a3e]"
           >
             Book a call <FaArrowRight className="text-xs" />
-          </Link>
+          </button>
           <span className="text-xs text-[#9a9aaa]">
             Calls are refundable up to 24 hours in advance.
           </span>
@@ -266,6 +272,8 @@ export default function PlansPage() {
           </Link>
         </div>
       </section>
+
+      <BookCallModal open={bookOpen} onClose={() => setBookOpen(false)} />
     </div>
   );
 }
@@ -576,7 +584,7 @@ function ComparisonTable() {
                     (i % 2 === 0 ? "bg-white" : "bg-[#faf8f3]/40")
                   }
                 >
-                  <td className="px-6 py-3 text-[#1a1a2e]">{r.label}</td>
+                  <td className="py-3 pl-12 pr-6 text-[#1a1a2e]">{r.label}</td>
                   <Cell value={r.report} accent="#2d5a3d" />
                   <Cell value={r.pro} accent="#2d5a3d" emphasize />
                   <Cell value={r.premium} accent="#2d5a3d" />
@@ -649,3 +657,269 @@ function Faq({ q, a }: { q: string; a: string }) {
     </details>
   );
 }
+
+/* ──────────────────────────────────────────────────────────── */
+
+function BookCallModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const today = useMemo(() => new Date(), []);
+  const [viewDate, setViewDate] = useState(
+    new Date(today.getFullYear(), today.getMonth(), 1)
+  );
+  const [selected, setSelected] = useState<Date | null>(null);
+  const [slot, setSlot] = useState<string | null>(null);
+
+  if (!open) return null;
+
+  const monthLabel = viewDate.toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const firstDayOfMonth = new Date(
+    viewDate.getFullYear(),
+    viewDate.getMonth(),
+    1
+  );
+  const startWeekday = firstDayOfMonth.getDay(); // 0 = Sun
+  const daysInMonth = new Date(
+    viewDate.getFullYear(),
+    viewDate.getMonth() + 1,
+    0
+  ).getDate();
+
+  const cells: (Date | null)[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push(new Date(viewDate.getFullYear(), viewDate.getMonth(), d));
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const startOfToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+
+  const slots = [
+    "9:00 AM",
+    "9:30 AM",
+    "10:00 AM",
+    "10:30 AM",
+    "11:00 AM",
+    "1:00 PM",
+    "1:30 PM",
+    "2:00 PM",
+    "2:30 PM",
+    "3:00 PM",
+    "3:30 PM",
+    "4:00 PM",
+  ];
+
+  const goPrev = () =>
+    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
+  const goNext = () =>
+    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
+
+  const selectedLabel = selected
+    ? selected.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#1a1a2e]/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-[#ece9e3] bg-white shadow-xl"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between border-b border-[#ece9e3] bg-[#faf8f3] px-6 py-5">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
+              Book a call
+            </p>
+            <h3 className="mt-1 font-serif text-2xl text-[#1a1a2e]">
+              Pick a day and time
+            </h3>
+            <p className="mt-1 text-xs text-[#6a6a7a]">
+              45-minute call with a retired contractor. Times shown in your
+              local timezone.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full p-2 text-[#6a6a7a] transition hover:bg-white"
+          >
+            <FaXmark />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="grid gap-0 md:grid-cols-2">
+          {/* Calendar */}
+          <div className="border-b border-[#ece9e3] p-6 md:border-b-0 md:border-r">
+            <div className="mb-4 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={goPrev}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[#6a6a7a] transition hover:bg-[#f8f7f4]"
+                aria-label="Previous month"
+              >
+                <FaChevronLeft className="text-xs" />
+              </button>
+              <span className="font-serif text-lg text-[#1a1a2e]">
+                {monthLabel}
+              </span>
+              <button
+                type="button"
+                onClick={goNext}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[#6a6a7a] transition hover:bg-[#f8f7f4]"
+                aria-label="Next month"
+              >
+                <FaChevronRight className="text-xs" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9a9aaa]">
+              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                <div key={i} className="py-1.5">
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-1 grid grid-cols-7 gap-1">
+              {cells.map((d, i) => {
+                if (!d) return <div key={i} className="h-10" />;
+                const past = d < startOfToday;
+                const isSelected = selected && isSameDay(d, selected);
+                const isToday = isSameDay(d, today);
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={past}
+                    onClick={() => {
+                      setSelected(d);
+                      setSlot(null);
+                    }}
+                    className={
+                      "flex h-10 items-center justify-center rounded-lg text-sm transition " +
+                      (isSelected
+                        ? "bg-[#2d5a3d] font-semibold text-white"
+                        : past
+                          ? "cursor-not-allowed text-[#cdcbc4]"
+                          : "text-[#1a1a2e] hover:bg-[#eef3ee]") +
+                      (isToday && !isSelected
+                        ? " ring-1 ring-[#2d5a3d]/40"
+                        : "")
+                    }
+                  >
+                    {d.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Time slots */}
+          <div className="flex max-h-[420px] flex-col p-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+              {selectedLabel ? "Available times" : "Select a day"}
+            </p>
+            <p className="mt-1 font-serif text-base text-[#1a1a2e]">
+              {selectedLabel ?? "Pick a day on the calendar"}
+            </p>
+
+            <div className="mt-4 flex-1 overflow-y-auto pr-1">
+              {selected ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {slots.map((t) => {
+                    const active = slot === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setSlot(t)}
+                        className={
+                          "rounded-xl border px-3 py-2.5 text-sm font-semibold transition " +
+                          (active
+                            ? "border-[#2d5a3d] bg-[#2d5a3d] text-white"
+                            : "border-[#ece9e3] bg-white text-[#1a1a2e] hover:border-[#2d5a3d]/50 hover:bg-[#eef3ee]")
+                        }
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-[#ece9e3] bg-[#faf8f3] px-6 py-10 text-center text-sm text-[#9a9aaa]">
+                  Choose a day to see available time slots.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex flex-col gap-3 border-t border-[#ece9e3] bg-[#faf8f3] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-[#6a6a7a]">
+            {slot && selectedLabel ? (
+              <>
+                <span className="font-semibold text-[#1a1a2e]">
+                  {selectedLabel}
+                </span>{" "}
+                at <span className="font-semibold text-[#1a1a2e]">{slot}</span>
+              </>
+            ) : (
+              "Refundable up to 24 hours in advance."
+            )}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full px-4 py-2 text-sm font-semibold text-[#6a6a7a] transition hover:bg-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!slot}
+              className={
+                "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition " +
+                (slot
+                  ? "bg-[#2d5a3d] hover:bg-[#244a32]"
+                  : "cursor-not-allowed bg-[#cdcbc4]")
+              }
+            >
+              Confirm booking <FaArrowRight className="text-xs" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
