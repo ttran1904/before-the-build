@@ -1,28 +1,26 @@
 "use client";
+
 import Link from "next/link";
 import { Fragment } from "react";
 import {
   FaClipboardList,
   FaUserTie,
-  FaBookOpen,
-  FaUserShield,
   FaHelmetSafety,
   FaCheck,
   FaMinus,
   FaShieldHalved,
   FaInfinity,
   FaArrowRight,
-
+  FaPhone,
+  FaPhoneVolume,
+  FaHeadset,
 } from "react-icons/fa6";
-import type { IconType } from "react-icons";
 
-type PlanFeature = string | { label: string; icon: IconType };
 
 /* ──────────────────────────────────────────────────────────────
  * Plans page — high-ticket, ownership-led pricing.
- * Hubspot-style structure: hero → recommended 3-tier → comparison
- * table → add-ons → trust strip → FAQ.
- * Round prices, "one-time", "lifetime project access" language.
+ * Structure: hero → 3 Groundwork plans (Report / Pro / Premium)
+ * → comparison table → call add-ons → trust strip → FAQ.
  * ────────────────────────────────────────────────────────────── */
 
 export default function PlansPage() {
@@ -37,8 +35,8 @@ export default function PlansPage() {
           Pick the chapter you’re in.
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[#6a6a7a]">
-          Groundwork Report, Pro, and Build Book are one-time payments — pay
-          once and keep your scope and design forever. Premium is ongoing
+          Three ways to get a real contractor&apos;s clarity on your project.
+          Report and Pro are one-time per-room payments. Premium is ongoing
           monthly support once your build begins.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#6a6a7a]">
@@ -49,20 +47,24 @@ export default function PlansPage() {
             <FaShieldHalved className="text-[#2d5a3d]" /> 7-day money-back guarantee
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <FaCheck className="text-[#2d5a3d]" /> No subscription on scope or design
+            <FaCheck className="text-[#2d5a3d]" /> No subscription on scope
           </span>
         </div>
       </header>
 
-      {/* ── 3-tier recommended (Groundwork + Build Book) ─────── */}
+      {/* ── 3 Groundwork plans ───────────────────────────────── */}
       <section>
         <div className="text-center">
           <h2 className="font-serif text-3xl text-[#1a1a2e]">
-            One-time plans for your project
+            Compare the 3 Groundwork plans
           </h2>
+          <p className="mx-auto mt-3 max-w-xl text-[14px] text-[#6a6a7a]">
+            Pick the level of support that fits where you are — from a
+            self-serve scope to a dedicated retired contractor by your side.
+          </p>
         </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="mt-10 grid gap-6 md:grid-cols-3 md:items-stretch">
           <PlanCard
             accent="#c08a5a"
             accentBg="#f6f3ed"
@@ -71,12 +73,11 @@ export default function PlansPage() {
             title="Groundwork Report"
             price="$399"
             priceNote="one-time · per room"
-            featured
-            featuredLabel="Most popular"
             highlights={[
               "Contractor-ready scope PDF",
               "Defined scope — in, out, undecided",
               "Decision checklist & builder questions",
+              "Major variables map",
               "Next-step roadmap",
             ]}
             ctaHref="/dashboard/checkout?plan=core"
@@ -91,11 +92,11 @@ export default function PlansPage() {
             price="$799"
             priceNote="one-time · per room"
             featured
-            featuredLabel="Recommended for $10k+ projects"
+            featuredLabel="Most popular · $10k+ projects"
             highlights={[
               "Everything in Groundwork Report",
               "3 calls with a real person",
-              "Bid comparison — flag what to question",
+              "Bid comparison — upload up to 4 bids",
               "One round of scope refinement",
             ]}
             ctaHref="/dashboard/checkout?plan=guided"
@@ -104,61 +105,15 @@ export default function PlansPage() {
           <PlanCard
             accent="#2d5a3d"
             accentBg="#eef3ee"
-            icon={<FaBookOpen />}
-            tag="For your design"
-            title="Build Book"
-            price="$150"
-            priceNote="one-time · per project"
-            highlights={[
-              "Curated moodboard",
-              "Real-photo AI mockup",
-              "Shareable order list",
-            ]}
-            ctaHref="/dashboard/checkout?plan=build-book"
-            ctaLabel="Get started"
-          />
-        </div>
-
-        <p className="mt-4 text-center text-xs text-[#9a9aaa]">
-          Groundwork Report and Pro are one-time per-room payments. Build Book
-          is one-time per project. All prices in USD.
-        </p>
-      </section>
-
-      {/* ── Comparison table ─────────────────────────────────── */}
-      <section className="overflow-hidden rounded-3xl border border-[#ece9e3] bg-white">
-        <div className="border-b border-[#ece9e3] p-6 text-center">
-          <h2 className="font-serif text-2xl text-[#1a1a2e]">Compare what&apos;s included</h2>
-        </div>
-        <ComparisonTable />
-      </section>
-
-      {/* ── Ongoing support ───────────────────────────────────── */}
-      <section>
-        <div className="text-center">
-          <h2 className="font-serif text-3xl text-[#1a1a2e]">
-            Ongoing support once the build starts
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-[15px] text-[#6a6a7a]">
-            A real retired contractor on your side — consistent across your
-            project.
-          </p>
-        </div>
-
-        {/* Groundwork Premium — full-width card */}
-        <div className="mt-10">
-          <AdvisorCard
             icon={<FaHelmetSafety />}
-            tag="Monthly · based on project size"
+            tag="Ongoing support"
             title="Groundwork Premium"
-            subtitle="A dedicated retired contractor on your side, start to finish."
             price="$500+"
-            priceUnit="/ month"
-            priceNote="Based on project size"
-            features={[
-              "Dedicated retired contractor — consistent across your project",
-              "Bid and estimate review",
-              "Change order review",
+            priceUnit="/ mo"
+            priceNote="based on project size"
+            highlights={[
+              "Dedicated retired contractor",
+              "Bid, estimate & change-order review",
               "Decision support mid-build",
               "Email support within 24 hours",
               "Ongoing contractor evaluation",
@@ -168,43 +123,74 @@ export default function PlansPage() {
           />
         </div>
 
-        {/* Occasional Call Support */}
-        <div className="mt-8 rounded-3xl border border-[#ece9e3] bg-white p-8">
-          <div className="text-center">
-            <p className="font-serif text-2xl text-[#1a1a2e]">
-              Occasional Call Support
-            </p>
-            <p className="mt-2 text-sm text-[#6a6a7a]">
-              For homeowners who need help without committing to Premium.
-            </p>
-          </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {[
-              { label: "Single call", price: "$59" },
-              { label: "3-call pack", price: "$149" },
-              { label: "5-call pack", price: "$229" },
-            ].map(({ label, price }) => (
-              <div
-                key={label}
-                className="flex flex-col items-center rounded-2xl border border-[#ece9e3] bg-[#faf8f3] px-6 py-6 text-center"
-              >
-                <span className="font-serif text-4xl font-bold text-[#1a1a2e]">
-                  {price}
-                </span>
-                <span className="mt-2 text-sm font-semibold text-[#6a6a7a]">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 text-center">
-            <Link
-              href="/dashboard/advisor"
-              className="inline-flex items-center gap-2 rounded-full bg-[#1a1a2e] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2a2a3e]"
-            >
-              Book a call <FaArrowRight className="text-xs" />
-            </Link>
-          </div>
+        <p className="mt-4 text-center text-xs text-[#9a9aaa]">
+          Report and Pro are one-time per-room payments. Premium is monthly,
+          based on project size. All prices in USD.
+        </p>
+      </section>
+
+      {/* ── Comparison table ─────────────────────────────────── */}
+      <section className="overflow-hidden rounded-3xl border border-[#ece9e3] bg-white">
+        <div className="border-b border-[#ece9e3] p-6 text-center">
+          <h2 className="font-serif text-2xl text-[#1a1a2e]">
+            Compare what&apos;s included
+          </h2>
+        </div>
+        <ComparisonTable />
+      </section>
+
+      {/* ── Occasional Call Support add-ons ──────────────────── */}
+      <section>
+        <div className="text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
+            Add-ons
+          </p>
+          <h2 className="mt-3 font-serif text-3xl text-[#1a1a2e]">
+            Occasional Call Support
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-[14px] text-[#6a6a7a]">
+            For homeowners who need help without committing to Premium. Use a
+            call before signing a bid, mid-build, or any time a decision feels
+            heavy.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-5 sm:grid-cols-3">
+          <CallPackCard
+            icon={<FaPhone />}
+            label="Single call"
+            price="$59"
+            unit="$59 / call"
+            description="One 45-minute call with a retired contractor."
+          />
+          <CallPackCard
+            icon={<FaPhoneVolume />}
+            label="3-call pack"
+            price="$149"
+            unit="≈ $50 / call"
+            description="Save $28. Use across bidding, signing, and mid-build."
+            featured
+            featuredLabel="Best value"
+          />
+          <CallPackCard
+            icon={<FaHeadset />}
+            label="5-call pack"
+            price="$229"
+            unit="≈ $46 / call"
+            description="Save $66. Best for long or complex builds."
+          />
+        </div>
+
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/dashboard/advisor"
+            className="inline-flex items-center gap-2 rounded-full bg-[#1a1a2e] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2a2a3e]"
+          >
+            Book a call <FaArrowRight className="text-xs" />
+          </Link>
+          <span className="text-xs text-[#9a9aaa]">
+            Calls are refundable up to 24 hours in advance.
+          </span>
         </div>
       </section>
 
@@ -214,17 +200,17 @@ export default function PlansPage() {
           <ValueProp
             icon={<FaInfinity />}
             title="Lifetime project access"
-            body="Your scope, design, and brief stay in your account forever — no renewal fees, no expiry."
+            body="Your scope and brief stay in your account forever — no renewal fees, no expiry."
           />
           <ValueProp
             icon={<FaShieldHalved />}
             title="7-day money-back"
-            body="If your Core or Guided Scope doesn&apos;t make your bids clearer, we refund it."
+            body="If your Report or Pro doesn&apos;t make your bids clearer, we refund it."
           />
           <ValueProp
             icon={<FaCheck />}
             title="One simple payment"
-            body="Pay once per project. No subscription on scope or design — only Advisor retainers are monthly."
+            body="Pay once per project for Report and Pro. Only Premium is monthly."
           />
         </div>
       </section>
@@ -276,7 +262,7 @@ export default function PlansPage() {
             href="/dashboard/guide"
             className="text-sm font-medium text-white/85 underline-offset-4 hover:underline"
           >
-            Not sure which layer? Read the guide
+            Not sure which plan? Read the guide
           </Link>
         </div>
       </section>
@@ -293,6 +279,7 @@ function PlanCard({
   tag,
   title,
   price,
+  priceUnit,
   priceNote,
   highlights,
   ctaHref,
@@ -306,6 +293,7 @@ function PlanCard({
   tag: string;
   title: string;
   price: string;
+  priceUnit?: string;
   priceNote: string;
   highlights: string[];
   ctaHref: string;
@@ -323,7 +311,7 @@ function PlanCard({
     >
       {featured && (
         <span
-          className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
+          className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
           style={{ backgroundColor: accent }}
         >
           {featuredLabel}
@@ -353,9 +341,19 @@ function PlanCard({
         className="mt-6 flex flex-col items-center rounded-2xl border px-4 py-6 text-center"
         style={{ borderColor: accent + "33", backgroundColor: accentBg }}
       >
-        <span className="font-serif text-5xl font-bold leading-none" style={{ color: accent }}>
-          {price}
-        </span>
+        <div className="flex items-baseline gap-1">
+          <span
+            className="font-serif text-5xl font-bold leading-none"
+            style={{ color: accent }}
+          >
+            {price}
+          </span>
+          {priceUnit && (
+            <span className="text-sm font-semibold text-[#6a6a7a]">
+              {priceUnit}
+            </span>
+          )}
+        </div>
         <span className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
           {priceNote}
         </span>
@@ -363,8 +361,14 @@ function PlanCard({
 
       <ul className="mt-6 flex-1 space-y-2.5">
         {highlights.map((h) => (
-          <li key={h} className="flex items-start gap-2 text-sm leading-snug text-[#1a1a2e]">
-            <FaCheck className="mt-1 flex-none text-[11px]" style={{ color: accent }} />
+          <li
+            key={h}
+            className="flex items-start gap-2 text-sm leading-snug text-[#1a1a2e]"
+          >
+            <FaCheck
+              className="mt-1 flex-none text-[11px]"
+              style={{ color: accent }}
+            />
             <span>{h}</span>
           </li>
         ))}
@@ -381,92 +385,79 @@ function PlanCard({
   );
 }
 
-function AdvisorCard({
+function CallPackCard({
   icon,
-  tag,
-  title,
-  subtitle,
+  label,
   price,
-  priceUnit,
-  priceNote,
-  features,
-  ctaHref,
-  ctaLabel,
+  unit,
+  description,
+  featured = false,
+  featuredLabel = "Best value",
 }: {
   icon: React.ReactNode;
-  tag: string;
-  title: string;
-  subtitle: string;
+  label: string;
   price: string;
-  priceUnit: string;
-  priceNote: string;
-  features: PlanFeature[];
-  ctaHref: string;
-  ctaLabel: string;
+  unit: string;
+  description: string;
+  featured?: boolean;
+  featuredLabel?: string;
 }) {
-  const accent = "#1a1a2e";
-  const accentBg = "#ece9e3";
+  const accent = "#c08a5a";
+  const accentBg = "#f6f3ed";
   return (
-    <div className="flex flex-col rounded-3xl border border-[#ece9e3] bg-white p-7 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-12 w-12 flex-none items-center justify-center rounded-xl text-xl"
-          style={{ backgroundColor: accentBg, color: accent }}
-        >
-          {icon}
-        </div>
+    <div
+      className={
+        "relative flex flex-col rounded-2xl bg-white p-6 transition hover:shadow-md " +
+        (featured
+          ? "border-2 shadow-sm"
+          : "border border-[#ece9e3] shadow-sm")
+      }
+      style={featured ? { borderColor: accent } : undefined}
+    >
+      {featured && (
         <span
-          className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
-          style={{ backgroundColor: accentBg, color: accent }}
+          className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
+          style={{ backgroundColor: accent }}
         >
-          {tag}
+          {featuredLabel}
         </span>
-      </div>
-      <h3 className="mt-5 font-serif text-2xl text-[#1a1a2e]">{title}</h3>
+      )}
 
       <div
-        className="mt-6 flex flex-col items-center rounded-2xl border px-4 py-6 text-center"
-        style={{ borderColor: accent + "33", backgroundColor: accentBg }}
+        className="flex h-11 w-11 items-center justify-center rounded-xl text-lg"
+        style={{ backgroundColor: accentBg, color: accent }}
       >
-        <div className="flex items-baseline gap-1">
-          <span className="font-serif text-5xl font-bold leading-none" style={{ color: accent }}>
-            {price}
-          </span>
-          {priceUnit && (
-            <span className="text-sm font-semibold text-[#6a6a7a]">{priceUnit}</span>
-          )}
-        </div>
-        <span
-          className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]"
-          dangerouslySetInnerHTML={{ __html: priceNote }}
-        />
+        {icon}
       </div>
 
-      <ul className="mt-6 space-y-2">
-        {features.map((f) => {
-          const label = typeof f === "string" ? f : f.label;
-          const Icon: IconType = typeof f === "string" ? FaCheck : f.icon;
-          return (
-            <li key={label} className="flex items-start gap-2 text-sm text-[#1a1a2e]">
-              <Icon className="mt-1 flex-none text-[11px]" style={{ color: accent }} />
-              <span dangerouslySetInnerHTML={{ __html: label }} />
-            </li>
-          );
-        })}
-      </ul>
+      <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+        {label}
+      </p>
 
-      <Link
-        href={ctaHref}
-        className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-[#1a1a2e] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2a2a3e]"
-      >
-        {ctaLabel} <FaArrowRight className="text-xs" />
-      </Link>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span
+          className="font-serif text-4xl font-bold leading-none"
+          style={{ color: accent }}
+        >
+          {price}
+        </span>
+        <span className="text-xs font-semibold text-[#9a9aaa]">{unit}</span>
+      </div>
+
+      <p className="mt-3 flex-1 text-sm leading-relaxed text-[#6a6a7a]">
+        {description}
+      </p>
     </div>
   );
 }
 
 function ComparisonTable() {
-  type Row = { label: string; core: boolean | string; guided: boolean | string; book: boolean | string };
+  type Row = {
+    label: string;
+    report: boolean | string;
+    pro: boolean | string;
+    premium: boolean | string;
+  };
   type Group = { category: string; color: string; bg: string; rows: Row[] };
 
   const groups: Group[] = [
@@ -475,35 +466,38 @@ function ComparisonTable() {
       color: "#c08a5a",
       bg: "#f6f3ed",
       rows: [
-        { label: "Project summary", core: true, guided: true, book: false },
-        { label: "Existing conditions snapshot", core: true, guided: true, book: false },
-        { label: "Defined scope (included, excluded, undecided)", core: true, guided: true, book: false },
-        { label: "Room-by-room breakdown", core: true, guided: true, book: false },
-        { label: "Decision checklist", core: true, guided: true, book: false },
-        { label: "Major variables map", core: true, guided: true, book: false },
-        { label: "Builder questions to ask", core: true, guided: true, book: false },
-        { label: "Next-step roadmap", core: true, guided: true, book: false },
-        { label: "Contractor-ready PDF", core: true, guided: true, book: false },
+        { label: "Project summary", report: true, pro: true, premium: false },
+        { label: "Existing conditions snapshot", report: true, pro: true, premium: false },
+        { label: "Defined scope (included, excluded, undecided)", report: true, pro: true, premium: false },
+        { label: "Room-by-room breakdown", report: true, pro: true, premium: false },
+        { label: "What to get clear before bidding", report: true, pro: true, premium: false },
+        { label: "Decision checklist", report: true, pro: true, premium: false },
+        { label: "Major variables map", report: true, pro: true, premium: false },
+        { label: "Builder questions to ask", report: true, pro: true, premium: false },
+        { label: "Next-step roadmap", report: true, pro: true, premium: false },
+        { label: "Contractor-ready PDF", report: true, pro: true, premium: false },
       ],
     },
     {
-      category: "Pro support",
+      category: "Pre-bid expert support",
       color: "#c08a5a",
       bg: "#f6f3ed",
       rows: [
-        { label: "3 calls with a real person", core: false, guided: true, book: false },
-        { label: "Bid comparison (upload up to 4 bids)", core: false, guided: true, book: false },
-        { label: "One round of scope refinement", core: false, guided: true, book: false },
+        { label: "Calls with a real person", report: false, pro: "3 calls", premium: "Unlimited email" },
+        { label: "Bid comparison (upload up to 4 bids)", report: false, pro: true, premium: true },
+        { label: "One round of scope refinement", report: false, pro: true, premium: true },
       ],
     },
     {
-      category: "Design & visuals",
+      category: "Mid-build ongoing support",
       color: "#2d5a3d",
       bg: "#eef3ee",
       rows: [
-        { label: "Style direction & moodboard", core: false, guided: false, book: true },
-        { label: "Real-photo AI mockup", core: false, guided: false, book: true },
-        { label: "Items checklist & shopping links", core: false, guided: false, book: true },
+        { label: "Dedicated retired contractor", report: false, pro: false, premium: true },
+        { label: "Change-order review", report: false, pro: false, premium: true },
+        { label: "Decision support mid-build", report: false, pro: false, premium: true },
+        { label: "Email support within 24 hours", report: false, pro: false, premium: true },
+        { label: "Ongoing contractor evaluation", report: false, pro: false, premium: true },
       ],
     },
     {
@@ -511,7 +505,7 @@ function ComparisonTable() {
       color: "#1a1a2e",
       bg: "#eef0f4",
       rows: [
-        { label: "Lifetime access to your project", core: true, guided: true, book: true },
+        { label: "Lifetime access to your project", report: true, pro: true, premium: true },
       ],
     },
   ];
@@ -525,28 +519,40 @@ function ComparisonTable() {
               Feature
             </th>
             <th className="px-4 py-5 text-center">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
+                Groundwork Report
+              </div>
+              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
+                $399
+                <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
+                  / room
+                </span>
+              </div>
+            </th>
+            <th className="px-4 py-5 text-center">
               <div className="inline-block rounded-full bg-[#c08a5a] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white">
                 Most popular
               </div>
               <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
-                Groundwork Report
-              </div>
-              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$399</div>
-            </th>
-            <th className="px-4 py-5 text-center">
-              <div className="inline-block rounded-full bg-[#c08a5a] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white">
-                Recommended · $10k+
-              </div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
                 Groundwork Pro
               </div>
-              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$799</div>
+              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
+                $799
+                <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
+                  / room
+                </span>
+              </div>
             </th>
             <th className="px-4 py-5 text-center">
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2d5a3d]">
-                Build Book
+                Groundwork Premium
               </div>
-              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$150</div>
+              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
+                $500+
+                <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
+                  / mo
+                </span>
+              </div>
             </th>
           </tr>
         </thead>
@@ -571,9 +577,9 @@ function ComparisonTable() {
                   }
                 >
                   <td className="px-6 py-3 text-[#1a1a2e]">{r.label}</td>
-                  <Cell value={r.core} accent="#c08a5a" emphasize />
-                  <Cell value={r.guided} accent="#c08a5a" emphasize />
-                  <Cell value={r.book} accent="#2d5a3d" />
+                  <Cell value={r.report} accent="#c08a5a" />
+                  <Cell value={r.pro} accent="#c08a5a" emphasize />
+                  <Cell value={r.premium} accent="#2d5a3d" />
                 </tr>
               ))}
             </Fragment>
@@ -635,7 +641,9 @@ function Faq({ q, a }: { q: string; a: string }) {
     <details className="group rounded-xl border border-[#ece9e3] bg-white p-5 open:shadow-sm">
       <summary className="cursor-pointer list-none text-sm font-semibold text-[#1a1a2e]">
         {q}
-        <span className="float-right text-[#9a9aaa] transition group-open:rotate-45">+</span>
+        <span className="float-right text-[#9a9aaa] transition group-open:rotate-45">
+          +
+        </span>
       </summary>
       <p className="mt-3 text-sm leading-relaxed text-[#6a6a7a]">{a}</p>
     </details>
