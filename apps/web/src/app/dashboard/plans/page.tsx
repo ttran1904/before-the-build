@@ -37,9 +37,9 @@ export default function PlansPage() {
           Pick the chapter you’re in.
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[#6a6a7a]">
-          One payment, lifetime access to your project. No subscriptions on
-          Groundwork or Build Book — pay once and keep every scope, render,
-          and contractor brief, forever.
+          Groundwork Report, Pro, and Build Book are one-time payments — pay
+          once and keep your scope and design forever. Premium is ongoing
+          monthly support once your build begins.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#6a6a7a]">
           <span className="inline-flex items-center gap-1.5">
@@ -68,15 +68,16 @@ export default function PlansPage() {
             accentBg="#f6f3ed"
             icon={<FaClipboardList />}
             tag="Self-serve"
-            title="Core Scope"
+            title="Groundwork Report"
             price="$399"
-            priceNote="one-time · per project"
+            priceNote="one-time · per room"
             featured
             featuredLabel="Most popular"
             highlights={[
-              "Contractor-ready scope",
-              "Apples-to-apples bid comparison",
-              "Self-serve",
+              "Contractor-ready scope PDF",
+              "Defined scope — in, out, undecided",
+              "Decision checklist & builder questions",
+              "Next-step roadmap",
             ]}
             ctaHref="/dashboard/checkout?plan=core"
             ctaLabel="Get started"
@@ -85,17 +86,17 @@ export default function PlansPage() {
             accent="#c08a5a"
             accentBg="#f6f3ed"
             icon={<FaUserTie />}
-            tag="With expert review"
-            title="Guided Scope"
-            price="$1,000"
-            priceNote="one-time · typical project"
+            tag="With expert calls"
+            title="Groundwork Pro"
+            price="$799"
+            priceNote="one-time · per room"
             featured
             featuredLabel="Recommended for $10k+ projects"
             highlights={[
-              "Everything in Core Scope",
-              "Live expert review call",
-              "1 revision round",
-              "Customized risk flags",
+              "Everything in Groundwork Report",
+              "3 calls with a real person",
+              "Bid comparison — flag what to question",
+              "One round of scope refinement",
             ]}
             ctaHref="/dashboard/checkout?plan=guided"
             ctaLabel="Get started"
@@ -106,7 +107,7 @@ export default function PlansPage() {
             icon={<FaBookOpen />}
             tag="For your design"
             title="Build Book"
-            price="$199"
+            price="$150"
             priceNote="one-time · per project"
             highlights={[
               "Curated moodboard",
@@ -119,9 +120,8 @@ export default function PlansPage() {
         </div>
 
         <p className="mt-4 text-center text-xs text-[#9a9aaa]">
-          All plans are one-time payments. Pricing shown in USD. Guided Scope
-          can scale up for unusually complex projects — we&apos;ll quote before
-          you commit.
+          Groundwork Report and Pro are one-time per-room payments. Build Book
+          is one-time per project. All prices in USD.
         </p>
       </section>
 
@@ -133,51 +133,78 @@ export default function PlansPage() {
         <ComparisonTable />
       </section>
 
-      {/* ── Contractor Advisor — separate layer ──────────────── */}
+      {/* ── Ongoing support ───────────────────────────────────── */}
       <section>
         <div className="text-center">
           <h2 className="font-serif text-3xl text-[#1a1a2e]">
-            Bring a contractor onto your side of the table
+            Ongoing support once the build starts
           </h2>
+          <p className="mx-auto mt-3 max-w-xl text-[15px] text-[#6a6a7a]">
+            A real retired contractor on your side — consistent across your
+            project.
+          </p>
         </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
+        {/* Groundwork Premium — full-width card */}
+        <div className="mt-10">
           <AdvisorCard
             icon={<FaHelmetSafety />}
-            tag="On-demand"
-            title="On-Demand Advisor"
-            subtitle="Book an expert for the moments that matter."
-            price="$150"
-            priceUnit="/ hour"
-            priceNote="3-call &amp; 5-call bundles available"
+            tag="Monthly · based on project size"
+            title="Groundwork Premium"
+            subtitle="A dedicated retired contractor on your side, start to finish."
+            price="$500+"
+            priceUnit="/ month"
+            priceNote="Based on project size"
             features={[
-              "A consistent advisor matched to your project",
-              "Book only when you need it",
-              "Bid review — inclusions, exclusions, red flags",
-              "Change-order &amp; pricing sanity checks",
-              "Help preparing the right contractor questions",
+              "Dedicated retired contractor — consistent across your project",
+              "Bid and estimate review",
+              "Change order review",
+              "Decision support mid-build",
+              "Email support within 24 hours",
+              "Ongoing contractor evaluation",
             ]}
-            ctaHref="/dashboard/advisor"
-            ctaLabel="Book an advisor"
-          />
-          <AdvisorCard
-            icon={<FaUserShield />}
-            tag="Continuous support"
-            title="Dedicated Advisor"
-            subtitle="One advisor, start to finish — calls plus async support."
-            price="Retainer"
-            priceUnit=""
-            priceNote="3-month minimum · 30-day cancellation after"
-            features={[
-              "Dedicated advisor who builds context over time",
-              "Scheduled calls + async messaging &amp; email",
-              "Continuous oversight of contractor behavior",
-              "Faster decisions — no re-explaining each time",
-              "All On-Demand use cases included",
-            ]}
-            ctaHref="/dashboard/advisor?tier=dedicated"
+            ctaHref="/dashboard/advisor?tier=premium"
             ctaLabel="Request a match"
           />
+        </div>
+
+        {/* Occasional Call Support */}
+        <div className="mt-8 rounded-3xl border border-[#ece9e3] bg-white p-8">
+          <div className="text-center">
+            <p className="font-serif text-2xl text-[#1a1a2e]">
+              Occasional Call Support
+            </p>
+            <p className="mt-2 text-sm text-[#6a6a7a]">
+              For homeowners who need help without committing to Premium.
+            </p>
+          </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[
+              { label: "Single call", price: "$59" },
+              { label: "3-call pack", price: "$149" },
+              { label: "5-call pack", price: "$229" },
+            ].map(({ label, price }) => (
+              <div
+                key={label}
+                className="flex flex-col items-center rounded-2xl border border-[#ece9e3] bg-[#faf8f3] px-6 py-6 text-center"
+              >
+                <span className="font-serif text-4xl font-bold text-[#1a1a2e]">
+                  {price}
+                </span>
+                <span className="mt-2 text-sm font-semibold text-[#6a6a7a]">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <Link
+              href="/dashboard/advisor"
+              className="inline-flex items-center gap-2 rounded-full bg-[#1a1a2e] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2a2a3e]"
+            >
+              Book a call <FaArrowRight className="text-xs" />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -209,24 +236,24 @@ export default function PlansPage() {
         </h2>
         <div className="mx-auto mt-6 max-w-3xl space-y-3">
           <Faq
-            q="Why one-time pricing instead of a subscription?"
-            a="A renovation has a clear start and finish. You shouldn&apos;t pay forever for a deliverable you produced once. You own your scope and Build Book the same way you&apos;d own a set of architectural drawings."
+            q="Why one-time pricing for Report and Pro?"
+            a="A renovation has a clear start and finish. You shouldn&apos;t pay forever for a deliverable you produced once. You own your scope the same way you&apos;d own a set of architectural drawings."
           />
           <Faq
-            q="What's the difference between Core and Guided Scope?"
-            a="Core is fast, structured, self-serve, and produces a contractor-ready scope. Guided adds a live expert review call, one round of revisions, deeper risk flags, and a bid comparison template — built for projects with more ambiguity."
+            q="What&apos;s the difference between Groundwork Report and Groundwork Pro?"
+            a="Report is a complete, contractor-ready scope you produce yourself. Pro adds 3 real-person calls, bid comparison across up to 4 bids, and one round of scope refinement — built for projects with more ambiguity or higher stakes."
           />
           <Faq
-            q="Can I upgrade from Core to Guided later?"
-            a="Yes. We credit the full $399 from Core toward Guided if you decide you want expert review afterward."
+            q="Can I upgrade from Report to Pro later?"
+            a="Yes. We credit the full $399 from Report toward Pro if you decide you want the calls and bid comparison afterward."
           />
           <Faq
-            q="When should I add a Contractor Advisor?"
-            a="On-Demand is great for one-off moments — comparing bids, reviewing a change order, or pricing sanity checks. Dedicated makes sense for larger projects where decisions come up every week."
+            q="When should I add Groundwork Premium?"
+            a="Premium makes sense once your build has started and decisions come up regularly — change orders, contractor behavior, mid-build pivots. The call packs are great for one-off moments before or during construction."
           />
           <Faq
             q="What if I need a refund?"
-            a="If a Core or Guided Scope doesn&apos;t make your bids more comparable, email us within 7 days and we&apos;ll refund the purchase. Advisor calls are refunded if cancelled 24h in advance."
+            a="If your Groundwork Report or Pro doesn&apos;t make your bids more comparable, email us within 7 days and we&apos;ll refund the purchase. Call packs are refunded if cancelled 24h in advance."
           />
         </div>
       </section>
@@ -243,7 +270,7 @@ export default function PlansPage() {
             href="/dashboard/checkout?plan=guided"
             className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#2d5a3d] transition hover:bg-[#f8f7f4]"
           >
-            Get Guided Scope <FaArrowRight className="text-xs" />
+            Get Groundwork Pro <FaArrowRight className="text-xs" />
           </Link>
           <Link
             href="/dashboard/guide"
@@ -444,26 +471,29 @@ function ComparisonTable() {
 
   const groups: Group[] = [
     {
-      category: "Scope & intake",
+      category: "Scope & report",
       color: "#c08a5a",
       bg: "#f6f3ed",
       rows: [
-        { label: "Structured intake & scope summary", core: true, guided: true, book: false },
-        { label: "Plumbing / electrical / layout flags", core: true, guided: true, book: false },
-        { label: "Open-items list & assumption log", core: true, guided: true, book: false },
-        { label: "Realistic cost range", core: "Range", guided: "Refined", book: false },
+        { label: "Project summary", core: true, guided: true, book: false },
+        { label: "Existing conditions snapshot", core: true, guided: true, book: false },
+        { label: "Defined scope (included, excluded, undecided)", core: true, guided: true, book: false },
+        { label: "Room-by-room breakdown", core: true, guided: true, book: false },
+        { label: "Decision checklist", core: true, guided: true, book: false },
+        { label: "Major variables map", core: true, guided: true, book: false },
+        { label: "Builder questions to ask", core: true, guided: true, book: false },
+        { label: "Next-step roadmap", core: true, guided: true, book: false },
         { label: "Contractor-ready PDF", core: true, guided: true, book: false },
       ],
     },
     {
-      category: "Expert review",
+      category: "Pro support",
       color: "#c08a5a",
       bg: "#f6f3ed",
       rows: [
-        { label: "Live expert review call", core: false, guided: true, book: false },
-        { label: "One round of revisions", core: false, guided: true, book: false },
-        { label: "Bid comparison template", core: false, guided: true, book: false },
-        { label: "Customized risk flags", core: false, guided: true, book: false },
+        { label: "3 calls with a real person", core: false, guided: true, book: false },
+        { label: "Bid comparison (upload up to 4 bids)", core: false, guided: true, book: false },
+        { label: "One round of scope refinement", core: false, guided: true, book: false },
       ],
     },
     {
@@ -499,7 +529,7 @@ function ComparisonTable() {
                 Most popular
               </div>
               <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
-                Core Scope
+                Groundwork Report
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$399</div>
             </th>
@@ -508,15 +538,15 @@ function ComparisonTable() {
                 Recommended · $10k+
               </div>
               <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
-                Guided Scope
+                Groundwork Pro
               </div>
-              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$1,000</div>
+              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$799</div>
             </th>
             <th className="px-4 py-5 text-center">
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2d5a3d]">
                 Build Book
               </div>
-              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$199</div>
+              <div className="mt-1 font-serif text-lg text-[#1a1a2e]">$150</div>
             </th>
           </tr>
         </thead>

@@ -41,23 +41,23 @@ export default function StartPage() {
         <div className="mt-12 grid gap-6 md:grid-cols-2">
           <ProductCard
             href="/groundwork/bathroom"
-            tag="Groundwork Scope"
-            price="From $399"
-            title="Define the project clearly enough that contractors bid the same thing."
+            tag="Groundwork Report"
+            price="$399 / room"
+            title="Get a complete, contractor-ready scope before anyone bids."
             bullets={[
-              "Project type, what's changing vs staying",
-              "Plumbing, electrical & layout flags",
-              "Open-items list & assumption log",
-              "Realistic cost range",
-              "Contractor-ready scope summary (PDF)",
+              "Project summary & existing conditions snapshot",
+              "Defined scope — included, excluded, undecided",
+              "Decision checklist & major variables map",
+              "Builder questions to ask",
+              "Next-step roadmap (PDF)",
             ]}
             icon={<FaClipboardList className="text-2xl text-[#c08a5a]" />}
-            cta="Start Groundwork Scope"
+            cta="Start Groundwork Report"
           />
           <ProductCard
             href="/build-book/bathroom/design"
             tag="Build Book"
-            price="Design layer"
+            price="$150 / project"
             title="Decide the design — moodboard, real-photo mockup, items list."
             bullets={[
               "Style direction & inspiration",
@@ -72,8 +72,9 @@ export default function StartPage() {
         </div>
 
         <p className="mt-10 text-center text-xs text-[#9a9890]">
-          Contractor Advisor — bid comparison & risk flags during construction —
-          coming soon.
+          Groundwork Pro ($799/room) adds 3 expert calls and bid comparison.
+          Groundwork Premium (from $500/month) is ongoing support once your
+          build starts.
         </p>
       </main>
     </div>
