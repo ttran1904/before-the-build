@@ -466,16 +466,16 @@ function ComparisonTable() {
       color: "#c08a5a",
       bg: "#f6f3ed",
       rows: [
-        { label: "Project summary", report: true, pro: true, premium: false },
-        { label: "Existing conditions snapshot", report: true, pro: true, premium: false },
-        { label: "Defined scope (included, excluded, undecided)", report: true, pro: true, premium: false },
-        { label: "Room-by-room breakdown", report: true, pro: true, premium: false },
-        { label: "What to get clear before bidding", report: true, pro: true, premium: false },
-        { label: "Decision checklist", report: true, pro: true, premium: false },
-        { label: "Major variables map", report: true, pro: true, premium: false },
-        { label: "Builder questions to ask", report: true, pro: true, premium: false },
-        { label: "Next-step roadmap", report: true, pro: true, premium: false },
-        { label: "Contractor-ready PDF", report: true, pro: true, premium: false },
+        { label: "Project summary", report: true, pro: true, premium: true },
+        { label: "Existing conditions snapshot", report: true, pro: true, premium: true },
+        { label: "Defined scope (included, excluded, undecided)", report: true, pro: true, premium: true },
+        { label: "Room-by-room breakdown", report: true, pro: true, premium: true },
+        { label: "What to get clear before bidding", report: true, pro: true, premium: true },
+        { label: "Decision checklist", report: true, pro: true, premium: true },
+        { label: "Major variables map", report: true, pro: true, premium: true },
+        { label: "Builder questions to ask", report: true, pro: true, premium: true },
+        { label: "Next-step roadmap", report: true, pro: true, premium: true },
+        { label: "Contractor-ready PDF", report: true, pro: true, premium: true },
       ],
     },
     {
@@ -577,8 +577,8 @@ function ComparisonTable() {
                   }
                 >
                   <td className="px-6 py-3 text-[#1a1a2e]">{r.label}</td>
-                  <Cell value={r.report} accent="#c08a5a" />
-                  <Cell value={r.pro} accent="#1a1a2e" emphasize />
+                  <Cell value={r.report} accent="#2d5a3d" />
+                  <Cell value={r.pro} accent="#2d5a3d" emphasize />
                   <Cell value={r.premium} accent="#2d5a3d" />
                 </tr>
               ))}
