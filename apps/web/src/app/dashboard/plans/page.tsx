@@ -84,8 +84,8 @@ export default function PlansPage() {
             ctaLabel="Get started"
           />
           <PlanCard
-            accent="#c08a5a"
-            accentBg="#f6f3ed"
+            accent="#1a1a2e"
+            accentBg="#eef0f4"
             icon={<FaUserTie />}
             tag="With expert calls"
             title="Groundwork Pro"
@@ -127,16 +127,6 @@ export default function PlansPage() {
           Report and Pro are one-time per-room payments. Premium is monthly,
           based on project size. All prices in USD.
         </p>
-      </section>
-
-      {/* ── Comparison table ─────────────────────────────────── */}
-      <section className="overflow-hidden rounded-3xl border border-[#ece9e3] bg-white">
-        <div className="border-b border-[#ece9e3] p-6 text-center">
-          <h2 className="font-serif text-2xl text-[#1a1a2e]">
-            Compare what&apos;s included
-          </h2>
-        </div>
-        <ComparisonTable />
       </section>
 
       {/* ── Occasional Call Support add-ons ──────────────────── */}
@@ -192,6 +182,16 @@ export default function PlansPage() {
             Calls are refundable up to 24 hours in advance.
           </span>
         </div>
+      </section>
+
+      {/* ── Comparison table ─────────────────────────────────── */}
+      <section className="overflow-hidden rounded-3xl border border-[#ece9e3] bg-white">
+        <div className="border-b border-[#ece9e3] p-6 text-center">
+          <h2 className="font-serif text-2xl text-[#1a1a2e]">
+            Compare what&apos;s included
+          </h2>
+        </div>
+        <ComparisonTable />
       </section>
 
       {/* ── Trust / value strip ──────────────────────────────── */}
@@ -480,8 +480,8 @@ function ComparisonTable() {
     },
     {
       category: "Pre-bid expert support",
-      color: "#c08a5a",
-      bg: "#f6f3ed",
+      color: "#1a1a2e",
+      bg: "#eef0f4",
       rows: [
         { label: "Calls with a real person", report: false, pro: "3 calls", premium: "Unlimited email" },
         { label: "Bid comparison (upload up to 4 bids)", report: false, pro: true, premium: true },
@@ -530,10 +530,10 @@ function ComparisonTable() {
               </div>
             </th>
             <th className="px-4 py-5 text-center">
-              <div className="inline-block rounded-full bg-[#c08a5a] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white">
+              <div className="inline-block rounded-full bg-[#1a1a2e] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white">
                 Most popular
               </div>
-              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
+              <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a1a2e]">
                 Groundwork Pro
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
@@ -578,7 +578,7 @@ function ComparisonTable() {
                 >
                   <td className="px-6 py-3 text-[#1a1a2e]">{r.label}</td>
                   <Cell value={r.report} accent="#c08a5a" />
-                  <Cell value={r.pro} accent="#c08a5a" emphasize />
+                  <Cell value={r.pro} accent="#1a1a2e" emphasize />
                   <Cell value={r.premium} accent="#2d5a3d" />
                 </tr>
               ))}
@@ -602,7 +602,7 @@ function Cell({
   return (
     <td
       className={
-        "px-4 py-3 text-center " + (emphasize ? "bg-[#f6f3ed]/40" : "")
+        "px-4 py-3 text-center " + (emphasize ? "bg-[#eef0f4]/60" : "")
       }
     >
       {typeof value === "string" ? (
