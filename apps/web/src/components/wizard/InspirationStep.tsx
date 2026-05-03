@@ -90,8 +90,11 @@ export function InspirationStep({
 
   return (
     <div className="mt-6 w-full">
-      <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
-        <div>
+      <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)_260px] lg:gap-8">
+        {/* Spacer column to keep center column horizontally centered */}
+        <div className="hidden lg:block" />
+
+        <div className="mx-auto w-full max-w-3xl">
           <Tabs tab={tab} setTab={setTab} count={items.length} />
 
           <div className="mt-8">
@@ -115,41 +118,59 @@ export function InspirationStep({
           </div>
         </div>
 
-        {/* Right rail: live "saved to idea board" tray */}
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <div className="rounded-2xl border border-[#ece9e3] bg-white px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-              Saved to your idea board
+        {/* Right rail: live "saved to idea board" tray. Sits in its own grid
+            column so it doesn't push the centered content off-axis. */}
+        <aside className="mt-8 lg:mt-0">
+          <div className="lg:sticky lg:top-6 rounded-2xl border border-[#ece9e3] bg-white px-4 py-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+              Saved to idea board
             </p>
             <p className="mt-1 font-serif text-2xl text-[#1a1a2e]">
               {items.length}
             </p>
             {items.length === 0 ? (
               <p className="mt-3 text-xs text-[#9a9aaa]">
-                Tap anything you like — it shows up here and on your idea board.
+                Tap anything you like — it shows up here.
               </p>
             ) : (
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="mt-3 grid grid-cols-3 gap-1.5">
                 {items.slice(0, 12).map((it) => (
-                  <div
+                  <SafeThumb
                     key={it.clientId}
-                    className="relative aspect-square overflow-hidden rounded-md bg-[#f0ede8]"
+                    src={it.imageUrl}
                     title={it.title || it.imageUrl}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={it.imageUrl} alt="" className="h-full w-full object-cover" />
-                  </div>
+                  />
                 ))}
               </div>
             )}
             {items.length > 12 && (
-              <p className="mt-3 text-xs text-[#9a9aaa]">
+              <p className="mt-2 text-[11px] text-[#9a9aaa]">
                 +{items.length - 12} more
               </p>
             )}
           </div>
         </aside>
       </div>
+    </div>
+  );
+}
+
+/* Renders an <img> only if it actually loads. Bad URLs become invisible. */
+function SafeThumb({ src, title }: { src: string; title?: string }) {
+  const [ok, setOk] = useState(true);
+  if (!ok) return null;
+  return (
+    <div
+      className="relative aspect-square overflow-hidden rounded-md bg-[#f0ede8]"
+      title={title}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        className="h-full w-full object-cover"
+        onError={() => setOk(false)}
+      />
     </div>
   );
 }
@@ -245,44 +266,62 @@ function GalleryTab({
       <p className="mb-4 text-center text-sm text-[#6a6a7a]">
         Tap anything that catches your eye — pick as many as you like.
       </p>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {images.map((img) => {
-          const selected = selectedUrls.has(img.url);
-          return (
-            <button
-              key={img.id}
-              onClick={() =>
-                onToggle({
-                  clientId: `gallery_${img.id}`,
-                  imageUrl: img.url,
-                  source: "google",
-                  title: img.title,
-                  tags: img.tags,
-                })
-              }
-              className={`group relative aspect-[4/5] overflow-hidden rounded-xl border-2 bg-[#f0ede8] transition ${
-                selected
-                  ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/40"
-                  : "border-transparent hover:border-[#1a1a2e]"
-              }`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={img.url}
-                alt={img.title}
-                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-                loading="lazy"
-              />
-              {selected && (
-                <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2d5a3d] text-white shadow">
-                  <FaCheck className="text-xs" />
-                </span>
-              )}
-            </button>
-          );
-        })}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        {images.map((img) => (
+          <GalleryTile
+            key={img.id}
+            img={img}
+            selected={selectedUrls.has(img.url)}
+            onToggle={onToggle}
+          />
+        ))}
       </div>
     </>
+  );
+}
+
+function GalleryTile({
+  img,
+  selected,
+  onToggle,
+}: {
+  img: GalleryImage;
+  selected: boolean;
+  onToggle: (item: InspirationItemInput) => void;
+}) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return null;
+  return (
+    <button
+      onClick={() =>
+        onToggle({
+          clientId: `gallery_${img.id}`,
+          imageUrl: img.url,
+          source: "google",
+          title: img.title,
+          tags: img.tags,
+        })
+      }
+      className={`group relative aspect-[4/5] overflow-hidden rounded-xl border-2 bg-[#f0ede8] transition ${
+        selected
+          ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/40"
+          : "border-transparent hover:border-[#1a1a2e]"
+      }`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={img.url}
+        alt={img.title}
+        className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+        loading="lazy"
+        onError={() => setBroken(true)}
+      />
+      {selected && (
+        <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2d5a3d] text-white shadow">
+          <FaCheck className="text-xs" />
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -479,36 +518,16 @@ function PinterestTab({
                 </span>
               </button>
               {open && (
-                <div className="grid grid-cols-2 gap-3 border-t border-[#ece9e3] p-4 sm:grid-cols-3 lg:grid-cols-4">
-                  {b.pins.map((pin) => {
-                    const selected = selectedUrls.has(pin.imageUrl);
-                    return (
-                      <button
-                        key={pin.id}
-                        onClick={() =>
-                          onToggle({
-                            clientId: `pinterest_${pin.id}`,
-                            imageUrl: pin.imageUrl,
-                            sourceUrl: pin.sourceUrl,
-                            source: "pinterest",
-                            title: pin.title,
-                            tags: ["pinterest", b.name.toLowerCase()],
-                          })
-                        }
-                        className={`relative aspect-[4/5] overflow-hidden rounded-lg border-2 bg-[#f0ede8] transition ${
-                          selected ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/40" : "border-transparent hover:border-[#1a1a2e]"
-                        }`}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={pin.imageUrl} alt={pin.title} className="h-full w-full object-cover" loading="lazy" />
-                        {selected && (
-                          <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2d5a3d] text-white shadow">
-                            <FaCheck className="text-xs" />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                <div className="grid grid-cols-2 gap-3 border-t border-[#ece9e3] p-4 sm:grid-cols-3">
+                  {b.pins.map((pin) => (
+                    <PinTile
+                      key={pin.id}
+                      pin={pin}
+                      boardName={b.name}
+                      selected={selectedUrls.has(pin.imageUrl)}
+                      onToggle={onToggle}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -516,5 +535,51 @@ function PinterestTab({
         })}
       </div>
     </>
+  );
+}
+
+function PinTile({
+  pin,
+  boardName,
+  selected,
+  onToggle,
+}: {
+  pin: PinterestPin;
+  boardName: string;
+  selected: boolean;
+  onToggle: (item: InspirationItemInput) => void;
+}) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return null;
+  return (
+    <button
+      onClick={() =>
+        onToggle({
+          clientId: `pinterest_${pin.id}`,
+          imageUrl: pin.imageUrl,
+          sourceUrl: pin.sourceUrl,
+          source: "pinterest",
+          title: pin.title,
+          tags: ["pinterest", boardName.toLowerCase()],
+        })
+      }
+      className={`relative aspect-[4/5] overflow-hidden rounded-lg border-2 bg-[#f0ede8] transition ${
+        selected ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/40" : "border-transparent hover:border-[#1a1a2e]"
+      }`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={pin.imageUrl}
+        alt={pin.title}
+        className="h-full w-full object-cover"
+        loading="lazy"
+        onError={() => setBroken(true)}
+      />
+      {selected && (
+        <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2d5a3d] text-white shadow">
+          <FaCheck className="text-xs" />
+        </span>
+      )}
+    </button>
   );
 }
