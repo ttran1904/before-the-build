@@ -24,7 +24,7 @@ export function TileSelect({
 
   if (useBelow) {
     return (
-      <div className="mt-10 flex w-full max-w-5xl flex-wrap justify-center gap-x-6 gap-y-10 px-2">
+      <div className="mt-10 flex w-full max-w-5xl flex-wrap justify-center gap-x-6 gap-y-8 px-2">
         {options.map((o) => {
           const Icon = o.icon;
           const selected = value === o.id;
@@ -35,32 +35,26 @@ export function TileSelect({
               onClick={() => !disabled && onChange(o.id)}
               disabled={disabled}
               aria-disabled={disabled}
-              className={`group flex w-32 flex-col items-center text-center transition sm:w-36 ${
-                disabled ? "cursor-not-allowed opacity-50" : ""
+              className={`group flex h-40 w-40 flex-col items-center justify-center rounded-full border px-3 text-center transition ${
+                disabled
+                  ? "cursor-not-allowed border-transparent bg-[#f0ede8] opacity-50"
+                  : selected
+                  ? "border-[#1a1a2e] bg-[#e8e6e1]"
+                  : "border-transparent bg-[#f0ede8] hover:bg-[#e8e6e1]"
               }`}
             >
-              <span
-                className={`mb-4 flex h-24 w-24 items-center justify-center rounded-full border transition ${
-                  disabled
-                    ? "border-transparent bg-[#f0ede8]"
-                    : selected
-                    ? "border-[#1a1a2e] bg-[#e8e6e1]"
-                    : "border-transparent bg-[#f0ede8] group-hover:bg-[#e8e6e1]"
-                }`}
-              >
-                {Icon && (
-                  <Icon
-                    className={`text-2xl text-[#3a3a4a] transition ${
-                      disabled ? "" : "group-hover:text-[#1a1a2e]"
-                    }`}
-                  />
-                )}
-              </span>
+              {Icon && (
+                <Icon
+                  className={`mb-2 text-2xl text-[#3a3a4a] transition ${
+                    disabled ? "" : "group-hover:text-[#1a1a2e]"
+                  }`}
+                />
+              )}
               <span className="block w-full px-1 text-center text-sm font-semibold leading-snug text-[#1a1a2e]">
                 {o.label}
               </span>
               {o.desc && (
-                <span className="mt-1 block w-full px-1 text-center text-xs leading-snug text-[#6a6a7a]">
+                <span className="mt-1 block w-full px-1 text-center text-[11px] leading-snug text-[#6a6a7a]">
                   {o.desc}
                 </span>
               )}

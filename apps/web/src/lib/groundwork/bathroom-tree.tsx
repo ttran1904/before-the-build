@@ -822,10 +822,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
         onChange={(v) => onChange(v as TileLook)}
         layout="below"
         options={[
-          { id: "large", label: "Large tile", icon: FaTableCellsLarge },
-          { id: "medium", label: "Medium tile", icon: FaSquare },
-          { id: "small", label: "Small or mosaic", icon: FaBorderAll },
-          { id: "patterned", label: "Patterned layout", icon: FaWandMagicSparkles },
+          { id: "large", label: "Large tile", desc: "12×24 or bigger", icon: FaTableCellsLarge },
+          { id: "medium", label: "Medium tile", desc: "around 12×12", icon: FaSquare },
+          { id: "small", label: "Small or mosaic", desc: "under 4×4", icon: FaBorderAll },
+          { id: "patterned", label: "Patterned layout", desc: "herringbone, offset", icon: FaWandMagicSparkles },
           { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
