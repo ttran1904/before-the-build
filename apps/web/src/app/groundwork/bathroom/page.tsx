@@ -21,7 +21,7 @@ export default function GroundworkBathroomPage() {
       <WizardEngine
         tabs={GROUNDWORK_TABS}
         nodes={nodes}
-        startId="project-type"
+        startId="room"
         brandTitle="Groundwork Scope · Bathroom"
         backHref="/dashboard"
         onFinish={() => {

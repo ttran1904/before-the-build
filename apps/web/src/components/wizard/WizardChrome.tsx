@@ -17,12 +17,18 @@ interface WizardChromeProps {
   onNext?: () => void;
   nextLabel?: string;
   nextDisabled?: boolean;
+  /** Optional warning text shown next to the Next button (e.g. "Pick an answer to continue."). */
+  nextWarning?: string;
   /** Hide the bottom Next button (e.g. when the answer auto-advances on click). */
   hideNext?: boolean;
   /** When true, replace question area with a centered loading state. */
   finishing?: boolean;
   /** Loading label shown while finishing. */
   finishingLabel?: string;
+  /** Use a wider main column (max-w-6xl) instead of the default 3xl. */
+  wide?: boolean;
+  /** Top-align the question area instead of vertically centering it. */
+  topAlign?: boolean;
   children: ReactNode;
 }
 
@@ -37,9 +43,12 @@ export function WizardChrome({
   onNext,
   nextLabel = "Next",
   nextDisabled = false,
+  nextWarning,
   hideNext = false,
   finishing = false,
   finishingLabel = "Generating your scope…",
+  wide = false,
+  topAlign = false,
   children,
 }: WizardChromeProps) {
   const visited = new Set(visitedTabs);
@@ -85,11 +94,12 @@ export function WizardChrome({
             })}
           </nav>
           <div className="flex-1" />
+          <div id="wizard-header-slot" className="flex items-center" />
         </div>
       </header>
 
       {/* ── Centered question area (autosaves silently) ───────── */}
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-stretch justify-center px-6 pb-12 pt-12">
+      <main className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} flex-1 flex-col items-stretch ${topAlign ? "justify-start" : "justify-center"} px-6 pb-6 pt-12`}>
         {finishing ? (
           <div className="flex flex-col items-center gap-6 py-16 text-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#e8e6e1] border-t-[#c08a5a]" />
@@ -103,30 +113,39 @@ export function WizardChrome({
         )}
       </main>
 
-      {/* ── Step navigation: Back (left) · Next (right) ─────────── */}
+      {/* ── Step navigation: Back (left) · Next (right) — sticky ─── */}
       {!finishing && (
-      <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 pb-12">
-        {onBack ? (
-          <button
-            onClick={onBack}
-            className="rounded-full bg-[#e8e6e1] px-8 py-3 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#d5d3cd]"
-          >
-            Back
-          </button>
-        ) : (
-          <span />
-        )}
-        {!hideNext ? (
-          <button
-            onClick={onNext}
-            disabled={nextDisabled}
-            className="rounded-full bg-[#c08a5a] px-10 py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {nextLabel}
-          </button>
-        ) : (
-          <span />
-        )}
+      <div className="sticky bottom-0 z-30 border-t border-[#ece9e3] bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+        <div className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} items-center justify-between px-6 py-2`}>
+          {onBack ? (
+            <button
+              onClick={onBack}
+              className="rounded-full bg-[#e8e6e1] px-5 py-1.5 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#d5d3cd]"
+            >
+              Back
+            </button>
+          ) : (
+            <span />
+          )}
+          {!hideNext ? (
+            <div className="flex flex-col items-end gap-1">
+              {nextWarning && (
+                <p className="text-[11px] font-medium text-[#c08a5a]">{nextWarning}</p>
+              )}
+              <button
+                onClick={onNext}
+                aria-disabled={nextDisabled}
+                className={`rounded-full bg-[#c08a5a] px-6 py-1.5 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] ${
+                  nextDisabled ? "opacity-40" : ""
+                }`}
+              >
+                {nextLabel}
+              </button>
+            </div>
+          ) : (
+            <span />
+          )}
+        </div>
       </div>
       )}
     </div>

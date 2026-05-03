@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WizardChrome } from "./WizardChrome";
+import { InfoPopover } from "./InfoPopover";
 import type { QuestionNode, WizardTab } from "./types";
 
 interface WizardEngineProps {
@@ -127,7 +128,17 @@ function NodeView({
   finishing?: boolean;
 }) {
   const [value, setValue] = useState<unknown>(() => node.initial());
-  const isValid = node.isValid ? node.isValid(value) : true;
+  const [showWarn, setShowWarn] = useState(false);
+  const isValid = node.isValid ? node.isValid(value) : hasAnswer(value);
+
+  const handleNext = () => {
+    if (!isValid) {
+      setShowWarn(true);
+      return;
+    }
+    setShowWarn(false);
+    onAdvance(value);
+  };
 
   return (
     <WizardChrome
@@ -138,25 +149,45 @@ function NodeView({
       brandTitle={brandTitle}
       backHref={backHref}
       onBack={onBack}
-      onNext={() => onAdvance(value)}
+      onNext={handleNext}
       nextDisabled={!isValid}
       hideNext={node.hideNext === true}
       nextLabel={node.terminal ? "Generate Scope" : "Next"}
+      nextWarning={showWarn && !isValid ? "Pick an answer to continue." : undefined}
       finishing={finishing}
+      wide={node.wide === true}
+      topAlign={node.topAlign === true}
     >
       <div>
         <h1 className="font-serif text-3xl leading-snug text-[#1a1a2e] sm:text-[34px]">
           {node.question}
+          {node.info && (
+            <InfoPopover
+              title={node.info.title}
+              body={node.info.body}
+              image={node.info.image}
+            />
+          )}
         </h1>
         {node.helper && (
           <p className="mt-2 text-sm text-[#6a6a7a]">{node.helper}</p>
         )}
         {node.render({
           value,
-          onChange: setValue,
+          onChange: (v: unknown) => {
+            setValue(v);
+            if (showWarn) setShowWarn(false);
+          },
           onAdvance,
         })}
       </div>
     </WizardChrome>
   );
+}
+
+function hasAnswer(v: unknown): boolean {
+  // Default: only block when the value is literally null/undefined
+  // (i.e. a single-select question hasn't been picked yet).
+  // Optional free-text and photo screens use "" or [] and should pass.
+  return v !== null && v !== undefined;
 }

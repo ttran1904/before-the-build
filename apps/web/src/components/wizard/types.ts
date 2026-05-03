@@ -11,6 +11,9 @@ export interface AnswerOption {
   label: string;
   desc?: string;
   icon?: IconType;
+  /** Optional Tailwind class to override the default icon size, e.g. "text-4xl". */
+  iconClass?: string;
+  disabled?: boolean;
 }
 
 export interface QuestionRenderProps<V = unknown> {
@@ -28,6 +31,15 @@ export interface QuestionNode<V = unknown> {
   question: string;
   /** Optional one-line helper under the question. */
   helper?: string;
+  /** Optional info popover shown via a small "i" button next to the question. */
+  info?: {
+    /** Title for the popover. Defaults to "What is this?". */
+    title?: string;
+    /** Plain-text explanation (1-3 short sentences). */
+    body: string;
+    /** Optional image URL (relative to /public). */
+    image?: string;
+  };
   /** Initial value for the local input from external store. */
   initial: () => V;
   /** Persist the answer to the external store. Called on Next or onAdvance. */
@@ -44,4 +56,8 @@ export interface QuestionNode<V = unknown> {
   hideNext?: boolean;
   /** When true, this is the last question — render Generate Scope + loader on advance. */
   terminal?: boolean;
+  /** Use a wider main column (max-w-6xl) for this question. */
+  wide?: boolean;
+  /** Top-align the question area (instead of vertical center) for this question. */
+  topAlign?: boolean;
 }

@@ -24,6 +24,8 @@ export function groundworkHasContent(s: GroundworkBathroomState): boolean {
     s.layout !== null ||
     s.photos.length > 0 ||
     s.floorPlan.length > 0 ||
+    s.inspirationItems.length > 0 ||
+    (s.inspirationLink ?? "").trim().length > 0 ||
     (s.notes ?? "").trim().length > 0
   );
 }
