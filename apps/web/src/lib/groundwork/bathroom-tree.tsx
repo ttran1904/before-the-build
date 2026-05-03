@@ -1307,8 +1307,6 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     id: "inspiration",
     tab: "photos",
     question: "Anything you've been drawn to?",
-    helper:
-      "Browse our gallery, upload a photo, paste a link, or pull from Pinterest. Whatever you save here goes straight to your idea board.",
     initial: () => null,
     commit: () => {},
     next: () => "notes",

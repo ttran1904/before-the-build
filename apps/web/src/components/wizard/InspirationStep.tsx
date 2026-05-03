@@ -10,6 +10,8 @@ import {
   FaSpinner,
   FaCheck,
   FaArrowUpRightFromSquare,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa6";
 
 import { PhotoUpload, ShortText } from "@/components/wizard/answers";
@@ -87,7 +89,7 @@ export function InspirationStep({
   );
 
   return (
-    <div className="mt-6 w-full max-w-5xl">
+    <div className="mt-6 w-full max-w-6xl">
       <Tabs tab={tab} setTab={setTab} count={items.length} />
 
       <div className="mt-8">
@@ -140,9 +142,9 @@ export function InspirationStep({
 function Tabs({ tab, setTab, count }: { tab: Tab; setTab: (t: Tab) => void; count: number }) {
   const items: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: "gallery", label: "Browse gallery", icon: FaImages },
+    { id: "pinterest", label: "Pinterest", icon: FaPinterest },
     { id: "upload", label: "Upload", icon: FaCloudArrowUp },
     { id: "link", label: "Paste a link", icon: FaLink },
-    { id: "pinterest", label: "Pinterest", icon: FaPinterest },
   ];
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 border-b border-[#ece9e3] pb-3">
@@ -226,7 +228,7 @@ function GalleryTab({
       <p className="mb-4 text-center text-sm text-[#6a6a7a]">
         Tap anything that catches your eye — pick as many as you like.
       </p>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {images.map((img) => {
           const selected = selectedUrls.has(img.url);
           return (
@@ -259,9 +261,6 @@ function GalleryTab({
                   <FaCheck className="text-xs" />
                 </span>
               )}
-              <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-2 py-1.5 text-left text-[11px] font-medium text-white">
-                {img.title}
-              </span>
             </button>
           );
         })}
@@ -450,10 +449,20 @@ function PinterestTab({
                     <p className="text-xs text-[#6a6a7a]">{b.pinCount} pins</p>
                   </div>
                 </div>
-                <span className="text-xs text-[#6a6a7a]">{open ? "Hide" : "Browse"}</span>
+                <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#6a6a7a]">
+                  {open ? (
+                    <>
+                      <FaChevronUp className="text-[10px]" /> Hide
+                    </>
+                  ) : (
+                    <>
+                      <FaChevronDown className="text-[10px]" /> Expand
+                    </>
+                  )}
+                </span>
               </button>
               {open && (
-                <div className="grid grid-cols-3 gap-2 border-t border-[#ece9e3] p-4 sm:grid-cols-4 md:grid-cols-6">
+                <div className="grid grid-cols-2 gap-3 border-t border-[#ece9e3] p-4 sm:grid-cols-3 lg:grid-cols-4">
                   {b.pins.map((pin) => {
                     const selected = selectedUrls.has(pin.imageUrl);
                     return (
@@ -469,15 +478,15 @@ function PinterestTab({
                             tags: ["pinterest", b.name.toLowerCase()],
                           })
                         }
-                        className={`relative aspect-square overflow-hidden rounded-md border-2 bg-[#f0ede8] transition ${
+                        className={`relative aspect-[4/5] overflow-hidden rounded-lg border-2 bg-[#f0ede8] transition ${
                           selected ? "border-[#2d5a3d] ring-2 ring-[#2d5a3d]/40" : "border-transparent hover:border-[#1a1a2e]"
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={pin.imageUrl} alt={pin.title} className="h-full w-full object-cover" loading="lazy" />
                         {selected && (
-                          <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#2d5a3d] text-white shadow">
-                            <FaCheck className="text-[10px]" />
+                          <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2d5a3d] text-white shadow">
+                            <FaCheck className="text-xs" />
                           </span>
                         )}
                       </button>
