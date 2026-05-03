@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { FaArrowLeft } from "react-icons/fa6";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa6";
 import type { WizardTab } from "./types";
 
 interface WizardChromeProps {
@@ -94,6 +94,32 @@ export function WizardChrome({
             })}
           </nav>
           <div className="flex-1" />
+          {!finishing && (
+            <div className="flex items-center gap-1.5">
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ece9e3] bg-white px-3 py-1.5 text-xs font-semibold text-[#4a4a5a] transition hover:bg-[#f7f5f1] hover:text-[#1a1a2e]"
+                  aria-label="Back"
+                >
+                  <FaArrowLeft className="text-[10px]" />
+                  Back
+                </button>
+              )}
+              {!hideNext && onNext && (
+                <button
+                  onClick={onNext}
+                  aria-disabled={nextDisabled}
+                  className={`inline-flex items-center gap-1.5 rounded-full bg-[#c08a5a] px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] ${
+                    nextDisabled ? "opacity-40" : ""
+                  }`}
+                >
+                  {nextLabel}
+                  <FaArrowRight className="text-[10px]" />
+                </button>
+              )}
+            </div>
+          )}
           <div id="wizard-header-slot" className="flex items-center" />
         </div>
       </header>
