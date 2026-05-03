@@ -99,6 +99,77 @@ export function TileSelect({
 }
 
 /* ────────────────────────────────────────────────────────────────
+ * Havenly-style multi-select tile row. Same circle look as
+ * TileSelect (below variant) but with multi-select semantics and
+ * `exclusive` option support (e.g. "Nothing", "Not sure yet").
+ * Does NOT auto-advance — user clicks Next when done.
+ * ──────────────────────────────────────────────────────────────── */
+export function TileMulti({
+  options,
+  value,
+  onChange,
+  exclusive = [],
+}: {
+  options: AnswerOption[];
+  value: string[];
+  onChange: (v: string[]) => void;
+  exclusive?: string[];
+}) {
+  const toggle = (id: string) => {
+    const isExclusive = exclusive.includes(id);
+    if (isExclusive) {
+      onChange(value.includes(id) ? [] : [id]);
+      return;
+    }
+    const cleaned = value.filter((v) => !exclusive.includes(v));
+    onChange(
+      cleaned.includes(id) ? cleaned.filter((v) => v !== id) : [...cleaned, id]
+    );
+  };
+
+  return (
+    <div className="mt-10 flex w-full max-w-5xl flex-wrap justify-center gap-x-6 gap-y-8 px-2">
+      {options.map((o) => {
+        const Icon = o.icon;
+        const selected = value.includes(o.id);
+        const disabled = o.disabled;
+        return (
+          <button
+            key={o.id}
+            onClick={() => !disabled && toggle(o.id)}
+            disabled={disabled}
+            aria-disabled={disabled}
+            className={`group flex h-40 w-40 flex-col items-center justify-center rounded-full border px-3 text-center transition ${
+              disabled
+                ? "cursor-not-allowed border-transparent bg-[#f0ede8] opacity-50"
+                : selected
+                ? "border-[#1a1a2e] bg-[#e8e6e1]"
+                : "border-transparent bg-[#f0ede8] hover:bg-[#e8e6e1]"
+            }`}
+          >
+            {Icon && (
+              <Icon
+                className={`mb-2 ${o.iconClass ?? "text-2xl"} text-[#3a3a4a] transition ${
+                  disabled ? "" : "group-hover:text-[#1a1a2e]"
+                }`}
+              />
+            )}
+            <span className="block w-full px-1 text-center text-sm font-semibold leading-snug text-[#1a1a2e]">
+              {o.label}
+            </span>
+            {o.desc && (
+              <span className="mt-1 block w-full px-1 text-center text-[11px] leading-snug text-[#6a6a7a]">
+                {o.desc}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
  * Vertical stack of pill-shaped single-select buttons (used for
  * budget ranges where icons don't help). Auto-advances.
  * ──────────────────────────────────────────────────────────────── */

@@ -112,6 +112,8 @@ export type ElectricalFan =
   | "simple_swap"
   | "new_duct"
   | "new_location"
+  | "new_install"
+  | "none"
   | "unsure";
 export type ElectricalFloor = "confirmed" | "considering";
 export type ElectricalOutlets =
@@ -181,7 +183,7 @@ export interface GroundworkBathroomState {
   // PDF intake — Lighting & electrical
   lightingChoices: string[];
   electricalUpgrades: string[];
-  electricalFan: ElectricalFan | null;
+  electricalFan: ElectricalFan[];
   electricalFloor: ElectricalFloor | null;
   electricalOutlets: ElectricalOutlets | null;
   electricalFixtures: string[];
@@ -258,7 +260,7 @@ const initial: GroundworkBathroomState = {
   tileEdgeText: "",
   lightingChoices: [],
   electricalUpgrades: [],
-  electricalFan: null,
+  electricalFan: [],
   electricalFloor: null,
   electricalOutlets: null,
   electricalFixtures: [],

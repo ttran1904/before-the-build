@@ -36,6 +36,8 @@ import {
   FaToolbox,
   FaChessBoard,
   FaShield,
+  FaPlus,
+  FaBan,
 } from "react-icons/fa6";
 
 import type { IconBaseProps } from "react-icons";
@@ -51,6 +53,7 @@ const FaFaucetDouble = (props: IconBaseProps) => (
 
 import {
   TileSelect,
+  TileMulti,
   PillSelect,
   ChipMulti,
   LongText,
@@ -1073,25 +1076,28 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     return "paint";
   }
 
-  const electricalFan: QuestionNode<ElectricalFan | null> = {
+  const electricalFan: QuestionNode<ElectricalFan[]> = {
     id: "electrical-fan",
     tab: "scope",
     question: "What's happening with the exhaust fan?",
     helper:
-      "Same location and same duct is a simple swap. A new duct run is a different scope item — and a different cost.",
+      "Pick everything that applies. A new duct run or a new spot is a different scope item — and a different cost.",
     skip: () => !get().electricalUpgrades.includes("fan"),
     initial: () => get().electricalFan,
-    commit: (v) => v && setKey("electricalFan", v),
+    commit: (v) => setKey("electricalFan", v),
     next: () => nextElectricalSub("electrical-fan"),
+    isValid: (v) => v.length > 0,
     render: ({ value, onChange }) => (
-      <TileSelect
+      <TileMulti
         value={value}
-        onChange={(v) => onChange(v as ElectricalFan)}
-        layout="below"
+        onChange={(v) => onChange(v as ElectricalFan[])}
+        exclusive={["none", "unsure"]}
         options={[
-          { id: "simple_swap", label: "Same fan, same spot", icon: FaArrowsRotate },
-          { id: "new_duct", label: "Same spot, new duct", icon: FaWind },
+          { id: "simple_swap", label: "New fan, same spot", icon: FaArrowsRotate },
+          { id: "new_duct", label: "New duct, same spot", icon: FaWind },
           { id: "new_location", label: "Move to a new spot", icon: FaLocationDot },
+          { id: "new_install", label: "Brand-new install", desc: "No fan there today", icon: FaPlus },
+          { id: "none", label: "Nothing", icon: FaBan },
           { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />

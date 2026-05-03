@@ -136,7 +136,7 @@ export function importLegacyProjectIntoGroundwork(
     tileEdgeText: "",
     lightingChoices: [],
     electricalUpgrades: [],
-    electricalFan: null,
+    electricalFan: [],
     electricalFloor: null,
     electricalOutlets: null,
     electricalFixtures: [],
