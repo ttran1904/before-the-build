@@ -46,6 +46,7 @@ import {
   getResponsibilityMatrix,
   getBudgetSensitivity,
   getReadinessScores,
+  getReadinessReport,
   getReportMeta,
   type ScopeStatus,
   type Impact,
@@ -90,13 +91,15 @@ const TONES = {
   change: "border border-[#ecd6bc] bg-[#f6e4d4] text-[#8a4a1a]",
   changeBig: "border border-[#e2bf94] bg-[#f4d6b8] text-[#6a3a08]",
   unsure: "border border-[#ecdfa9] bg-[#fbf2d9] text-[#7a5a1a]",
+  notSet: "border border-[#e8e6e1] bg-[#f8f7f4] text-[#6a6a7a]",
 } as const;
 
 function statusChip(v: string | null) {
   switch (v) {
     case "keep":
-    case "none":
       return { label: "Keep", icon: FaCircleCheck, cls: TONES.keep };
+    case "none":
+      return { label: "No changes", icon: FaCircleCheck, cls: TONES.keep };
     case "replace":
       return { label: "Replace", icon: FaArrowRotateRight, cls: TONES.change };
     case "new_tile":
@@ -122,7 +125,12 @@ function statusChip(v: string | null) {
     case "structural":
       return { label: "Structural", icon: FaTools, cls: TONES.changeBig };
     case "unsure":
+    case "not_sure":
       return { label: "Unsure", icon: FaCircleQuestion, cls: TONES.unsure };
+    case null:
+    case undefined:
+    case "":
+      return { label: "Not yet set", icon: FaCircleQuestion, cls: TONES.notSet };
     default:
       return { label: lbl(v), icon: FaCircleQuestion, cls: TONES.unsure };
   }
@@ -215,6 +223,7 @@ export default function GroundworkSummaryPage() {
   const responsibility = getResponsibilityMatrix(state);
   const sensitivity = getBudgetSensitivity(state);
   const readiness = getReadinessScores(state);
+  const readinessReport = getReadinessReport(state);
 
   const scopeItems: ScopeCardItem[] = [
     { key: "vanity", label: "Vanity", icon: FaWrench, value: state.vanity },
@@ -465,6 +474,7 @@ export default function GroundworkSummaryPage() {
                 hint="How close this scope is to bid-ready, by category"
               />
               <ReadinessGrid r={readiness} />
+              <ReadinessBreakdown report={readinessReport} />
               <div className="rounded-2xl border border-[#ece9e3] bg-white px-6 py-5 shadow-sm">
                 <p
                   className="text-sm leading-relaxed text-[#3a3a4a]"
@@ -596,47 +606,39 @@ function ReportHeroCard({
 }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-[#ece9e3] bg-white shadow-sm">
-      {/* Title + meta band */}
-      <div className="px-8 pt-7 pb-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
-          Before the Build · Groundwork Report
-        </p>
-        <h1 className="mt-1.5 font-serif text-4xl leading-tight text-[#1a1a2e] sm:text-5xl">
-          {meta.title}
-        </h1>
-
-        <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
-          <MetaCell k="Homeowner" v={meta.homeowner} />
-          <MetaCell k="Property" v={meta.property} />
-          <MetaCell k="Report" v={meta.reportPeriod} />
-          <ReadinessCell pct={meta.bidReadiness} />
-        </div>
-      </div>
-
-      {/* Cost + facts band */}
-      <div className="border-t border-[#f1ede5] bg-[#faf8f3] px-8 py-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div className="px-8 pt-7 pb-7">
+        {/* Title row + cost block */}
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
-              Bathroom · Groundwork
-            </p>
-            <h2 className="mt-1.5 font-serif text-2xl text-[#1a1a2e] sm:text-3xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
               Contractor-ready Scope Report
-            </h2>
+            </p>
+            <h1 className="mt-1.5 font-serif text-3xl leading-tight text-[#1a1a2e] sm:text-4xl">
+              {meta.title}
+            </h1>
           </div>
-          <div className="rounded-2xl bg-white px-6 py-4 text-right shadow-sm ring-1 ring-[#ece9e3]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
+          <div className="rounded-2xl border border-[#ece9e3] bg-[#fbfaf6] px-5 py-3.5 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
               Realistic cost range
             </p>
-            <p className="mt-0.5 font-serif text-3xl text-[#1a1a2e]">
+            <p className="mt-0.5 font-serif text-2xl text-[#1a1a2e] sm:text-3xl">
               {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
             </p>
-            <p className="mt-0.5 text-[11px] text-[#9a9aaa]">
+            <p className="mt-0.5 text-[10px] text-[#9a9aaa]">
               Materials + labor + 20% contingency
             </p>
           </div>
         </div>
 
+        {/* Meta row */}
+        <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-[#f1ede5] pt-5 sm:grid-cols-4">
+          <MetaCell k="Homeowner" v={meta.homeowner} />
+          <MetaCell k="Property" v={meta.property} />
+          <MetaCell k="Report" v={meta.reportPeriod} />
+          <ReadinessCell pct={meta.bidReadiness} />
+        </div>
+
+        {/* Fact tiles */}
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Fact icon={bathroomIcon} k="Bathroom" v={lbl(state.bathroomKind)} />
           <Fact icon={FaTools} k="Project" v={projectTypeLabel(state.projectType)} />
@@ -652,7 +654,7 @@ function ReportHeroCard({
             {state.goals.map((g) => (
               <span
                 key={g}
-                className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#1a1a2e] ring-1 ring-[#ece9e3]"
+                className="rounded-full bg-[#f8f7f4] px-3 py-1 text-xs font-medium text-[#1a1a2e] ring-1 ring-[#ece9e3]"
               >
                 {g.replace(/_/g, " ")}
               </span>
@@ -660,7 +662,7 @@ function ReportHeroCard({
           </div>
         )}
 
-        <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#ece9e3] bg-white px-4 py-3">
+        <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#ece9e3] bg-[#fbfaf6] px-4 py-3">
           <FaCircleInfo className="mt-0.5 flex-none text-[#c08a5a]" />
           <p className="text-xs leading-relaxed text-[#3a3a4a]">
             <span className="font-semibold text-[#1a1a2e]">
@@ -952,6 +954,86 @@ function ReadinessGrid({ r }: { r: ReturnType<typeof getReadinessScores> }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ReadinessBreakdown({
+  report,
+}: {
+  report: ReturnType<typeof getReadinessReport>;
+}) {
+  const totalOpen = report.allMissing.length;
+  return (
+    <div className="rounded-2xl border border-[#ece9e3] bg-white shadow-sm">
+      <div className="flex flex-col gap-1 border-b border-[#f1ede5] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
+            What's still open
+          </p>
+          <h3 className="mt-1 font-serif text-2xl text-[#1a1a2e]">
+            {totalOpen === 0
+              ? "Every category is defined."
+              : `${totalOpen} ${totalOpen === 1 ? "decision" : "decisions"} would tighten this scope`}
+          </h3>
+        </div>
+        <p className="text-xs text-[#6a6a7a] sm:max-w-xs sm:text-right">
+          We track every intake answer behind the scenes — these are the ones still
+          unresolved or marked "not sure".
+        </p>
+      </div>
+      <div className="grid grid-cols-1 divide-y divide-[#f1ede5] sm:grid-cols-2 sm:divide-y-0 sm:divide-x">
+        {report.dimensions.map((d, i) => {
+          const open = d.facts.filter((f) => f.relevant && !f.resolved);
+          const tone =
+            d.score >= 80
+              ? "text-[#2d5a3d]"
+              : d.score >= 60
+              ? "text-[#7a5a1a]"
+              : "text-[#8a4a1a]";
+          return (
+            <div
+              key={d.key}
+              className={`p-6 ${i % 2 === 1 ? "" : ""} ${
+                i >= 2 ? "sm:border-t sm:border-[#f1ede5]" : ""
+              }`}
+            >
+              <div className="flex items-baseline justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+                  {d.label}
+                </p>
+                <p className={`font-serif text-2xl leading-none ${tone}`}>{d.score}%</p>
+              </div>
+              <p className="mt-2 text-xs text-[#6a6a7a]">{d.blurb}</p>
+              <p className="mt-3 text-[11px] text-[#9a9aaa]">
+                {d.resolved} of {d.total} resolved
+              </p>
+              {open.length > 0 ? (
+                <ul className="mt-3 space-y-1.5">
+                  {open.map((f) => (
+                    <li
+                      key={f.id}
+                      className="flex items-start gap-2 text-xs leading-snug text-[#3a3a4a]"
+                    >
+                      <FaCircleQuestion className="mt-0.5 flex-none text-[#c08a5a]" />
+                      <span>
+                        <span className="font-medium text-[#1a1a2e]">{f.label}</span>
+                        {f.hint && (
+                          <span className="text-[#6a6a7a]"> — {f.hint}</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#eef3ee] px-3 py-1 text-[11px] font-medium text-[#2d5a3d]">
+                  <FaCircleCheck /> All set
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

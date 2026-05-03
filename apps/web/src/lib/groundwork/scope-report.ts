@@ -1,6 +1,7 @@
 import type { GroundworkBathroomState } from "./store";
 import { projectTypeLabel } from "./store";
 import { getCostBreakdown } from "./cost-breakdown";
+import { computeReadiness, type ReadinessReport } from "./readiness-graph";
 
 /* ──────────────────────────────────────────────────────────────────
  * Ground Report deriver
@@ -502,65 +503,23 @@ export function getBudgetSensitivity(s: GroundworkBathroomState): {
 /* ── Readiness Summary ─────────────────────────────────────────── */
 
 export function getReadinessScores(s: GroundworkBathroomState): ReadinessScores {
-  const total = (vals: Array<unknown>) => vals.length;
-  const defined = (vals: Array<unknown>) =>
-    vals.filter((v) => v !== null && v !== undefined && v !== "" && v !== "unsure").length;
-  const pct = (vals: Array<unknown>) =>
-    total(vals) === 0 ? 0 : Math.round((defined(vals) / total(vals)) * 100);
+  const r = computeReadiness(s);
+  const dim = (key: string) =>
+    r.dimensions.find((d) => d.key === key)?.score ?? 0;
+  return {
+    scopeDefinition: dim("scopeDefinition"),
+    finishSelections: dim("finishSelections"),
+    structuralClarity: dim("structuralClarity"),
+    fixtureSpecs: dim("fixtureSpecs"),
+    overall: r.overall,
+    narrative: r.narrative,
+  };
+}
 
-  const scopeDefinition = pct([
-    s.projectType,
-    s.bathroomKind,
-    s.intent,
-    s.demo,
-    s.plumbing,
-    s.vanity,
-    s.toilet,
-    s.showerTub,
-    s.flooring,
-    s.walls,
-    s.lighting,
-    s.electrical,
-    s.layout,
-  ]);
-
-  const finishSelections = pct([
-    s.tileStatus === "know" ? "ok" : null,
-    s.tileLook,
-    s.wallTileExtent,
-    s.grout,
-    s.tileEdge,
-    s.paint,
-  ]);
-
-  const structuralClarity = pct([
-    s.layout,
-    s.plumbing,
-    s.drainLocation,
-    s.showerGlass,
-    s.electricalFan?.length ? "ok" : null,
-  ]);
-
-  const fixtureSpecs = pct([
-    s.fixtureStatus === "selected" ? "ok" : null,
-    s.fixtureBrand || null,
-    s.vanityStatus === "selected" ? "ok" : null,
-    s.vanitySize === "known" ? "ok" : null,
-    s.toiletPlan,
-  ]);
-
-  const overall = Math.round(
-    (scopeDefinition * 0.4 + finishSelections * 0.2 + structuralClarity * 0.2 + fixtureSpecs * 0.2),
-  );
-
-  const narrative =
-    overall >= 90
-      ? "This scope is **builder-ready**. Every category is defined; bids you receive will be apples-to-apples. You can proceed to soliciting bids with confidence."
-      : overall >= 70
-      ? "This scope is **ready for a builder conversation and a sharper feasibility number**. What remains open are finish selections and fixture specs — specifically: tile size, wall tile extent, trim profile, grout type, and shower fixture model. These decisions determine whether builders price the same job or different interpretations of it. Resolving them converts this from a feasibility document to a true apples-to-apples bid package."
-      : "This scope **defines intent but not enough detail for comparable bids**. Several scope and finish decisions are still open. Builders walking the same space will quote materially different jobs until those resolve.";
-
-  return { scopeDefinition, finishSelections, structuralClarity, fixtureSpecs, overall, narrative };
+/** Full knowledge-graph readiness — the report tab uses this directly to
+ *  show per-dimension breakdowns and lists of unresolved questions. */
+export function getReadinessReport(s: GroundworkBathroomState): ReadinessReport {
+  return computeReadiness(s);
 }
 
 /* ── Report Meta ───────────────────────────────────────────────── */

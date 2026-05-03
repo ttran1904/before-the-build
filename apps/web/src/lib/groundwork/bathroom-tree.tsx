@@ -38,6 +38,12 @@ import {
   FaShield,
   FaPlus,
   FaBan,
+  FaBolt,
+  FaHourglassHalf,
+  FaSeedling,
+  FaWallet,
+  FaSackDollar,
+  FaGem,
 } from "react-icons/fa6";
 
 import type { IconBaseProps } from "react-icons";
@@ -97,6 +103,8 @@ import {
   type WallChange,
   type ElectricalChange,
   type LayoutChange,
+  type Urgency,
+  type BudgetTier,
 } from "./store";
 
 export const GROUNDWORK_TABS: WizardTab[] = [
@@ -291,7 +299,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     question: "Which bathroom?",
     initial: () => get().bathroomKind,
     commit: (v) => v && setKey("bathroomKind", v),
-    next: () => "intent",
+    next: () => "urgency",
     render: ({ value, onChange }) => (
       <TileSelect
         value={value}
@@ -300,6 +308,55 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
           { id: "primary", label: "Primary bath", icon: FaCrown },
           { id: "three_quarter", label: "Hall bath", icon: FaBath },
           { id: "half_bath", label: "Powder room", icon: FaHandsBubbles },
+        ]}
+      />
+    ),
+  };
+
+  /* ── PART 2.5: Timing + budget framing ───────────────────── */
+
+  const urgency: QuestionNode<Urgency | null> = {
+    id: "urgency",
+    tab: "project",
+    question: "When would you ideally want this done?",
+    helper: "No pressure — this just helps a builder slot you in honestly.",
+    initial: () => get().urgency,
+    commit: (v) => v && setKey("urgency", v),
+    next: () => "budget",
+    render: ({ value, onChange }) => (
+      <TileSelect
+        layout="below"
+        value={value}
+        onChange={(v) => onChange(v as Urgency)}
+        options={[
+          { id: "asap", label: "As soon as possible", icon: FaBolt },
+          { id: "soonish", label: "Within a few months", icon: FaHourglassHalf },
+          { id: "no_rush", label: "No rush — getting it right matters more", icon: FaSeedling },
+        ]}
+      />
+    ),
+  };
+
+  const budget: QuestionNode<BudgetTier | null> = {
+    id: "budget",
+    tab: "project",
+    question: "What range feels comfortable to spend?",
+    helper:
+      "A rough band is enough. We use this to steer specs to the right tier — never to gate options.",
+    initial: () => get().budgetTier,
+    commit: (v) => v && setKey("budgetTier", v),
+    next: () => "intent",
+    render: ({ value, onChange }) => (
+      <TileSelect
+        layout="below"
+        value={value}
+        onChange={(v) => onChange(v as BudgetTier)}
+        options={[
+          { id: "under_10k", label: "Under $10k", icon: FaWallet },
+          { id: "10_to_25k", label: "$10k – $25k", icon: FaWallet },
+          { id: "25_to_50k", label: "$25k – $50k", icon: FaSackDollar },
+          { id: "50_to_100k", label: "$50k – $100k", icon: FaSackDollar },
+          { id: "above_100k", label: "Above $100k", icon: FaGem },
         ]}
       />
     ),
@@ -1338,6 +1395,8 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
   return [
     room,
     bathType,
+    urgency,
+    budget,
     intent,
     demo,
     plumbing,
