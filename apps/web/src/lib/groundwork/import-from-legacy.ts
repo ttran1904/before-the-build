@@ -96,6 +96,7 @@ export function importLegacyProjectIntoGroundwork(
     bathroomKind,
     goals: legacy.goals ?? [],
     urgency: null,
+    propertyAddress: "",
     budgetTier,
     vanity: null,
     toilet: null,

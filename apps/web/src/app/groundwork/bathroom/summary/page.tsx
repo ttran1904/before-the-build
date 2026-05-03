@@ -13,6 +13,12 @@ import {
   FaHouse,
   FaClock,
   FaWallet,
+  FaUser,
+  FaLocationDot,
+  FaCalendarDay,
+  FaShield,
+  FaBath as FaBath6,
+  FaScrewdriverWrench,
 } from "react-icons/fa6";
 import {
   FaToilet,
@@ -617,14 +623,14 @@ function ReportHeroCard({
               {meta.title}
             </h1>
           </div>
-          <div className="rounded-2xl border border-[#ecd6bc] bg-[#f6e4d4]/60 px-5 py-3.5 text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a4a1a]">
+          <div className="rounded-2xl border border-[#cfe0d2] bg-[#eef3ee] px-5 py-3.5 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2d5a3d]">
               Realistic cost range
             </p>
             <p className="mt-0.5 font-serif text-2xl text-[#1a1a2e] sm:text-3xl">
               {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
             </p>
-            <p className="mt-0.5 text-[10px] text-[#8a4a1a]/80">
+            <p className="mt-0.5 text-[10px] text-[#2d5a3d]/80">
               Materials + labor + 20% contingency
             </p>
           </div>
@@ -632,15 +638,15 @@ function ReportHeroCard({
 
         {/* Unified 4-up meta + facts grid (2 rows) */}
         <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-[#f1ede5] pt-5 sm:grid-cols-4">
-          <MetaCell k="Homeowner" v={meta.homeowner} />
-          <MetaCell k="Property" v={meta.property} />
-          <MetaCell k="Report" v={meta.reportPeriod} />
+          <MetaCell icon={FaUser} k="Homeowner" v={meta.homeowner} />
+          <MetaCell icon={FaLocationDot} k="Property" v={meta.property} />
+          <MetaCell icon={FaCalendarDay} k="Report" v={meta.reportPeriod} />
           <ReadinessCell pct={meta.bidReadiness} />
 
-          <MetaCell k="Bathroom" v={lbl(state.bathroomKind)} />
-          <MetaCell k="Project" v={projectTypeLabel(state.projectType)} />
-          <MetaCell k="Urgency" v={lbl(state.urgency)} />
-          <MetaCell k="Homeowner budget" v={lbl(state.budgetTier)} />
+          <MetaCell icon={FaBath6} k="Bathroom" v={lbl(state.bathroomKind)} />
+          <MetaCell icon={FaScrewdriverWrench} k="Project" v={projectTypeLabel(state.projectType)} />
+          <MetaCell icon={FaClock} k="Urgency" v={lbl(state.urgency)} />
+          <MetaCell icon={FaWallet} k="Homeowner budget" v={lbl(state.budgetTier)} />
         </div>
 
         {state.goals.length > 0 && (
@@ -658,26 +664,31 @@ function ReportHeroCard({
             ))}
           </div>
         )}
-
-        <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#ece9e3] bg-[#fbfaf6] px-4 py-3">
-          <FaCircleInfo className="mt-0.5 flex-none text-[#c08a5a]" />
-          <p className="text-xs leading-relaxed text-[#3a3a4a]">
-            <span className="font-semibold text-[#1a1a2e]">
-              Share this with every contractor.
-            </span>{" "}
-            Same scope in, same kind of bid out — no guesswork, no surprise quotes.
-          </p>
-        </div>
       </div>
     </div>
   );
 }
 
-function MetaCell({ k, v }: { k: string; v: string }) {
+function MetaCell({
+  k,
+  v,
+  icon: Icon,
+}: {
+  k: string;
+  v: string;
+  icon?: IconType;
+}) {
   return (
-    <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">{k}</p>
-      <p className="mt-1.5 text-sm font-medium text-[#1a1a2e]">{v}</p>
+    <div className="flex items-start gap-2.5">
+      {Icon && (
+        <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#f6f3ed] text-[#c08a5a]">
+          <Icon className="text-[12px]" />
+        </span>
+      )}
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">{k}</p>
+        <p className="mt-1 truncate text-sm font-medium text-[#1a1a2e]">{v}</p>
+      </div>
     </div>
   );
 }
@@ -685,21 +696,28 @@ function MetaCell({ k, v }: { k: string; v: string }) {
 function ReadinessCell({ pct }: { pct: number }) {
   const palette =
     pct >= 80
-      ? { bg: "bg-[#eef3ee]", border: "border-[#cfe0d2]", text: "text-[#2d5a3d]" }
+      ? { bg: "bg-[#e8f0e9]", border: "border-[#cfe0d2]", text: "text-[#2d5a3d]" }
       : pct >= 60
       ? { bg: "bg-[#fbf2d9]", border: "border-[#ecdfa9]", text: "text-[#7a5a1a]" }
       : { bg: "bg-[#f6e4d4]", border: "border-[#ecd6bc]", text: "text-[#8a4a1a]" };
   return (
-    <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
-        Bid Readiness
-      </p>
+    <div className="flex items-start gap-2.5">
       <span
-        className={`mt-1.5 inline-flex items-baseline gap-1 rounded-full border ${palette.border} ${palette.bg} px-3 py-1 ${palette.text}`}
+        className={`mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full ${palette.bg} ${palette.text}`}
       >
-        <span className="font-serif text-xl leading-none">{pct}</span>
-        <span className="text-[11px] font-semibold leading-none">%</span>
+        <FaShield className="text-[12px]" />
       </span>
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
+          Bid Readiness
+        </p>
+        <span
+          className={`mt-1 inline-flex items-baseline gap-1 rounded-full border ${palette.border} ${palette.bg} px-2.5 py-0.5 ${palette.text}`}
+        >
+          <span className="font-serif text-lg leading-none">{pct}</span>
+          <span className="text-[10px] font-semibold leading-none">%</span>
+        </span>
+      </div>
     </div>
   );
 }

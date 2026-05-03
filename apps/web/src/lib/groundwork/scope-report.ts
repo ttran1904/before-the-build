@@ -557,7 +557,7 @@ export function getReportMeta(s: GroundworkBathroomState): ReportMeta {
   return {
     title,
     homeowner: "Homeowner",
-    property: "Property on file",
+    property: s.propertyAddress?.trim() || "Property on file",
     reportPeriod: `${datePretty} · ${timePretty}`,
     reportId: `GR-${stamp}`,
     bidReadiness: r.overall,

@@ -280,12 +280,14 @@ export function ShortText({
   placeholder,
   label,
   inputMode,
+  autoComplete,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   label?: string;
   inputMode?: "text" | "numeric" | "decimal" | "url";
+  autoComplete?: string;
 }) {
   return (
     <div className="mt-8">
@@ -297,6 +299,7 @@ export function ShortText({
       <input
         type="text"
         inputMode={inputMode}
+        autoComplete={autoComplete}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

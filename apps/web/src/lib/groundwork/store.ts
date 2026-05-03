@@ -131,6 +131,7 @@ export interface GroundworkBathroomState {
   goals: string[];
   urgency: Urgency | null;
   budgetTier: BudgetTier | null;
+  propertyAddress: string;
 
   // Scope tab — what's changing (legacy roll-up fields, kept for
   // back-compat with the summary + cost-breakdown derivers)
@@ -231,6 +232,7 @@ const initial: GroundworkBathroomState = {
   goals: [],
   urgency: null,
   budgetTier: null,
+  propertyAddress: "",
   vanity: null,
   toilet: null,
   showerTub: null,

@@ -277,7 +277,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     helper: "We've built this specifically for bathrooms. More rooms coming soon.",
     initial: () => "bathroom",
     commit: () => {},
-    next: () => "bath-type",
+    next: () => "address",
     render: ({ value, onAdvance }) => (
       <TileSelect
         value={value}
@@ -289,6 +289,26 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
           { id: "laundry", label: "Laundry (coming soon)", icon: FaDroplet, disabled: true },
           { id: "other", label: "Other (coming soon)", icon: FaCircleQuestion, disabled: true },
         ]}
+      />
+    ),
+  };
+
+  const address: QuestionNode<string> = {
+    id: "address",
+    tab: "project",
+    question: "Where's the project?",
+    helper:
+      "Just a street address is enough. Your browser can autofill from saved addresses — we use this so the report has a real property reference.",
+    initial: () => get().propertyAddress,
+    commit: (v) => setKey("propertyAddress", v.trim()),
+    next: () => "bath-type",
+    isValid: (v) => v.trim().length >= 4,
+    render: ({ value, onChange }) => (
+      <ShortText
+        value={value}
+        onChange={onChange}
+        placeholder="123 Main St, Springfield, IL"
+        autoComplete="street-address"
       />
     ),
   };
@@ -1394,6 +1414,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
 
   return [
     room,
+    address,
     bathType,
     urgency,
     budget,
