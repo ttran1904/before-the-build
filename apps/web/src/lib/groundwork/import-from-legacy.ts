@@ -146,6 +146,7 @@ export function importLegacyProjectIntoGroundwork(
     photos: legacy.mockupBathroomPhotos ?? [],
     floorPlan: [],
     inspirationLink: "",
+    inspirationItems: [],
     notes: notesParts.join("\n"),
     completedAt: null,
   };

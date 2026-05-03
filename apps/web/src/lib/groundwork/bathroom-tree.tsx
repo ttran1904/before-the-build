@@ -61,6 +61,7 @@ import {
   ShortText,
   DimensionsInput,
 } from "@/components/wizard/answers";
+import { InspirationStep } from "@/components/wizard/InspirationStep";
 import type { QuestionNode, WizardTab } from "@/components/wizard/types";
 import {
   useGroundworkStore,
@@ -103,6 +104,47 @@ export const GROUNDWORK_TABS: WizardTab[] = [
   { id: "scope", label: "Scope" },
   { id: "photos", label: "Photos" },
 ];
+
+/* Binding adapter so the inspiration question (rendered without props from
+ * the wizard tree) can read/write the live store. Lives at module scope so
+ * it can use hooks. */
+function InspirationStepBinding() {
+  const projectId = useGroundworkStore((s) => s.projectId);
+  const items = useGroundworkStore((s) => s.inspirationItems);
+  const photos = useGroundworkStore((s) => s.floorPlan);
+  const link = useGroundworkStore((s) => s.inspirationLink);
+  const setVal = useGroundworkStore((s) => s.set);
+  return (
+    <InspirationStep
+      projectId={projectId}
+      items={items.map((i) => ({
+        clientId: i.id,
+        imageUrl: i.imageUrl,
+        sourceUrl: i.sourceUrl,
+        source: i.source,
+        title: i.title,
+        tags: i.tags,
+      }))}
+      onItemsChange={(next) =>
+        setVal(
+          "inspirationItems",
+          next.map((i) => ({
+            id: i.clientId,
+            imageUrl: i.imageUrl,
+            sourceUrl: i.sourceUrl ?? undefined,
+            source: i.source,
+            title: i.title,
+            tags: i.tags,
+          })),
+        )
+      }
+      photos={photos}
+      onPhotosChange={(v) => setVal("floorPlan", v)}
+      link={link}
+      onLinkChange={(v) => setVal("inspirationLink", v)}
+    />
+  );
+}
 
 /* ── Helpers that derive the legacy roll-up fields from the new
  *    PDF-aligned answers. The summary page + cost-breakdown read the
@@ -1255,42 +1297,22 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
       "Totally optional. If you have them handy, they're helpful context — but don't let this slow you down.",
     initial: () => get().photos,
     commit: (v) => setKey("photos", v),
-    next: () => "photos-inspiration",
+    next: () => "inspiration",
     render: ({ value, onChange }) => (
       <PhotoUpload value={value} onChange={onChange} />
     ),
   };
 
-  const photosInspiration: QuestionNode<string[]> = {
-    id: "photos-inspiration",
+  const inspiration: QuestionNode<null> = {
+    id: "inspiration",
     tab: "photos",
     question: "Anything you've been drawn to?",
     helper:
-      "A saved photo or screenshot — completely optional. Doesn't change your Ground Report. Just helps us understand where you're headed.",
-    initial: () => get().floorPlan,
-    commit: (v) => setKey("floorPlan", v),
-    next: () => "inspiration-link",
-    render: ({ value, onChange }) => (
-      <PhotoUpload value={value} onChange={onChange} />
-    ),
-  };
-
-  const inspirationLink: QuestionNode<string> = {
-    id: "inspiration-link",
-    tab: "photos",
-    question: "Have a link to share?",
-    helper: "Pinterest, Instagram, Houzz — anything. Optional.",
-    initial: () => get().inspirationLink,
-    commit: (v) => setKey("inspirationLink", v),
+      "Browse our gallery, upload a photo, paste a link, or pull from Pinterest. Whatever you save here goes straight to your idea board.",
+    initial: () => null,
+    commit: () => {},
     next: () => "notes",
-    render: ({ value, onChange }) => (
-      <ShortText
-        value={value}
-        onChange={onChange}
-        inputMode="url"
-        placeholder="https://"
-      />
-    ),
+    render: () => <InspirationStepBinding />,
   };
 
   const notes: QuestionNode<string> = {
@@ -1353,8 +1375,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     paint,
     accessories,
     photosCurrent,
-    photosInspiration,
-    inspirationLink,
+    inspiration,
     notes,
   ];
 }

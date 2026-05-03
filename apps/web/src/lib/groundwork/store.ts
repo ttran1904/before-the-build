@@ -197,6 +197,16 @@ export interface GroundworkBathroomState {
   photos: string[];
   floorPlan: string[];
   inspirationLink: string;
+  /** Items the user picked in the inspiration step (gallery, link, pinterest).
+   *  Mirrored to mood_boards/inspiration_items in Supabase by inspiration helpers. */
+  inspirationItems: Array<{
+    id: string;
+    imageUrl: string;
+    sourceUrl?: string;
+    source: string;
+    title?: string;
+    tags?: string[];
+  }>;
   notes: string;
 
   // Bookkeeping
@@ -270,6 +280,7 @@ const initial: GroundworkBathroomState = {
   photos: [],
   floorPlan: [],
   inspirationLink: "",
+  inspirationItems: [],
   notes: "",
   completedAt: null,
   projectId: null,

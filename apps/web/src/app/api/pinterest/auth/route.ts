@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const redirectUri = `${origin}/api/pinterest/callback`;
   const state = crypto.randomBytes(16).toString("hex");
+  const nextPath = req.nextUrl.searchParams.get("next") || "/dashboard/idea-boards";
 
   // Store state in a short-lived cookie for CSRF validation
   const oauthUrl = new URL("https://www.pinterest.com/oauth/");
@@ -29,6 +30,13 @@ export async function GET(req: NextRequest) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 600, // 10 minutes
+    path: "/",
+  });
+  res.cookies.set("pinterest_oauth_next", nextPath, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 600,
     path: "/",
   });
 

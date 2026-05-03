@@ -52,9 +52,13 @@ export async function GET(req: NextRequest) {
 
     const tokenData = await tokenRes.json();
 
-    // Store tokens in secure HTTP-only cookies
+    // Honor the optional next-cookie set in /api/pinterest/auth so we can
+    // bring the user back to the wizard step (or wherever they came from).
+    const nextPath = req.cookies.get("pinterest_oauth_next")?.value || "/dashboard/idea-boards";
+    const safeNext = nextPath.startsWith("/") ? nextPath : "/dashboard/idea-boards";
+    const sep = safeNext.includes("?") ? "&" : "?";
     const res = NextResponse.redirect(
-      new URL("/dashboard/idea-boards?pinterest=connected", req.nextUrl.origin)
+      new URL(`${safeNext}${sep}pinterest=connected`, req.nextUrl.origin)
     );
 
     res.cookies.set("pinterest_access_token", tokenData.access_token, {
@@ -77,6 +81,7 @@ export async function GET(req: NextRequest) {
 
     // Clear the state cookie
     res.cookies.delete("pinterest_oauth_state");
+    res.cookies.delete("pinterest_oauth_next");
 
     return res;
   } catch (err) {
