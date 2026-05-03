@@ -166,7 +166,7 @@ export function InspirationStep({
     <div className="relative mt-6 w-full">
       {headerSlot && createPortal(savedButton, headerSlot)}
 
-      <div className="mx-auto w-full max-w-4xl">
+      <div className="w-full">
         <Tabs tab={tab} setTab={setTab} counts={counts} />
 
         <div className="mt-8">

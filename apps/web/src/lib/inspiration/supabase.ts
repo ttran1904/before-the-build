@@ -98,7 +98,11 @@ export async function getOrCreateIntakeBoard(
       .single();
 
     if (error || !created?.id) {
-      console.error("[inspiration] failed to create intake board:", error);
+      // Likely RLS or missing migration. Local mirror still works, so
+      // just warn (not error → no Next.js dev overlay) and fall back.
+      console.warn(
+        "[inspiration] supabase intake board unavailable, using local store only.",
+      );
       return null;
     }
     return { projectId, moodBoardId: created.id };
@@ -142,7 +146,7 @@ export async function saveInspirationItem(
     .single();
 
   if (error) {
-    console.error("[inspiration] insert failed:", error);
+    console.warn("[inspiration] supabase insert skipped (local-only).");
     return null;
   }
   return data?.id ?? null;
@@ -166,7 +170,7 @@ export async function removeInspirationItem(
     .eq("mood_board_id", ids.moodBoardId)
     .eq("image_url", item.imageUrl);
 
-  if (error) console.error("[inspiration] delete failed:", error);
+  if (error) console.warn("[inspiration] supabase delete skipped (local-only).");
 }
 
 /* ------------------------------------------------------------------ */

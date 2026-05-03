@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa6";
+import { FaArrowLeft } from "react-icons/fa6";
 import type { WizardTab } from "./types";
 
 interface WizardChromeProps {
@@ -94,38 +94,12 @@ export function WizardChrome({
             })}
           </nav>
           <div className="flex-1" />
-          {!finishing && (
-            <div className="flex items-center gap-1.5">
-              {onBack && (
-                <button
-                  onClick={onBack}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ece9e3] bg-white px-3 py-1.5 text-xs font-semibold text-[#4a4a5a] transition hover:bg-[#f7f5f1] hover:text-[#1a1a2e]"
-                  aria-label="Back"
-                >
-                  <FaArrowLeft className="text-[10px]" />
-                  Back
-                </button>
-              )}
-              {!hideNext && onNext && (
-                <button
-                  onClick={onNext}
-                  aria-disabled={nextDisabled}
-                  className={`inline-flex items-center gap-1.5 rounded-full bg-[#c08a5a] px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] ${
-                    nextDisabled ? "opacity-40" : ""
-                  }`}
-                >
-                  {nextLabel}
-                  <FaArrowRight className="text-[10px]" />
-                </button>
-              )}
-            </div>
-          )}
           <div id="wizard-header-slot" className="flex items-center" />
         </div>
       </header>
 
       {/* ── Centered question area (autosaves silently) ───────── */}
-      <main className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} flex-1 flex-col items-stretch ${topAlign ? "justify-start" : "justify-center"} px-6 pb-12 pt-12`}>
+      <main className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} flex-1 flex-col items-stretch ${topAlign ? "justify-start" : "justify-center"} px-6 pb-6 pt-12`}>
         {finishing ? (
           <div className="flex flex-col items-center gap-6 py-16 text-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#e8e6e1] border-t-[#c08a5a]" />
@@ -139,37 +113,39 @@ export function WizardChrome({
         )}
       </main>
 
-      {/* ── Step navigation: Back (left) · Next (right) ─────────── */}
+      {/* ── Step navigation: Back (left) · Next (right) — sticky ─── */}
       {!finishing && (
-      <div className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} items-center justify-between px-6 pb-12`}>
-        {onBack ? (
-          <button
-            onClick={onBack}
-            className="rounded-full bg-[#e8e6e1] px-8 py-3 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#d5d3cd]"
-          >
-            Back
-          </button>
-        ) : (
-          <span />
-        )}
-        {!hideNext ? (
-          <div className="flex flex-col items-end gap-2">
-            {nextWarning && (
-              <p className="text-xs font-medium text-[#c08a5a]">{nextWarning}</p>
-            )}
+      <div className="sticky bottom-0 z-30 border-t border-[#ece9e3] bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+        <div className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} items-center justify-between px-6 py-4`}>
+          {onBack ? (
             <button
-              onClick={onNext}
-              aria-disabled={nextDisabled}
-              className={`rounded-full bg-[#c08a5a] px-10 py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] ${
-                nextDisabled ? "opacity-40" : ""
-              }`}
+              onClick={onBack}
+              className="rounded-full bg-[#e8e6e1] px-8 py-3 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#d5d3cd]"
             >
-              {nextLabel}
+              Back
             </button>
-          </div>
-        ) : (
-          <span />
-        )}
+          ) : (
+            <span />
+          )}
+          {!hideNext ? (
+            <div className="flex flex-col items-end gap-2">
+              {nextWarning && (
+                <p className="text-xs font-medium text-[#c08a5a]">{nextWarning}</p>
+              )}
+              <button
+                onClick={onNext}
+                aria-disabled={nextDisabled}
+                className={`rounded-full bg-[#c08a5a] px-10 py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] ${
+                  nextDisabled ? "opacity-40" : ""
+                }`}
+              >
+                {nextLabel}
+              </button>
+            </div>
+          ) : (
+            <span />
+          )}
+        </div>
       </div>
       )}
     </div>

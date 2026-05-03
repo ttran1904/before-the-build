@@ -1310,6 +1310,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     wide: true,
     topAlign: true,
     initial: () => null,
+    isValid: () => true,
     commit: () => {},
     next: () => "notes",
     render: () => <InspirationStepBinding />,
