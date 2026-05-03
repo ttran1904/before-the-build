@@ -12,6 +12,9 @@ import {
   FaArrowUpRightFromSquare,
   FaChevronDown,
   FaChevronUp,
+  FaArrowRotateRight,
+  FaXmark,
+  FaBookmark,
 } from "react-icons/fa6";
 
 import { PhotoUpload, ShortText } from "@/components/wizard/answers";
@@ -66,6 +69,42 @@ export function InspirationStep({
   onLinkChange,
 }: InspirationStepProps) {
   const [tab, setTab] = useState<Tab>("gallery");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  /* Pinterest state lives here so it survives tab switches. */
+  const [pinterestConnected, setPinterestConnected] = useState<boolean | null>(null);
+  const [pinterestBoards, setPinterestBoards] = useState<PinterestBoard[] | null>(null);
+  const [pinterestLoading, setPinterestLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/pinterest/status")
+      .then((r) => r.json())
+      .then((d: { connected: boolean }) => setPinterestConnected(!!d.connected))
+      .catch(() => setPinterestConnected(false));
+  }, []);
+
+  const loadPinterestBoards = useCallback(async () => {
+    setPinterestLoading(true);
+    try {
+      const res = await fetch("/api/pinterest/boards");
+      const data = await res.json();
+      if (data.connected) {
+        setPinterestConnected(true);
+        setPinterestBoards(data.boards || []);
+      } else {
+        setPinterestConnected(false);
+      }
+    } finally {
+      setPinterestLoading(false);
+    }
+  }, []);
+
+  // Load boards once when we know we're connected and haven't loaded yet.
+  useEffect(() => {
+    if (pinterestConnected && pinterestBoards === null && !pinterestLoading) {
+      loadPinterestBoards();
+    }
+  }, [pinterestConnected, pinterestBoards, pinterestLoading, loadPinterestBoards]);
 
   const selectedUrls = useMemo(
     () => new Set(items.map((i) => i.imageUrl)),
@@ -89,88 +128,154 @@ export function InspirationStep({
   );
 
   return (
-    <div className="mt-6 w-full">
-      <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)_260px] lg:gap-8">
-        {/* Spacer column to keep center column horizontally centered */}
-        <div className="hidden lg:block" />
-
-        <div className="mx-auto w-full max-w-3xl">
-          <Tabs tab={tab} setTab={setTab} count={items.length} />
-
-          <div className="mt-8">
-            {tab === "gallery" && (
-              <GalleryTab selectedUrls={selectedUrls} onToggle={toggleItem} />
-            )}
-            {tab === "upload" && (
-              <div className="mx-auto max-w-2xl">
-                <p className="mb-4 text-center text-sm text-[#6a6a7a]">
-                  Got a screenshot or photo on your phone? Drop it here.
-                </p>
-                <PhotoUpload value={photos} onChange={onPhotosChange} />
-              </div>
-            )}
-            {tab === "link" && (
-              <LinkTab link={link} onLinkChange={onLinkChange} onAdd={toggleItem} />
-            )}
-            {tab === "pinterest" && (
-              <PinterestTab selectedUrls={selectedUrls} onToggle={toggleItem} />
-            )}
-          </div>
-        </div>
-
-        {/* Right rail: live "saved to idea board" tray. Sits in its own grid
-            column so it doesn't push the centered content off-axis. */}
-        <aside className="mt-8 lg:mt-0">
-          <div className="lg:sticky lg:top-6 rounded-2xl border border-[#ece9e3] bg-white px-4 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-              Saved to idea board
-            </p>
-            <p className="mt-1 font-serif text-2xl text-[#1a1a2e]">
-              {items.length}
-            </p>
-            {items.length === 0 ? (
-              <p className="mt-3 text-xs text-[#9a9aaa]">
-                Tap anything you like — it shows up here.
-              </p>
-            ) : (
-              <div className="mt-3 grid grid-cols-3 gap-1.5">
-                {items.slice(0, 12).map((it) => (
-                  <SafeThumb
-                    key={it.clientId}
-                    src={it.imageUrl}
-                    title={it.title || it.imageUrl}
-                  />
-                ))}
-              </div>
-            )}
-            {items.length > 12 && (
-              <p className="mt-2 text-[11px] text-[#9a9aaa]">
-                +{items.length - 12} more
-              </p>
-            )}
-          </div>
-        </aside>
+    <div className="relative mt-6 w-full">
+      {/* Top-right "Saved" pill — opens the slide-out drawer */}
+      <div className="absolute right-0 -top-2 z-10">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="inline-flex items-center gap-2 rounded-full border border-[#ece9e3] bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] shadow-sm transition hover:bg-[#f7f5f1]"
+        >
+          <FaBookmark className="text-[#2d5a3d]" />
+          Saved
+          <span className="ml-1 rounded-full bg-[#2d5a3d] px-2 py-0.5 text-[11px] font-semibold text-white">
+            {items.length}
+          </span>
+        </button>
       </div>
+
+      <div className="mx-auto w-full max-w-4xl">
+        <Tabs tab={tab} setTab={setTab} count={items.length} />
+
+        <div className="mt-8">
+          {tab === "gallery" && (
+            <GalleryTab selectedUrls={selectedUrls} onToggle={toggleItem} />
+          )}
+          {tab === "upload" && (
+            <div className="mx-auto max-w-2xl">
+              <p className="mb-4 text-center text-sm text-[#6a6a7a]">
+                Got a screenshot or photo on your phone? Drop it here.
+              </p>
+              <PhotoUpload value={photos} onChange={onPhotosChange} />
+            </div>
+          )}
+          {tab === "link" && (
+            <LinkTab link={link} onLinkChange={onLinkChange} onAdd={toggleItem} />
+          )}
+          {tab === "pinterest" && (
+            <PinterestTab
+              connected={pinterestConnected}
+              boards={pinterestBoards}
+              loading={pinterestLoading}
+              onReload={loadPinterestBoards}
+              selectedUrls={selectedUrls}
+              onToggle={toggleItem}
+            />
+          )}
+        </div>
+      </div>
+
+      <SavedDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        items={items}
+        onRemove={(it) => toggleItem(it)}
+      />
     </div>
   );
 }
 
-/* Renders an <img> only if it actually loads. Bad URLs become invisible. */
-function SafeThumb({ src, title }: { src: string; title?: string }) {
-  const [ok, setOk] = useState(true);
-  if (!ok) return null;
+/* ------------------------- saved drawer ------------------------- */
+
+function SavedDrawer({
+  open,
+  onClose,
+  items,
+  onRemove,
+}: {
+  open: boolean;
+  onClose: () => void;
+  items: InspirationItemInput[];
+  onRemove: (item: InspirationItemInput) => void;
+}) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 z-40 bg-black/30 transition-opacity ${
+          open ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+      {/* Panel */}
+      <aside
+        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-sm flex-col border-l border-[#ece9e3] bg-white shadow-xl transition-transform ${
+          open ? "translate-x-0" : "translate-x-full"
+        }`}
+        aria-hidden={!open}
+      >
+        <header className="flex items-center justify-between border-b border-[#ece9e3] px-5 py-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+              Saved to idea board
+            </p>
+            <p className="mt-0.5 font-serif text-2xl text-[#1a1a2e]">
+              {items.length}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[#6a6a7a] transition hover:bg-[#f0ede8]"
+            aria-label="Close"
+          >
+            <FaXmark />
+          </button>
+        </header>
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {items.length === 0 ? (
+            <p className="mt-10 text-center text-sm text-[#9a9aaa]">
+              Tap anything you like — it shows up here.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {items.map((it) => (
+                <DrawerThumb key={it.clientId} item={it} onRemove={onRemove} />
+              ))}
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
+  );
+}
+
+function DrawerThumb({
+  item,
+  onRemove,
+}: {
+  item: InspirationItemInput;
+  onRemove: (item: InspirationItemInput) => void;
+}) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return null;
   return (
     <div
-      className="relative aspect-square overflow-hidden rounded-md bg-[#f0ede8]"
-      title={title}
+      className="group relative aspect-square overflow-hidden rounded-lg bg-[#f0ede8]"
+      title={item.title || item.imageUrl}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={src}
+        src={item.imageUrl}
         alt=""
         className="h-full w-full object-cover"
-        onError={() => setOk(false)}
+        onError={() => setBroken(true)}
       />
+      <button
+        onClick={() => onRemove(item)}
+        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#1a1a2e] opacity-0 shadow transition group-hover:opacity-100"
+        aria-label="Remove"
+      >
+        <FaXmark className="text-xs" />
+      </button>
     </div>
   );
 }
@@ -266,7 +371,7 @@ function GalleryTab({
       <p className="mb-4 text-center text-sm text-[#6a6a7a]">
         Tap anything that catches your eye — pick as many as you like.
       </p>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {images.map((img) => (
           <GalleryTile
             key={img.id}
@@ -396,43 +501,21 @@ function LinkTab({
 /* ------------------------- pinterest tab ------------------------- */
 
 function PinterestTab({
+  connected,
+  boards,
+  loading,
+  onReload,
   selectedUrls,
   onToggle,
 }: {
+  connected: boolean | null;
+  boards: PinterestBoard[] | null;
+  loading: boolean;
+  onReload: () => void;
   selectedUrls: Set<string>;
   onToggle: (item: InspirationItemInput) => void;
 }) {
-  const [connected, setConnected] = useState<boolean | null>(null);
-  const [boards, setBoards] = useState<PinterestBoard[]>([]);
-  const [loading, setLoading] = useState(false);
   const [openBoardId, setOpenBoardId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/pinterest/status")
-      .then((r) => r.json())
-      .then((d: { connected: boolean }) => setConnected(!!d.connected))
-      .catch(() => setConnected(false));
-  }, []);
-
-  const loadBoards = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/pinterest/boards");
-      const data = await res.json();
-      if (data.connected) {
-        setConnected(true);
-        setBoards(data.boards || []);
-      } else {
-        setConnected(false);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (connected) loadBoards();
-  }, [connected, loadBoards]);
 
   if (connected === null) {
     return (
@@ -464,7 +547,7 @@ function PinterestTab({
     );
   }
 
-  if (loading) {
+  if (loading && boards === null) {
     return (
       <div className="flex h-32 items-center justify-center text-[#6a6a7a]">
         <FaSpinner className="mr-2 animate-spin" /> Loading your boards…
@@ -472,19 +555,39 @@ function PinterestTab({
     );
   }
 
-  if (boards.length === 0) {
+  if (!boards || boards.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-[#6a6a7a]">
+      <div className="py-8 text-center text-sm text-[#6a6a7a]">
         No boards found on your Pinterest account.
-      </p>
+        <div className="mt-3">
+          <button
+            onClick={onReload}
+            className="inline-flex items-center gap-2 rounded-full border border-[#ece9e3] bg-white px-4 py-1.5 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#f7f5f1]"
+          >
+            <FaArrowRotateRight className={loading ? "animate-spin" : ""} />
+            Reload
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
     <>
-      <p className="mb-4 text-center text-sm text-[#6a6a7a]">
-        Tap a board to expand, then tap individual pins to save them.
-      </p>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-sm text-[#6a6a7a]">
+          Tap a board to expand, then tap pins to save them.
+        </p>
+        <button
+          onClick={onReload}
+          disabled={loading}
+          className="inline-flex items-center gap-2 rounded-full border border-[#ece9e3] bg-white px-3 py-1.5 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#f7f5f1] disabled:opacity-60"
+          title="Reload boards from Pinterest"
+        >
+          <FaArrowRotateRight className={loading ? "animate-spin" : ""} />
+          Reload
+        </button>
+      </div>
       <div className="space-y-4">
         {boards.map((b) => {
           const open = openBoardId === b.id;
