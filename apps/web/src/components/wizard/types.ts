@@ -11,6 +11,8 @@ export interface AnswerOption {
   label: string;
   desc?: string;
   icon?: IconType;
+  /** Optional Tailwind class to override the default icon size, e.g. "text-4xl". */
+  iconClass?: string;
   disabled?: boolean;
 }
 

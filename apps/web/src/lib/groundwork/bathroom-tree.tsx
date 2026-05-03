@@ -34,6 +34,7 @@ import {
   FaLocationDot,
   FaHand,
   FaToolbox,
+  FaChessBoard,
 } from "react-icons/fa6";
 
 import {
@@ -241,7 +242,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
         options={[
           { id: "primary", label: "Primary bath", icon: FaCrown },
           { id: "three_quarter", label: "Hall bath", icon: FaBath },
-          { id: "half_bath", label: "Powder room (no shower or tub)", icon: FaHandsBubbles },
+          { id: "half_bath", label: "Powder room", icon: FaHandsBubbles },
         ]}
       />
     ),
@@ -310,7 +311,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     tab: "project",
     question: "Are the big fixtures staying in the same places?",
     helper:
-      "Moving plumbing is one of the biggest cost variables in a renovation. Even a rough answer helps.",
+      "Moving plumbing is one of the biggest cost variables in a renovation.",
     initial: () => get().plumbing,
     commit: (v) => {
       if (!v) return;
@@ -822,10 +823,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
         onChange={(v) => onChange(v as TileLook)}
         layout="below"
         options={[
-          { id: "large", label: "Large tile", desc: "12×24 or bigger", icon: FaTableCellsLarge },
-          { id: "medium", label: "Medium tile", desc: "around 12×12", icon: FaSquare },
-          { id: "small", label: "Small or mosaic", desc: "under 4×4", icon: FaBorderAll },
-          { id: "patterned", label: "Patterned layout", desc: "herringbone, offset", icon: FaWandMagicSparkles },
+          { id: "large", label: "Large tile", desc: "12×24 or bigger", icon: FaSquare, iconClass: "text-4xl" },
+          { id: "medium", label: "Medium tile", desc: "around 12×12", icon: FaSquare, iconClass: "text-2xl" },
+          { id: "small", label: "Small or mosaic", desc: "under 4×4", icon: FaSquare, iconClass: "text-sm" },
+          { id: "patterned", label: "Patterned layout", icon: FaChessBoard },
           { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />

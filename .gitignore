@@ -13,3 +13,6 @@ supabase/.temp/
 # supabase/migrations/* (removed: migrations should be tracked)
 groundwork_intake_flow Visual.pdf 
 groundwork-intake-doc.pdf
+
+# Local helper scripts (underscore-prefixed = scratch/throwaway)
+scripts/_*

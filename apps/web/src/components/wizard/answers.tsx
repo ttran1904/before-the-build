@@ -45,7 +45,7 @@ export function TileSelect({
             >
               {Icon && (
                 <Icon
-                  className={`mb-2 text-2xl text-[#3a3a4a] transition ${
+                  className={`mb-2 ${o.iconClass ?? "text-2xl"} text-[#3a3a4a] transition ${
                     disabled ? "" : "group-hover:text-[#1a1a2e]"
                   }`}
                 />
