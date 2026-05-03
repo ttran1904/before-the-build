@@ -56,4 +56,8 @@ export interface QuestionNode<V = unknown> {
   hideNext?: boolean;
   /** When true, this is the last question — render Generate Scope + loader on advance. */
   terminal?: boolean;
+  /** Use a wider main column (max-w-6xl) for this question. */
+  wide?: boolean;
+  /** Top-align the question area (instead of vertical center) for this question. */
+  topAlign?: boolean;
 }

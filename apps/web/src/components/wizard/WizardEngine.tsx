@@ -155,6 +155,8 @@ function NodeView({
       nextLabel={node.terminal ? "Generate Scope" : "Next"}
       nextWarning={showWarn && !isValid ? "Pick an answer to continue." : undefined}
       finishing={finishing}
+      wide={node.wide === true}
+      topAlign={node.topAlign === true}
     >
       <div>
         <h1 className="font-serif text-3xl leading-snug text-[#1a1a2e] sm:text-[34px]">

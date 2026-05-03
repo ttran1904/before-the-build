@@ -89,50 +89,67 @@ export function InspirationStep({
   );
 
   return (
-    <div className="mt-6 w-full max-w-6xl">
-      <Tabs tab={tab} setTab={setTab} count={items.length} />
+    <div className="mt-6 w-full">
+      <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
+        <div>
+          <Tabs tab={tab} setTab={setTab} count={items.length} />
 
-      <div className="mt-8">
-        {tab === "gallery" && (
-          <GalleryTab selectedUrls={selectedUrls} onToggle={toggleItem} />
-        )}
-        {tab === "upload" && (
-          <div className="mx-auto max-w-2xl">
-            <p className="mb-4 text-center text-sm text-[#6a6a7a]">
-              Got a screenshot or photo on your phone? Drop it here.
-            </p>
-            <PhotoUpload value={photos} onChange={onPhotosChange} />
-          </div>
-        )}
-        {tab === "link" && (
-          <LinkTab link={link} onLinkChange={onLinkChange} onAdd={toggleItem} />
-        )}
-        {tab === "pinterest" && (
-          <PinterestTab selectedUrls={selectedUrls} onToggle={toggleItem} />
-        )}
-      </div>
-
-      {items.length > 0 && (
-        <div className="mt-10 rounded-2xl border border-[#ece9e3] bg-white px-5 py-4">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-              Saved to your idea board · {items.length}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {items.slice(0, 12).map((it) => (
-              <div
-                key={it.clientId}
-                className="relative h-16 w-16 overflow-hidden rounded-md bg-[#f0ede8]"
-                title={it.title || it.imageUrl}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={it.imageUrl} alt="" className="h-full w-full object-cover" />
+          <div className="mt-8">
+            {tab === "gallery" && (
+              <GalleryTab selectedUrls={selectedUrls} onToggle={toggleItem} />
+            )}
+            {tab === "upload" && (
+              <div className="mx-auto max-w-2xl">
+                <p className="mb-4 text-center text-sm text-[#6a6a7a]">
+                  Got a screenshot or photo on your phone? Drop it here.
+                </p>
+                <PhotoUpload value={photos} onChange={onPhotosChange} />
               </div>
-            ))}
+            )}
+            {tab === "link" && (
+              <LinkTab link={link} onLinkChange={onLinkChange} onAdd={toggleItem} />
+            )}
+            {tab === "pinterest" && (
+              <PinterestTab selectedUrls={selectedUrls} onToggle={toggleItem} />
+            )}
           </div>
         </div>
-      )}
+
+        {/* Right rail: live "saved to idea board" tray */}
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <div className="rounded-2xl border border-[#ece9e3] bg-white px-5 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+              Saved to your idea board
+            </p>
+            <p className="mt-1 font-serif text-2xl text-[#1a1a2e]">
+              {items.length}
+            </p>
+            {items.length === 0 ? (
+              <p className="mt-3 text-xs text-[#9a9aaa]">
+                Tap anything you like — it shows up here and on your idea board.
+              </p>
+            ) : (
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {items.slice(0, 12).map((it) => (
+                  <div
+                    key={it.clientId}
+                    className="relative aspect-square overflow-hidden rounded-md bg-[#f0ede8]"
+                    title={it.title || it.imageUrl}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={it.imageUrl} alt="" className="h-full w-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {items.length > 12 && (
+              <p className="mt-3 text-xs text-[#9a9aaa]">
+                +{items.length - 12} more
+              </p>
+            )}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

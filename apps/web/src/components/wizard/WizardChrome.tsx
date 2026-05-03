@@ -25,6 +25,10 @@ interface WizardChromeProps {
   finishing?: boolean;
   /** Loading label shown while finishing. */
   finishingLabel?: string;
+  /** Use a wider main column (max-w-6xl) instead of the default 3xl. */
+  wide?: boolean;
+  /** Top-align the question area instead of vertically centering it. */
+  topAlign?: boolean;
   children: ReactNode;
 }
 
@@ -43,6 +47,8 @@ export function WizardChrome({
   hideNext = false,
   finishing = false,
   finishingLabel = "Generating your scope…",
+  wide = false,
+  topAlign = false,
   children,
 }: WizardChromeProps) {
   const visited = new Set(visitedTabs);
@@ -92,7 +98,7 @@ export function WizardChrome({
       </header>
 
       {/* ── Centered question area (autosaves silently) ───────── */}
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-stretch justify-center px-6 pb-12 pt-12">
+      <main className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} flex-1 flex-col items-stretch ${topAlign ? "justify-start" : "justify-center"} px-6 pb-12 pt-12`}>
         {finishing ? (
           <div className="flex flex-col items-center gap-6 py-16 text-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#e8e6e1] border-t-[#c08a5a]" />
@@ -108,7 +114,7 @@ export function WizardChrome({
 
       {/* ── Step navigation: Back (left) · Next (right) ─────────── */}
       {!finishing && (
-      <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 pb-12">
+      <div className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} items-center justify-between px-6 pb-12`}>
         {onBack ? (
           <button
             onClick={onBack}
