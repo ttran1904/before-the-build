@@ -616,7 +616,7 @@ function ReportHeroCard({
         {/* Title row + cost block */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#9a9aaa]">
               Contractor-ready Scope Report
             </p>
             <h1 className="mt-1.5 font-serif text-3xl leading-tight text-[#1a1a2e] sm:text-4xl">
@@ -630,7 +630,7 @@ function ReportHeroCard({
             <p className="mt-0.5 font-serif text-2xl text-[#1a1a2e] sm:text-3xl">
               {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
             </p>
-            <p className="mt-0.5 text-[10px] text-[#2d5a3d]/80">
+            <p className="mt-0.5 text-[10px] text-[#6a6a7a]">
               Materials + labor + 20% contingency
             </p>
           </div>
@@ -681,12 +681,12 @@ function MetaCell({
   return (
     <div className="flex items-start gap-2.5">
       {Icon && (
-        <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#f6f3ed] text-[#c08a5a]">
-          <Icon className="text-[12px]" />
+        <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center text-[#9a9aaa]">
+          <Icon className="text-[13px]" />
         </span>
       )}
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">{k}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#9a9aaa]">{k}</p>
         <p className="mt-1 truncate text-sm font-medium text-[#1a1a2e]">{v}</p>
       </div>
     </div>
@@ -702,13 +702,11 @@ function ReadinessCell({ pct }: { pct: number }) {
       : { bg: "bg-[#f6e4d4]", border: "border-[#ecd6bc]", text: "text-[#8a4a1a]" };
   return (
     <div className="flex items-start gap-2.5">
-      <span
-        className={`mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full ${palette.bg} ${palette.text}`}
-      >
-        <FaShield className="text-[12px]" />
+      <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center text-[#9a9aaa]">
+        <FaShield className="text-[13px]" />
       </span>
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#9a9aaa]">
           Bid Readiness
         </p>
         <span
