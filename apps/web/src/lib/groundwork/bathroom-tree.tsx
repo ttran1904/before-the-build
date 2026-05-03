@@ -811,21 +811,22 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
   const tileLook: QuestionNode<TileLook | null> = {
     id: "tile-look",
     tab: "scope",
-    question: "What size or look are you leaning toward?",
-    helper: "Even a general direction helps set the labor assumption in your report.",
+    question: "What size of tile are you leaning toward?",
+    helper: "Tile size changes how much labor goes into the install. A general direction is plenty.",
     initial: () => get().tileLook,
     commit: (v) => v && setKey("tileLook", v),
     next: () => "wall-tile-extent",
     render: ({ value, onChange }) => (
-      <PillSelect
+      <TileSelect
         value={value}
         onChange={(v) => onChange(v as TileLook)}
+        layout="below"
         options={[
-          { id: "large", label: "Large format (12×24 or bigger)" },
-          { id: "medium", label: "Medium format (12×12)" },
-          { id: "small", label: "Small format or mosaic (under 4×4)" },
-          { id: "patterned", label: "Patterned layout (herringbone, offset, etc.)" },
-          { id: "unsure", label: "No idea yet" },
+          { id: "large", label: "Large tile", icon: FaTableCellsLarge },
+          { id: "medium", label: "Medium tile", icon: FaSquare },
+          { id: "small", label: "Small or mosaic", icon: FaBorderAll },
+          { id: "patterned", label: "Patterned layout", icon: FaWandMagicSparkles },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -1187,8 +1188,6 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     id: "accessories",
     tab: "scope",
     question: "What about mirrors, towel bars, and hooks?",
-    helper:
-      "These are usually handled separately from contractor scope — but the wall blocking that supports them goes in before the walls close.",
     initial: () => get().accessories,
     commit: (v) => v && setKey("accessories", v),
     next: () => "photos-current",
