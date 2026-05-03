@@ -617,33 +617,30 @@ function ReportHeroCard({
               {meta.title}
             </h1>
           </div>
-          <div className="rounded-2xl border border-[#ece9e3] bg-[#fbfaf6] px-5 py-3.5 text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
+          <div className="rounded-2xl border border-[#ecd6bc] bg-[#f6e4d4]/60 px-5 py-3.5 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a4a1a]">
               Realistic cost range
             </p>
             <p className="mt-0.5 font-serif text-2xl text-[#1a1a2e] sm:text-3xl">
               {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
             </p>
-            <p className="mt-0.5 text-[10px] text-[#9a9aaa]">
+            <p className="mt-0.5 text-[10px] text-[#8a4a1a]/80">
               Materials + labor + 20% contingency
             </p>
           </div>
         </div>
 
-        {/* Meta row */}
-        <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-[#f1ede5] pt-5 sm:grid-cols-4">
+        {/* Unified 4-up meta + facts grid (2 rows) */}
+        <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-[#f1ede5] pt-5 sm:grid-cols-4">
           <MetaCell k="Homeowner" v={meta.homeowner} />
           <MetaCell k="Property" v={meta.property} />
           <MetaCell k="Report" v={meta.reportPeriod} />
           <ReadinessCell pct={meta.bidReadiness} />
-        </div>
 
-        {/* Fact tiles */}
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Fact icon={bathroomIcon} k="Bathroom" v={lbl(state.bathroomKind)} />
-          <Fact icon={FaTools} k="Project" v={projectTypeLabel(state.projectType)} />
-          <Fact icon={FaClock} k="Urgency" v={lbl(state.urgency)} />
-          <Fact icon={FaWallet} k="Homeowner budget" v={lbl(state.budgetTier)} />
+          <MetaCell k="Bathroom" v={lbl(state.bathroomKind)} />
+          <MetaCell k="Project" v={projectTypeLabel(state.projectType)} />
+          <MetaCell k="Urgency" v={lbl(state.urgency)} />
+          <MetaCell k="Homeowner budget" v={lbl(state.budgetTier)} />
         </div>
 
         {state.goals.length > 0 && (
@@ -680,24 +677,29 @@ function MetaCell({ k, v }: { k: string; v: string }) {
   return (
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">{k}</p>
-      <p className="mt-1 text-sm font-medium text-[#1a1a2e]">{v}</p>
+      <p className="mt-1.5 text-sm font-medium text-[#1a1a2e]">{v}</p>
     </div>
   );
 }
 
 function ReadinessCell({ pct }: { pct: number }) {
-  const tone =
+  const palette =
     pct >= 80
-      ? "text-[#2d5a3d]"
+      ? { bg: "bg-[#eef3ee]", border: "border-[#cfe0d2]", text: "text-[#2d5a3d]" }
       : pct >= 60
-      ? "text-[#7a5a1a]"
-      : "text-[#8a4a1a]";
+      ? { bg: "bg-[#fbf2d9]", border: "border-[#ecdfa9]", text: "text-[#7a5a1a]" }
+      : { bg: "bg-[#f6e4d4]", border: "border-[#ecd6bc]", text: "text-[#8a4a1a]" };
   return (
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
         Bid Readiness
       </p>
-      <p className={`mt-1 font-serif text-2xl leading-none ${tone}`}>{pct}%</p>
+      <span
+        className={`mt-1.5 inline-flex items-baseline gap-1 rounded-full border ${palette.border} ${palette.bg} px-3 py-1 ${palette.text}`}
+      >
+        <span className="font-serif text-xl leading-none">{pct}</span>
+        <span className="text-[11px] font-semibold leading-none">%</span>
+      </span>
     </div>
   );
 }
