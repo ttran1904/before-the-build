@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa6";
 import { WizardChrome } from "./WizardChrome";
 import { InfoPopover } from "./InfoPopover";
 import type { QuestionNode, WizardTab } from "./types";
@@ -159,6 +160,33 @@ function NodeView({
       topAlign={node.topAlign === true}
     >
       <div>
+        {/* Compact top Back/Next — handy on tall pages so the user doesn't
+            have to scroll to the footer. Right-aligned above the title so
+            it never competes with content. */}
+        {!finishing && (
+          <div className="mb-4 flex items-center justify-end gap-2">
+            <button
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#ece9e3] bg-white px-3 py-1.5 text-xs font-semibold text-[#4a4a5a] transition hover:bg-[#f7f5f1] hover:text-[#1a1a2e]"
+              aria-label="Back"
+            >
+              <FaArrowLeft className="text-[10px]" />
+              Back
+            </button>
+            {node.hideNext !== true && (
+              <button
+                onClick={handleNext}
+                aria-disabled={!isValid}
+                className={`inline-flex items-center gap-1.5 rounded-full bg-[#c08a5a] px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] ${
+                  !isValid ? "opacity-40" : ""
+                }`}
+              >
+                {node.terminal ? "Generate" : "Next"}
+                <FaArrowRight className="text-[10px]" />
+              </button>
+            )}
+          </div>
+        )}
         <h1 className="font-serif text-3xl leading-snug text-[#1a1a2e] sm:text-[34px]">
           {node.question}
           {node.info && (
