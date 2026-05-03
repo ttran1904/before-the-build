@@ -54,44 +54,62 @@ interface IntakeBoardIds {
   moodBoardId: string;
 }
 
+const intakeBoardCache = new Map<string, Promise<IntakeBoardIds | null>>();
+
 /** Get the user's intake mood board for the given project, creating it if
  *  needed. Returns null if the user is not signed in. */
 export async function getOrCreateIntakeBoard(
   projectId: string,
 ): Promise<IntakeBoardIds | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const cached = intakeBoardCache.get(projectId);
+  if (cached) return cached;
 
-  const { data: existing } = await supabase
-    .from("mood_boards")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("project_id", projectId)
-    .eq("source", "intake")
-    .maybeSingle();
+  const promise = (async (): Promise<IntakeBoardIds | null> => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
 
-  if (existing?.id) {
-    return { projectId, moodBoardId: existing.id };
-  }
+    // Use limit(1) instead of maybeSingle so duplicate rows (legacy data)
+    // don't throw — we just take the first one.
+    const { data: existing } = await supabase
+      .from("mood_boards")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("project_id", projectId)
+      .eq("source", "intake")
+      .order("created_at", { ascending: true })
+      .limit(1);
 
-  const { data: created, error } = await supabase
-    .from("mood_boards")
-    .insert({
-      user_id: user.id,
-      project_id: projectId,
-      name: INTAKE_BOARD_NAME,
-      source: "intake",
-    })
-    .select("id")
-    .single();
+    const existingId = existing?.[0]?.id;
+    if (existingId) {
+      return { projectId, moodBoardId: existingId };
+    }
 
-  if (error || !created?.id) {
-    console.error("[inspiration] failed to create intake board:", error);
-    return null;
-  }
-  return { projectId, moodBoardId: created.id };
+    const { data: created, error } = await supabase
+      .from("mood_boards")
+      .insert({
+        user_id: user.id,
+        project_id: projectId,
+        name: INTAKE_BOARD_NAME,
+        source: "intake",
+      })
+      .select("id")
+      .single();
+
+    if (error || !created?.id) {
+      console.error("[inspiration] failed to create intake board:", error);
+      return null;
+    }
+    return { projectId, moodBoardId: created.id };
+  })();
+
+  intakeBoardCache.set(projectId, promise);
+  // If it resolves to null, drop the cache so we retry next time.
+  promise.then((r) => {
+    if (!r) intakeBoardCache.delete(projectId);
+  });
+  return promise;
 }
 
 /** Insert an inspiration_item linked to the project's intake board. Mirrors

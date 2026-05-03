@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   FaPinterest,
@@ -111,6 +112,20 @@ export function InspirationStep({
     [items],
   );
 
+  /* Per-tab counts derived from clientId prefix so Pinterest picks count
+     toward the Pinterest tab — not the gallery tab. */
+  const counts = useMemo(
+    () => ({
+      gallery: items.filter((i) => i.clientId.startsWith("gallery_")).length,
+      pinterest: items.filter((i) => i.clientId.startsWith("pinterest_")).length,
+      upload: photos.length,
+      link: items.filter((i) => i.clientId.startsWith("link_")).length,
+    }),
+    [items, photos],
+  );
+
+  const totalCount = counts.gallery + counts.pinterest + counts.upload + counts.link;
+
   const toggleItem = useCallback(
     async (next: InspirationItemInput) => {
       if (selectedUrls.has(next.imageUrl)) {
@@ -127,24 +142,32 @@ export function InspirationStep({
     [items, onItemsChange, projectId, selectedUrls],
   );
 
+  /* "Saved" pill rendered into the wizard top header via portal. */
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setHeaderSlot(document.getElementById("wizard-header-slot"));
+  }, []);
+
+  const savedButton = (
+    <button
+      onClick={() => setDrawerOpen(true)}
+      className="inline-flex items-center gap-2 rounded-full border border-[#ece9e3] bg-white px-4 py-1.5 text-sm font-semibold text-[#1a1a2e] shadow-sm transition hover:bg-[#f7f5f1]"
+    >
+      <FaBookmark className="text-[#2d5a3d]" />
+      Saved
+      <span className="ml-1 rounded-full bg-[#2d5a3d] px-2 py-0.5 text-[11px] font-semibold text-white">
+        {totalCount}
+      </span>
+    </button>
+  );
+
   return (
     <div className="relative mt-6 w-full">
-      {/* Top-right "Saved" pill — opens the slide-out drawer */}
-      <div className="absolute right-0 -top-2 z-10">
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full border border-[#ece9e3] bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] shadow-sm transition hover:bg-[#f7f5f1]"
-        >
-          <FaBookmark className="text-[#2d5a3d]" />
-          Saved
-          <span className="ml-1 rounded-full bg-[#2d5a3d] px-2 py-0.5 text-[11px] font-semibold text-white">
-            {items.length}
-          </span>
-        </button>
-      </div>
+      {headerSlot && createPortal(savedButton, headerSlot)}
 
       <div className="mx-auto w-full max-w-4xl">
-        <Tabs tab={tab} setTab={setTab} count={items.length} />
+        <Tabs tab={tab} setTab={setTab} counts={counts} />
 
         <div className="mt-8">
           {tab === "gallery" && (
@@ -282,7 +305,15 @@ function DrawerThumb({
 
 /* ------------------------- tabs ------------------------- */
 
-function Tabs({ tab, setTab, count }: { tab: Tab; setTab: (t: Tab) => void; count: number }) {
+function Tabs({
+  tab,
+  setTab,
+  counts,
+}: {
+  tab: Tab;
+  setTab: (t: Tab) => void;
+  counts: Record<Tab, number>;
+}) {
   const items: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: "gallery", label: "Browse gallery", icon: FaImages },
     { id: "pinterest", label: "Pinterest", icon: FaPinterest },
@@ -294,6 +325,7 @@ function Tabs({ tab, setTab, count }: { tab: Tab; setTab: (t: Tab) => void; coun
       {items.map((it) => {
         const Icon = it.icon;
         const active = tab === it.id;
+        const n = counts[it.id];
         return (
           <button
             key={it.id}
@@ -306,11 +338,11 @@ function Tabs({ tab, setTab, count }: { tab: Tab; setTab: (t: Tab) => void; coun
           >
             <Icon className="text-base" />
             {it.label}
-            {it.id === "gallery" && count > 0 && (
+            {n > 0 && (
               <span className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                 active ? "bg-white/20 text-white" : "bg-[#e8e6e1] text-[#3a3a4a]"
               }`}>
-                {count}
+                {n}
               </span>
             )}
           </button>

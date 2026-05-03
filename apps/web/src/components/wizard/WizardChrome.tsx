@@ -94,6 +94,7 @@ export function WizardChrome({
             })}
           </nav>
           <div className="flex-1" />
+          <div id="wizard-header-slot" className="flex items-center" />
         </div>
       </header>
 
