@@ -12,8 +12,7 @@ import {
   FaCheck,
   FaInfinity,
   FaLock,
-  FaShieldHalved,
-} from "react-icons/fa6";
+  } from "react-icons/fa6";
 
 /* ──────────────────────────────────────────────────────────────
  * Checkout — sleek, condensed, payments-first.
@@ -23,7 +22,7 @@ import {
  * to the returned session URL.
  * ────────────────────────────────────────────────────────────── */
 
-type PlanId = "core" | "guided" | "build-book";
+type PlanId = "core" | "guided" | "premium" | "build-book";
 
 type Plan = {
   id: PlanId;
@@ -59,6 +58,19 @@ const PLANS: Record<PlanId, Plan> = {
       "3 calls with a real person — used as needed",
       "Bid comparison — upload up to 4 bids, flags what to question",
       "One round of scope refinement",
+    ],
+  },
+  premium: {
+    id: "premium",
+    name: "Groundwork Premium",
+    tagline: "Concierge support · per room",
+    priceCents: 149900,
+    includes: [
+      "Dedicated experienced contractor",
+      "Bid, estimate & change-order review",
+      "Decision support mid-build",
+      "Email support within 24 hours",
+      "Ongoing contractor evaluation",
     ],
   },
   "build-book": {
@@ -297,9 +309,6 @@ function CheckoutInner() {
                 <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-[#9a9aaa]">
                   <span className="inline-flex items-center gap-1">
                     <FaLock className="text-[10px]" /> Secure payment
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <FaShieldHalved className="text-[10px]" /> 7-day refund
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <FaInfinity className="text-[10px]" /> Lifetime access

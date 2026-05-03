@@ -5,8 +5,7 @@ import {
   FaStar, FaRobot, FaCompass, FaCouch, FaArrowsRotate,
   FaCartShopping, FaCalendarDays, FaShieldHalved, FaCertificate,
   FaRuler,
-  FaClipboardList,
-  FaUserTie, FaHelmetSafety,
+  FaPhone, FaPhoneVolume, FaHeadset,
 } from "react-icons/fa6";
 
 /* ─── Room scene illustrations ─── */
@@ -744,7 +743,7 @@ export default function Home() {
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-[#6a6a7a]">
               From a self-serve scope you can hand a contractor, to a dedicated
-              retired contractor on your side from start to finish.
+              experienced contractor on your side from start to finish.
             </p>
           </div>
 
@@ -752,7 +751,6 @@ export default function Home() {
             <PlanCard
               accent="#c08a5a"
               accentBg="#f6f3ed"
-              icon={<FaClipboardList />}
               tag="Self-serve"
               title="Groundwork Report"
               subtitle="A clear plan before talking to contractors. Built to hand directly to a contractor."
@@ -772,7 +770,6 @@ export default function Home() {
             <PlanCard
               accent="#1a1a2e"
               accentBg="#eef0f4"
-              icon={<FaUserTie />}
               tag="With expert calls"
               title="Groundwork Pro"
               subtitle="A real person to help you think it through before bidding."
@@ -793,69 +790,53 @@ export default function Home() {
             <PlanCard
               accent="#2d5a3d"
               accentBg="#eef3ee"
-              icon={<FaHelmetSafety />}
-              tag="Ongoing support"
+              tag="Concierge support"
               title="Groundwork Premium"
-              subtitle="A dedicated retired contractor on your side once the build has started."
-              price="$500+"
-              priceNote="monthly · based on project size"
+              subtitle="A dedicated, experienced contractor on your side once the build has started."
+              price="$1,499"
+              priceNote="one-time · per room"
               features={[
-                "Dedicated retired contractor",
+                "Dedicated experienced contractor",
                 "Bid, estimate & change-order review",
                 "Decision support mid-build",
                 "Email support within 24 hours",
                 "Ongoing contractor evaluation",
               ]}
-              ctaHref="/sign-in?redirect=%2Fdashboard%2Fadvisor%3Ftier%3Dpremium"
-              ctaLabel="Request a match"
+              ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dpremium"
+              ctaLabel="Get started"
             />
           </div>
 
           {/* Add-ons strip */}
-          <div className="mt-10 rounded-3xl border border-[#e8e6e1] bg-white p-8">
-            <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
-              <div>
-                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
-                  Add-ons
-                </span>
-                <h3 className="mt-2 font-serif text-2xl text-[#1a1a2e]">
-                  Occasional Call Support
-                </h3>
-                <p className="mt-1 max-w-xl text-sm text-[#6a6a7a]">
-                  Need help without committing to Premium? Book a single call
-                  or save with a pack.
-                </p>
-              </div>
-              <div className="grid w-full grid-cols-3 gap-3 md:w-auto md:gap-4">
-                {[
-                  { label: "Single call", price: "$59" },
-                  { label: "3-call pack", price: "$149", highlight: true },
-                  { label: "5-call pack", price: "$229" },
-                ].map((c) => (
-                  <div
-                    key={c.label}
-                    className={
-                      "flex flex-col items-center rounded-2xl border px-4 py-3 text-center " +
-                      (c.highlight
-                        ? "border-[#c08a5a] bg-[#f6f3ed]"
-                        : "border-[#ece9e3] bg-[#faf8f3]")
-                    }
-                  >
-                    <span className="font-serif text-2xl font-bold text-[#1a1a2e]">
-                      {c.price}
-                    </span>
-                    <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
-                      {c.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="mt-16 text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
+              Add-ons
+            </span>
+            <h3 className="mt-3 font-serif text-3xl text-[#1a1a2e]">
+              On-Demand Expert Calls
+            </h3>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-[#6a6a7a]">
+              For homeowners who need help without committing to Premium. Use a
+              call before signing a bid, mid-build, or any time a decision feels
+              heavy.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 sm:grid-cols-3">
+            <CallPackCard icon={<FaPhone />} label="Single call" price="$59" unit="$59 / call" />
+            <CallPackCard
+              icon={<FaPhoneVolume />}
+              label="3-call pack"
+              price="$149"
+              unit="≈ $50 / call"
+              featured
+              featuredLabel="Best value"
+            />
+            <CallPackCard icon={<FaHeadset />} label="5-call pack" price="$229" unit="≈ $46 / call" />
           </div>
 
           <p className="mt-6 text-center text-xs text-[#9a9aaa]">
-            Report and Pro are one-time per-room payments. Premium is monthly,
-            based on project size.{" "}
+            All three plans are one-time, per-room payments.{" "}
             <Link href="/dashboard/plans" className="underline-offset-2 hover:underline">
               See full plan comparison →
             </Link>
@@ -947,7 +928,6 @@ export default function Home() {
 function PlanCard({
   accent,
   accentBg,
-  icon,
   tag,
   title,
   subtitle,
@@ -961,7 +941,6 @@ function PlanCard({
 }: {
   accent: string;
   accentBg: string;
-  icon: React.ReactNode;
   tag: string;
   title: string;
   subtitle: string;
@@ -992,14 +971,9 @@ function PlanCard({
         </span>
       )}
 
-      {/* Header: icon left, tag right */}
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-12 w-12 flex-none items-center justify-center rounded-xl text-xl"
-          style={{ backgroundColor: accentBg, color: accent }}
-        >
-          {icon}
-        </div>
+      {/* Header: title with tag */}
+      <div className="flex flex-wrap items-center gap-3">
+        <h4 className="font-serif text-3xl text-[#1a1a2e]">{title}</h4>
         <span
           className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
           style={{ backgroundColor: accentBg, color: accent }}
@@ -1007,8 +981,6 @@ function PlanCard({
           {tag}
         </span>
       </div>
-
-      <h4 className="mt-5 font-serif text-3xl text-[#1a1a2e]">{title}</h4>
       <p className="mt-2 text-sm text-[#6a6a7a]">{subtitle}</p>
 
       {/* Centered price block, mid-card */}
@@ -1047,3 +1019,54 @@ function PlanCard({
   );
 }
 
+function CallPackCard({
+  icon,
+  label,
+  price,
+  unit,
+  featured = false,
+  featuredLabel = "Best value",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  price: string;
+  unit: string;
+  featured?: boolean;
+  featuredLabel?: string;
+}) {
+  const accent = "#c08a5a";
+  const accentBg = "#f6f3ed";
+  return (
+    <div
+      className={
+        "relative flex flex-col rounded-2xl bg-white p-6 transition hover:shadow-md " +
+        (featured ? "border-2 shadow-sm" : "border border-[#ece9e3] shadow-sm")
+      }
+      style={featured ? { borderColor: accent } : undefined}
+    >
+      {featured && (
+        <span
+          className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
+          style={{ backgroundColor: accent }}
+        >
+          {featuredLabel}
+        </span>
+      )}
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-xl text-lg"
+          style={{ backgroundColor: accentBg, color: accent }}
+        >
+          {icon}
+        </div>
+        <p className="font-serif text-lg text-[#1a1a2e]">{label}</p>
+      </div>
+      <div className="mt-5 flex items-baseline gap-2">
+        <span className="font-serif text-4xl font-bold leading-none" style={{ color: accent }}>
+          {price}
+        </span>
+        <span className="text-xs font-semibold text-[#9a9aaa]">{unit}</span>
+      </div>
+    </div>
+  );
+}

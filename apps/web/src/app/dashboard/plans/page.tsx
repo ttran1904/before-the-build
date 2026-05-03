@@ -3,12 +3,8 @@
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import {
-  FaClipboardList,
-  FaUserTie,
-  FaHelmetSafety,
   FaCheck,
   FaMinus,
-  FaShieldHalved,
   FaInfinity,
   FaArrowRight,
   FaPhone,
@@ -46,15 +42,12 @@ export default function PlansPage() {
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[#6a6a7a]">
           Three ways to get a real contractor&apos;s clarity on your project —
-          from a self-serve scope to a dedicated retired contractor by your
-          side. Report and Pro are one-time per-room; Premium is monthly.
+          from a self-serve scope to a dedicated, experienced contractor by your
+          side. All three plans are one-time, per-room.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#6a6a7a]">
           <span className="inline-flex items-center gap-1.5">
             <FaInfinity className="text-[#2d5a3d]" /> Lifetime project access
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <FaShieldHalved className="text-[#2d5a3d]" /> 7-day money-back guarantee
           </span>
           <span className="inline-flex items-center gap-1.5">
             <FaCheck className="text-[#2d5a3d]" /> No subscription on scope
@@ -68,7 +61,6 @@ export default function PlansPage() {
           <PlanCard
             accent="#c08a5a"
             accentBg="#f6f3ed"
-            icon={<FaClipboardList />}
             tag="Self-serve"
             title="Groundwork Report"
             price="$399"
@@ -86,7 +78,6 @@ export default function PlansPage() {
           <PlanCard
             accent="#1a1a2e"
             accentBg="#eef0f4"
-            icon={<FaUserTie />}
             tag="With expert calls"
             title="Groundwork Pro"
             price="$799"
@@ -105,38 +96,35 @@ export default function PlansPage() {
           <PlanCard
             accent="#2d5a3d"
             accentBg="#eef3ee"
-            icon={<FaHelmetSafety />}
-            tag="Ongoing support"
+            tag="Concierge support"
             title="Groundwork Premium"
-            price="$500+"
-            priceUnit="/ mo"
-            priceNote="based on project size"
+            price="$1,499"
+            priceNote="one-time · per room"
             highlights={[
-              "Dedicated retired contractor",
+              "Dedicated experienced contractor",
               "Bid, estimate & change-order review",
               "Decision support mid-build",
               "Email support within 24 hours",
               "Ongoing contractor evaluation",
             ]}
-            ctaHref="/dashboard/advisor?tier=premium"
-            ctaLabel="Request a match"
+            ctaHref="/dashboard/checkout?plan=premium"
+            ctaLabel="Get started"
           />
         </div>
 
         <p className="mt-4 text-center text-xs text-[#9a9aaa]">
-          Report and Pro are one-time per-room payments. Premium is monthly,
-          based on project size. All prices in USD.
+          All three plans are one-time, per-room payments. All prices in USD.
         </p>
       </section>
 
-      {/* ── Occasional Call Support add-ons ──────────────────── */}
+      {/* ── On-Demand Expert Calls add-ons ──────────────────── */}
       <section>
         <div className="text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
             Add-ons
           </p>
           <h2 className="mt-3 font-serif text-3xl text-[#1a1a2e]">
-            Occasional Call Support
+            On-Demand Expert Calls
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-[14px] text-[#6a6a7a]">
             For homeowners who need help without committing to Premium. Use a
@@ -151,14 +139,12 @@ export default function PlansPage() {
             label="Single call"
             price="$59"
             unit="$59 / call"
-            description="One 45-minute call with a retired contractor."
           />
           <CallPackCard
             icon={<FaPhoneVolume />}
             label="3-call pack"
             price="$149"
             unit="≈ $50 / call"
-            description="Save $28. Use across bidding, signing, and mid-build."
             featured
             featuredLabel="Best value"
           />
@@ -167,7 +153,6 @@ export default function PlansPage() {
             label="5-call pack"
             price="$229"
             unit="≈ $46 / call"
-            description="Save $66. Best for long or complex builds."
           />
         </div>
 
@@ -197,21 +182,16 @@ export default function PlansPage() {
 
       {/* ── Trust / value strip ──────────────────────────────── */}
       <section className="rounded-3xl bg-[#1a1a2e] p-10 text-white">
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2">
           <ValueProp
             icon={<FaInfinity />}
             title="Lifetime project access"
             body="Your scope and brief stay in your account forever — no renewal fees, no expiry."
           />
           <ValueProp
-            icon={<FaShieldHalved />}
-            title="7-day money-back"
-            body="If your Report or Pro doesn&apos;t make your bids clearer, we refund it."
-          />
-          <ValueProp
             icon={<FaCheck />}
-            title="One simple payment"
-            body="Pay once per project for Report and Pro. Only Premium is monthly."
+            title="One-time payment"
+            body="One-time, per-room pricing across every Groundwork plan — no subscriptions."
           />
         </div>
       </section>
@@ -237,10 +217,6 @@ export default function PlansPage() {
           <Faq
             q="When should I add Groundwork Premium?"
             a="Premium makes sense once your build has started and decisions come up regularly — change orders, contractor behavior, mid-build pivots. The call packs are great for one-off moments before or during construction."
-          />
-          <Faq
-            q="What if I need a refund?"
-            a="If your Groundwork Report or Pro doesn&apos;t make your bids more comparable, email us within 7 days and we&apos;ll refund the purchase. Call packs are refunded if cancelled 24h in advance."
           />
         </div>
       </section>
@@ -278,7 +254,6 @@ export default function PlansPage() {
 function PlanCard({
   accent,
   accentBg,
-  icon,
   tag,
   title,
   price,
@@ -292,7 +267,6 @@ function PlanCard({
 }: {
   accent: string;
   accentBg: string;
-  icon: React.ReactNode;
   tag: string;
   title: string;
   price: string;
@@ -321,14 +295,9 @@ function PlanCard({
         </span>
       )}
 
-      {/* Header — icon left, tag right */}
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-12 w-12 flex-none items-center justify-center rounded-xl text-xl"
-          style={{ backgroundColor: accentBg, color: accent }}
-        >
-          {icon}
-        </div>
+      {/* Header — title with tag */}
+      <div className="flex flex-wrap items-center gap-3">
+        <h3 className="font-serif text-2xl text-[#1a1a2e]">{title}</h3>
         <span
           className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
           style={{ backgroundColor: accentBg, color: accent }}
@@ -336,8 +305,6 @@ function PlanCard({
           {tag}
         </span>
       </div>
-
-      <h3 className="mt-5 font-serif text-2xl text-[#1a1a2e]">{title}</h3>
 
       {/* Centered mid-card price */}
       <div
@@ -393,7 +360,6 @@ function CallPackCard({
   label,
   price,
   unit,
-  description,
   featured = false,
   featuredLabel = "Best value",
 }: {
@@ -401,7 +367,6 @@ function CallPackCard({
   label: string;
   price: string;
   unit: string;
-  description: string;
   featured?: boolean;
   featuredLabel?: string;
 }) {
@@ -426,18 +391,17 @@ function CallPackCard({
         </span>
       )}
 
-      <div
-        className="flex h-11 w-11 items-center justify-center rounded-xl text-lg"
-        style={{ backgroundColor: accentBg, color: accent }}
-      >
-        {icon}
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-xl text-lg"
+          style={{ backgroundColor: accentBg, color: accent }}
+        >
+          {icon}
+        </div>
+        <p className="font-serif text-lg text-[#1a1a2e]">{label}</p>
       </div>
 
-      <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-        {label}
-      </p>
-
-      <div className="mt-1 flex items-baseline gap-2">
+      <div className="mt-5 flex items-baseline gap-2">
         <span
           className="font-serif text-4xl font-bold leading-none"
           style={{ color: accent }}
@@ -447,9 +411,6 @@ function CallPackCard({
         <span className="text-xs font-semibold text-[#9a9aaa]">{unit}</span>
       </div>
 
-      <p className="mt-3 flex-1 text-sm leading-relaxed text-[#6a6a7a]">
-        {description}
-      </p>
     </div>
   );
 }
@@ -495,7 +456,7 @@ function ComparisonTable() {
       bg: "#eef0f4",
       icon: <FaUserGroup />,
       rows: [
-        { label: "Calls with a real person", info: "45-min calls with a retired contractor. Used as needed.", report: false, pro: "3 calls", premium: "Unlimited email" },
+        { label: "Calls with a real person", info: "60-min calls with an experienced contractor. Used as needed.", report: false, pro: "3 calls", premium: "X calls" },
         { label: "Bid comparison (upload up to 4 bids)", info: "We line up the bids side-by-side and flag what to question.", report: false, pro: true, premium: true },
         { label: "One round of scope refinement", info: "Update the scope after walkthroughs or initial contractor feedback.", report: false, pro: true, premium: true },
       ],
@@ -506,7 +467,7 @@ function ComparisonTable() {
       bg: "#eef3ee",
       icon: <FaScrewdriverWrench />,
       rows: [
-        { label: "Dedicated retired contractor", info: "The same person across your whole project — no rotating advisors.", report: false, pro: false, premium: true },
+        { label: "Dedicated experienced contractor", info: "The same person across your whole project — no rotating advisors.", report: false, pro: false, premium: true },
         { label: "Change-order review", info: "We sanity-check change orders before you sign.", report: false, pro: false, premium: true },
         { label: "Decision support mid-build", report: false, pro: false, premium: true },
         { label: "Email support within 24 hours", report: false, pro: false, premium: true },
@@ -562,9 +523,9 @@ function ComparisonTable() {
                 Groundwork Premium
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
-                $500+
+                $1,499
                 <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
-                  / mo
+                  / room
                 </span>
               </div>
             </th>
@@ -787,7 +748,7 @@ function BookCallModal({
               Pick a day and time
             </h3>
             <p className="mt-1 text-xs text-[#6a6a7a]">
-              45-minute call with a retired contractor. Times shown in your
+              60-minute call with an experienced contractor. Times shown in your
               local timezone.
             </p>
           </div>
