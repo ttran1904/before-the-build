@@ -35,7 +35,19 @@ import {
   FaHand,
   FaToolbox,
   FaChessBoard,
+  FaShield,
 } from "react-icons/fa6";
+
+import type { IconBaseProps } from "react-icons";
+
+const FaFaucetDouble = (props: IconBaseProps) => (
+  <span
+    style={{ display: "inline-flex", alignItems: "center", gap: "0.15em" }}
+  >
+    <FaFaucet {...props} />
+    <FaFaucet {...props} />
+  </span>
+);
 
 import {
   TileSelect,
@@ -508,11 +520,12 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
       <ChipMulti
         value={value}
         onChange={onChange}
+        exclusive={["none", "unsure"]}
         options={[
           { id: "niche", label: "Niche (recessed shelf)" },
           { id: "bench", label: "Bench" },
           { id: "multi_niche", label: "Multiple niches or custom shelving" },
-          { id: "none", label: "None" },
+          { id: "none", label: "Nothing" },
           { id: "unsure", label: "Not sure yet" },
         ]}
       />
@@ -635,7 +648,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
         options={[
           { id: "keep", label: "Keep existing", icon: FaLock },
           { id: "single", label: "Single vanity", icon: FaFaucet },
-          { id: "double", label: "Double vanity", icon: FaFaucetDrip },
+          { id: "double", label: "Double vanity", icon: FaFaucetDouble },
           { id: "pedestal", label: "Pedestal sink", icon: FaSoap },
           { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
@@ -892,6 +905,11 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     question: "What kind of grout?",
     helper:
       "Standard grout works for most projects. Epoxy is more stain-resistant and costs more.",
+    info: {
+      title: "What's grout?",
+      body: "Grout is the thin material that fills the gaps between tiles. It locks the tiles in place, keeps water from getting behind them, and is one of the first things people notice when a bathroom starts to look dated.",
+      image: "/images/help/grout.jpg",
+    },
     initial: () => get().grout,
     commit: (v) => v && setKey("grout", v),
     next: () => "tile-edge",
@@ -899,9 +917,15 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
       <TileSelect
         value={value}
         onChange={(v) => onChange(v as GroutChoice)}
+        layout="below"
         options={[
           { id: "standard", label: "Standard grout", icon: FaHandsBubbles },
-          { id: "epoxy", label: "Epoxy grout (more durable, higher cost)", icon: FaDroplet },
+          {
+            id: "epoxy",
+            label: "Epoxy grout",
+            desc: "More durable, higher cost",
+            icon: FaShield,
+          },
           { id: "unsure", label: "Not decided yet", icon: FaCircleQuestion },
         ]}
       />
@@ -914,6 +938,11 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     question: "Tile edge treatment?",
     helper:
       "Where your tile meets paint or another surface. Some builders use a metal strip (Schluter), others a finished tile edge.",
+    info: {
+      title: "What's a tile edge?",
+      body: "It's how the last row of tile is finished where it meets paint, drywall, or another material. The two common options are a thin metal strip (a Schluter trim) or a tile with a polished, rounded edge — both keep the corner clean and protected.",
+      image: "/images/help/tile-edge.jpg",
+    },
     initial: () => get().tileEdge,
     commit: (v) => v && setKey("tileEdge", v),
     next: (v) => (v === "selected" ? "tile-edge-text" : "lighting"),
@@ -921,6 +950,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
       <TileSelect
         value={value}
         onChange={(v) => onChange(v as TileEdgeChoice)}
+        layout="below"
         options={[
           { id: "selected", label: "Already selected", icon: FaBorderAll },
           { id: "unsure", label: "Not decided yet", icon: FaCircleQuestion },
@@ -965,11 +995,12 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
       <ChipMulti
         value={value}
         onChange={onChange}
+        exclusive={["none", "not_sure"]}
         options={[
           { id: "vanity_light", label: "Vanity light", icon: FaLightbulb },
           { id: "shower_recessed", label: "Recessed light in shower", icon: FaLightbulb },
           { id: "both", label: "Both", icon: FaLightbulb },
-          { id: "none", label: "Nothing — lighting stays as-is", icon: FaLock },
+          { id: "none", label: "Nothing", icon: FaLock },
           { id: "not_sure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
@@ -994,12 +1025,13 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
       <ChipMulti
         value={value}
         onChange={onChange}
+        exclusive={["none", "not_sure"]}
         options={[
           { id: "fan", label: "New exhaust fan", icon: FaWind },
           { id: "heated_floor", label: "Heated floor", icon: FaTemperatureHigh },
           { id: "outlets", label: "New outlets", icon: FaPlug },
           { id: "fixtures", label: "New or updated light fixtures (beyond vanity & shower)", icon: FaLightbulb },
-          { id: "none", label: "None of these", icon: FaLock },
+          { id: "none", label: "Nothing", icon: FaLock },
           { id: "not_sure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
@@ -1130,6 +1162,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
       <ChipMulti
         value={value}
         onChange={onChange}
+        exclusive={["not_sure"]}
         options={[
           { id: "recessed_main", label: "Recessed lights in the main bathroom (outside the shower)", icon: FaLightbulb },
           { id: "sconces", label: "Sconces", icon: FaLightbulb },

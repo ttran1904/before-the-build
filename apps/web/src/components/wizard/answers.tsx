@@ -141,18 +141,33 @@ export function PillSelect({
 /* ────────────────────────────────────────────────────────────────
  * Multi-select chips (rounded outlined). User taps to toggle, no
  * auto-advance — uses the bottom Next button.
+ *
+ * `exclusive` lists option ids that, when picked, clear the rest
+ * of the selection (e.g. "Nothing", "Not sure yet"). Picking a
+ * non-exclusive option clears any active exclusive option.
  * ──────────────────────────────────────────────────────────────── */
 export function ChipMulti({
   options,
   value,
   onChange,
+  exclusive = [],
 }: {
   options: AnswerOption[];
   value: string[];
   onChange: (v: string[]) => void;
+  exclusive?: string[];
 }) {
-  const toggle = (id: string) =>
-    onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
+  const toggle = (id: string) => {
+    const isExclusive = exclusive.includes(id);
+    if (isExclusive) {
+      onChange(value.includes(id) ? [] : [id]);
+      return;
+    }
+    const cleaned = value.filter((v) => !exclusive.includes(v));
+    onChange(
+      cleaned.includes(id) ? cleaned.filter((v) => v !== id) : [...cleaned, id]
+    );
+  };
 
   return (
     <div className="mt-8 flex flex-wrap justify-center gap-3">

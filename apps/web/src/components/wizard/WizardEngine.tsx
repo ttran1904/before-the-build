@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WizardChrome } from "./WizardChrome";
+import { InfoPopover } from "./InfoPopover";
 import type { QuestionNode, WizardTab } from "./types";
 
 interface WizardEngineProps {
@@ -158,6 +159,13 @@ function NodeView({
       <div>
         <h1 className="font-serif text-3xl leading-snug text-[#1a1a2e] sm:text-[34px]">
           {node.question}
+          {node.info && (
+            <InfoPopover
+              title={node.info.title}
+              body={node.info.body}
+              image={node.info.image}
+            />
+          )}
         </h1>
         {node.helper && (
           <p className="mt-2 text-sm text-[#6a6a7a]">{node.helper}</p>

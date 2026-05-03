@@ -31,6 +31,15 @@ export interface QuestionNode<V = unknown> {
   question: string;
   /** Optional one-line helper under the question. */
   helper?: string;
+  /** Optional info popover shown via a small "i" button next to the question. */
+  info?: {
+    /** Title for the popover. Defaults to "What is this?". */
+    title?: string;
+    /** Plain-text explanation (1-3 short sentences). */
+    body: string;
+    /** Optional image URL (relative to /public). */
+    image?: string;
+  };
   /** Initial value for the local input from external store. */
   initial: () => V;
   /** Persist the answer to the external store. Called on Next or onAdvance. */
