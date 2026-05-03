@@ -127,7 +127,17 @@ function NodeView({
   finishing?: boolean;
 }) {
   const [value, setValue] = useState<unknown>(() => node.initial());
-  const isValid = node.isValid ? node.isValid(value) : true;
+  const [showWarn, setShowWarn] = useState(false);
+  const isValid = node.isValid ? node.isValid(value) : hasAnswer(value);
+
+  const handleNext = () => {
+    if (!isValid) {
+      setShowWarn(true);
+      return;
+    }
+    setShowWarn(false);
+    onAdvance(value);
+  };
 
   return (
     <WizardChrome
@@ -138,10 +148,11 @@ function NodeView({
       brandTitle={brandTitle}
       backHref={backHref}
       onBack={onBack}
-      onNext={() => onAdvance(value)}
+      onNext={handleNext}
       nextDisabled={!isValid}
       hideNext={node.hideNext === true}
       nextLabel={node.terminal ? "Generate Scope" : "Next"}
+      nextWarning={showWarn && !isValid ? "Pick an answer to continue." : undefined}
       finishing={finishing}
     >
       <div>
@@ -153,10 +164,20 @@ function NodeView({
         )}
         {node.render({
           value,
-          onChange: setValue,
+          onChange: (v: unknown) => {
+            setValue(v);
+            if (showWarn) setShowWarn(false);
+          },
           onAdvance,
         })}
       </div>
     </WizardChrome>
   );
+}
+
+function hasAnswer(v: unknown): boolean {
+  // Default: only block when the value is literally null/undefined
+  // (i.e. a single-select question hasn't been picked yet).
+  // Optional free-text and photo screens use "" or [] and should pass.
+  return v !== null && v !== undefined;
 }

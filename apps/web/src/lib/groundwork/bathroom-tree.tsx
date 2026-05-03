@@ -29,6 +29,11 @@ import {
   FaFaucet,
   FaFaucetDrip,
   FaSoap,
+  FaCheck,
+  FaFan,
+  FaLocationDot,
+  FaHand,
+  FaToolbox,
 } from "react-icons/fa6";
 
 import {
@@ -753,13 +758,14 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
       return "tile-look";
     },
     render: ({ value, onChange }) => (
-      <PillSelect
+      <TileSelect
         value={value}
         onChange={(v) => onChange(v as TileStatus)}
+        layout="below"
         options={[
-          { id: "know", label: "Yes — I know what I want" },
-          { id: "kindof", label: "Kind of — I know the look, not the spec" },
-          { id: "not_yet", label: "Not yet" },
+          { id: "know", label: "I know my tile", icon: FaCheck },
+          { id: "kindof", label: "I have a direction", icon: FaWandMagicSparkles },
+          { id: "not_yet", label: "Not yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -914,7 +920,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
         value={value}
         onChange={(v) => onChange(v as TileEdgeChoice)}
         options={[
-          { id: "selected", label: "Already selected", icon: FaCircleQuestion },
+          { id: "selected", label: "Already selected", icon: FaBorderAll },
           { id: "unsure", label: "Not decided yet", icon: FaCircleQuestion },
         ]}
       />
@@ -1044,14 +1050,15 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     commit: (v) => v && setKey("electricalFan", v),
     next: () => nextElectricalSub("electrical-fan"),
     render: ({ value, onChange }) => (
-      <PillSelect
+      <TileSelect
         value={value}
         onChange={(v) => onChange(v as ElectricalFan)}
+        layout="below"
         options={[
-          { id: "simple_swap", label: "Replacing the fan, same location, same duct" },
-          { id: "new_duct", label: "New fan, same location, new duct run needed" },
-          { id: "new_location", label: "New fan in a new location" },
-          { id: "unsure", label: "Not sure yet" },
+          { id: "simple_swap", label: "Same fan, same spot", icon: FaArrowsRotate },
+          { id: "new_duct", label: "Same spot, new duct", icon: FaWind },
+          { id: "new_location", label: "Move to a new spot", icon: FaLocationDot },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -1168,8 +1175,8 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
         value={value}
         onChange={(v) => onChange(v as PaintChoice)}
         options={[
-          { id: "yes", label: "Yes — ceiling and walls", icon: FaPaintRoller },
-          { id: "no", label: "No — paint excluded", icon: FaLock },
+          { id: "yes", label: "Yes", icon: FaPaintRoller },
+          { id: "no", label: "No", icon: FaLock },
           { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
@@ -1186,13 +1193,14 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     commit: (v) => v && setKey("accessories", v),
     next: () => "photos-current",
     render: ({ value, onChange }) => (
-      <PillSelect
+      <TileSelect
         value={value}
         onChange={(v) => onChange(v as AccessoriesChoice)}
+        layout="below"
         options={[
-          { id: "self", label: "I'll handle those myself after construction" },
-          { id: "builder", label: "I want the builder to install them" },
-          { id: "unsure", label: "Not sure yet" },
+          { id: "self", label: "I'll handle them", icon: FaHand },
+          { id: "builder", label: "Builder installs", icon: FaToolbox },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),

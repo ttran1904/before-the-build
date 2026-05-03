@@ -17,6 +17,8 @@ interface WizardChromeProps {
   onNext?: () => void;
   nextLabel?: string;
   nextDisabled?: boolean;
+  /** Optional warning text shown next to the Next button (e.g. "Pick an answer to continue."). */
+  nextWarning?: string;
   /** Hide the bottom Next button (e.g. when the answer auto-advances on click). */
   hideNext?: boolean;
   /** When true, replace question area with a centered loading state. */
@@ -37,6 +39,7 @@ export function WizardChrome({
   onNext,
   nextLabel = "Next",
   nextDisabled = false,
+  nextWarning,
   hideNext = false,
   finishing = false,
   finishingLabel = "Generating your scope…",
@@ -117,13 +120,20 @@ export function WizardChrome({
           <span />
         )}
         {!hideNext ? (
-          <button
-            onClick={onNext}
-            disabled={nextDisabled}
-            className="rounded-full bg-[#c08a5a] px-10 py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {nextLabel}
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            {nextWarning && (
+              <p className="text-xs font-medium text-[#c08a5a]">{nextWarning}</p>
+            )}
+            <button
+              onClick={onNext}
+              aria-disabled={nextDisabled}
+              className={`rounded-full bg-[#c08a5a] px-10 py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] ${
+                nextDisabled ? "opacity-40" : ""
+              }`}
+            >
+              {nextLabel}
+            </button>
+          </div>
         ) : (
           <span />
         )}
