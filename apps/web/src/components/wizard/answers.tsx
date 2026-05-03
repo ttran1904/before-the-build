@@ -24,7 +24,7 @@ export function TileSelect({
 
   if (useBelow) {
     return (
-      <div className="mt-10 grid w-full max-w-5xl grid-cols-2 gap-x-6 gap-y-10 px-2 sm:grid-cols-3 md:grid-cols-4">
+      <div className="mt-10 flex w-full max-w-5xl flex-wrap justify-center gap-x-6 gap-y-10 px-2">
         {options.map((o) => {
           const Icon = o.icon;
           const selected = value === o.id;
@@ -35,7 +35,7 @@ export function TileSelect({
               onClick={() => !disabled && onChange(o.id)}
               disabled={disabled}
               aria-disabled={disabled}
-              className={`group flex flex-col items-center text-center transition ${
+              className={`group flex w-32 flex-col items-center text-center transition sm:w-36 ${
                 disabled ? "cursor-not-allowed opacity-50" : ""
               }`}
             >
