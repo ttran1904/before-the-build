@@ -116,11 +116,11 @@ export function WizardChrome({
       {/* ── Step navigation: Back (left) · Next (right) — sticky ─── */}
       {!finishing && (
       <div className="sticky bottom-0 z-30 border-t border-[#ece9e3] bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
-        <div className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} items-center justify-between px-6 py-4`}>
+        <div className={`mx-auto flex w-full ${wide ? "max-w-6xl" : "max-w-3xl"} items-center justify-between px-6 py-2`}>
           {onBack ? (
             <button
               onClick={onBack}
-              className="rounded-full bg-[#e8e6e1] px-8 py-3 text-sm font-semibold text-[#1a1a2e] transition hover:bg-[#d5d3cd]"
+              className="rounded-full bg-[#e8e6e1] px-5 py-1.5 text-xs font-semibold text-[#1a1a2e] transition hover:bg-[#d5d3cd]"
             >
               Back
             </button>
@@ -128,14 +128,14 @@ export function WizardChrome({
             <span />
           )}
           {!hideNext ? (
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col items-end gap-1">
               {nextWarning && (
-                <p className="text-xs font-medium text-[#c08a5a]">{nextWarning}</p>
+                <p className="text-[11px] font-medium text-[#c08a5a]">{nextWarning}</p>
               )}
               <button
                 onClick={onNext}
                 aria-disabled={nextDisabled}
-                className={`rounded-full bg-[#c08a5a] px-10 py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] ${
+                className={`rounded-full bg-[#c08a5a] px-6 py-1.5 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#a87445] ${
                   nextDisabled ? "opacity-40" : ""
                 }`}
               >
