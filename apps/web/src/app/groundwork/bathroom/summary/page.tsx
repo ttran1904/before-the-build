@@ -36,6 +36,7 @@ import {
   getCostBreakdown,
   fmtRange,
   type BreakdownLine,
+  type LineReadiness,
 } from "@/lib/groundwork/cost-breakdown";
 import {
   getScopeOfWork,
@@ -135,13 +136,13 @@ interface ScopeCardItem {
 
 type TabId = "overview" | "scope" | "budget" | "decisions" | "roles" | "readiness";
 
-const TABS: Array<{ id: TabId; label: string; hint: string }> = [
-  { id: "overview", label: "Overview", hint: "The gist" },
-  { id: "scope", label: "Scope of Work", hint: "What's in, what's out" },
-  { id: "budget", label: "Budget", hint: "Range + breakdown" },
-  { id: "decisions", label: "Decisions", hint: "Open items + assumptions" },
-  { id: "roles", label: "Responsibilities", hint: "Who supplies, who installs" },
-  { id: "readiness", label: "Readiness", hint: "How bid-ready you are" },
+const TABS: Array<{ id: TabId; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "scope", label: "Scope of Work" },
+  { id: "budget", label: "Budget" },
+  { id: "decisions", label: "Decisions" },
+  { id: "roles", label: "Responsibilities" },
+  { id: "readiness", label: "Readiness" },
 ];
 
 export default function GroundworkSummaryPage() {
@@ -277,28 +278,26 @@ export default function GroundworkSummaryPage() {
           </div>
         </header>
 
-        <main ref={printRef} className="mx-auto w-full max-w-5xl space-y-8 px-6 py-10">
+        <main ref={printRef} className="mx-auto w-full max-w-5xl space-y-6 px-6 py-8">
           {/* ── Formal Ground Report header ─────────────────────── */}
           <ReportTitleBlock meta={meta} />
 
           {/* ── Tab strip (hidden in PDF) ───────────────────────── */}
           {!printAll && (
-            <nav className="-mt-2 flex flex-wrap gap-1 border-b border-[#ece9e3]">
+            <nav className="-mt-3 flex flex-wrap gap-1.5 rounded-full border border-[#ece9e3] bg-white p-1 shadow-sm">
               {TABS.map((t) => {
                 const active = activeTab === t.id;
                 return (
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id)}
-                    className={`group relative flex flex-col items-start gap-0.5 px-4 py-3 text-left transition ${
-                      active ? "text-[#1a1a2e]" : "text-[#6a6a7a] hover:text-[#1a1a2e]"
+                    className={`flex-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#1a1a2e] text-white shadow-sm"
+                        : "text-[#6a6a7a] hover:bg-[#f0ede8] hover:text-[#1a1a2e]"
                     }`}
                   >
-                    <span className="text-sm font-semibold">{t.label}</span>
-                    <span className="text-[11px] text-[#9a9aaa]">{t.hint}</span>
-                    {active && (
-                      <span className="absolute -bottom-px left-0 right-0 h-[2px] bg-[#2d5a3d]" />
-                    )}
+                    {t.label}
                   </button>
                 );
               })}
@@ -370,11 +369,16 @@ export default function GroundworkSummaryPage() {
 
               {/* Scope cards — preserved */}
               <Section title="What's changing vs staying">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {scopeItems.map((it) => (
                     <ScopeCard key={it.key} item={it} />
                   ))}
                 </div>
+              </Section>
+
+              {/* Budget snapshot — also surfaced on overview for at-a-glance value */}
+              <Section title="Estimated cost breakdown">
+                <CostTable breakdown={breakdown} readiness={readiness} />
               </Section>
 
               {/* Quick callouts — preserved */}
@@ -457,7 +461,7 @@ export default function GroundworkSummaryPage() {
               <BudgetTiers data={sensitivity} />
 
               <Section title="Estimated cost breakdown">
-                <CostTable breakdown={breakdown} />
+                <CostTable breakdown={breakdown} readiness={readiness} showReadiness />
               </Section>
             </section>
           )}
@@ -612,17 +616,19 @@ function ScopeCard({ item }: { item: ScopeCardItem }) {
   return (
     <div className="rounded-2xl border border-[#ece9e3] bg-white p-4 shadow-sm">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[#f0ede8] text-[#1a1a2e]">
-          <Icon className="text-lg" />
+        <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[#f0ede8] text-[#1a1a2e]">
+          <Icon className="text-base" />
         </div>
-        <p className="flex-1 text-sm font-semibold text-[#1a1a2e]">{item.label}</p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-[#1a1a2e]">{item.label}</p>
+          <span
+            className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${chip.cls}`}
+          >
+            <ChipIcon className="text-[9px]" />
+            {chip.label}
+          </span>
+        </div>
       </div>
-      <span
-        className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold ${chip.cls}`}
-      >
-        <ChipIcon className="text-[10px]" />
-        {chip.label}
-      </span>
     </div>
   );
 }
@@ -635,32 +641,21 @@ function ReportTitleBlock({
   meta: ReturnType<typeof getReportMeta>;
 }) {
   return (
-    <div className="space-y-8 border-b border-[#ece9e3] pb-8">
-      <div className="flex flex-col gap-1">
+    <div className="space-y-4 border-b border-[#ece9e3] pb-5">
+      <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
           Before the Build · Groundwork Report
         </p>
-        <h1 className="font-serif text-5xl leading-tight text-[#b0a99c] sm:text-6xl">
+        <h1 className="mt-1 font-serif text-4xl leading-tight text-[#1a1a2e] sm:text-5xl">
           {meta.title}
         </h1>
-        <p className="text-sm text-[#6a6a7a]">
-          Pre-Bid Scope Definition · {meta.version}
-        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <MetaCell k="Homeowner" v={meta.homeowner} />
         <MetaCell k="Property" v={meta.property} />
         <MetaCell k="Report" v={meta.reportPeriod} />
-      </div>
-
-      <div className="flex items-baseline justify-between border-t border-[#ece9e3] pt-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#9a9aaa]">
-          Bid readiness
-        </p>
-        <p className="font-serif text-4xl text-[#b0a99c]">
-          {meta.bidReadiness}% <span className="text-[#9a9aaa]">Defined</span>
-        </p>
+        <ReadinessCell pct={meta.bidReadiness} />
       </div>
     </div>
   );
@@ -670,7 +665,29 @@ function MetaCell({ k, v }: { k: string; v: string }) {
   return (
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">{k}</p>
-      <p className="mt-1 text-sm text-[#3a3a4a]">{v}</p>
+      <p className="mt-1 text-sm font-medium text-[#1a1a2e]">{v}</p>
+    </div>
+  );
+}
+
+function ReadinessCell({ pct }: { pct: number }) {
+  const tone =
+    pct >= 80
+      ? { fg: "text-[#2d5a3d]", bar: "bg-[#2d5a3d]" }
+      : pct >= 60
+      ? { fg: "text-[#7a5a1a]", bar: "bg-[#c08a5a]" }
+      : { fg: "text-[#8a4a1a]", bar: "bg-[#c08a5a]" };
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
+        Bid Readiness
+      </p>
+      <div className="mt-1 flex items-center gap-3">
+        <p className={`font-serif text-xl ${tone.fg}`}>{pct}%</p>
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#f0ede8]">
+          <div className={`h-1 rounded-full ${tone.bar}`} style={{ width: `${pct}%` }} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -934,7 +951,38 @@ function ReadinessGrid({ r }: { r: ReturnType<typeof getReadinessScores> }) {
 
 /* ────────────────── Existing Cost Breakdown table (preserved) ── */
 
-function CostTable({ breakdown }: { breakdown: ReturnType<typeof getCostBreakdown> }) {
+function readinessBadge(r: LineReadiness) {
+  if (r === "firm")
+    return {
+      icon: FaCircleCheck,
+      label: "Firm",
+      cls: "bg-[#eef3ee] text-[#2d5a3d] border-[#d6e3d8]",
+      title: "High confidence — driven by code minimums or fixed labor.",
+    };
+  if (r === "estimated")
+    return {
+      icon: FaCircleInfo,
+      label: "Estimated",
+      cls: "bg-[#fbf2d9] text-[#7a5a1a] border-[#ecdfa9]",
+      title: "Mid confidence — depends on a finish or fixture spec.",
+    };
+  return {
+    icon: FaTriangleExclamation,
+    label: "Rough",
+    cls: "bg-[#f6e4d4] text-[#8a4a1a] border-[#ecd6bc]",
+    title: "Low confidence — open decision or behind-wall discovery.",
+  };
+}
+
+function CostTable({
+  breakdown,
+  readiness,
+  showReadiness,
+}: {
+  breakdown: ReturnType<typeof getCostBreakdown>;
+  readiness?: ReturnType<typeof getReadinessScores>;
+  showReadiness?: boolean;
+}) {
   if (breakdown.lines.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-[#ece9e3] bg-white p-6 text-center text-sm text-[#6a6a7a]">
@@ -955,6 +1003,7 @@ function CostTable({ breakdown }: { breakdown: ReturnType<typeof getCostBreakdow
     const high = rows.reduce((n, r) => n + r.high, 0);
     groups.push({ name: cat, rows, low, high });
   }
+  const colSpan = showReadiness ? 4 : 3;
   return (
     <div className="overflow-hidden rounded-2xl border border-[#ece9e3] bg-white shadow-sm">
       <table className="w-full text-sm">
@@ -962,25 +1011,36 @@ function CostTable({ breakdown }: { breakdown: ReturnType<typeof getCostBreakdow
           <tr>
             <th className="px-5 py-3 text-left font-semibold">Item</th>
             <th className="px-5 py-3 text-left font-semibold">Description</th>
+            {showReadiness && (
+              <th className="px-5 py-3 text-left font-semibold">Confidence</th>
+            )}
             <th className="px-5 py-3 text-right font-semibold">Estimated cost</th>
           </tr>
         </thead>
         <tbody>
           {groups.map((g) => (
-            <Group key={g.name} group={g} />
+            <Group key={g.name} group={g} showReadiness={showReadiness} />
           ))}
           <tr className="border-t-2 border-[#1a1a2e] bg-[#e8e6e1]">
             <td className="px-5 py-3 text-sm font-bold uppercase tracking-wider text-[#1a1a2e]">
               Subtotal
             </td>
-            <td className="px-5 py-3 text-xs text-[#3a3a4a]">Materials + labor + permits</td>
+            <td
+              className="px-5 py-3 text-xs text-[#3a3a4a]"
+              colSpan={showReadiness ? 2 : 1}
+            >
+              Materials + labor + permits
+            </td>
             <td className="px-5 py-3 text-right text-sm font-bold text-[#1a1a2e]">
               {fmtRange(breakdown.subtotalLow, breakdown.subtotalHigh)}
             </td>
           </tr>
           <tr className="bg-[#fbeede]">
             <td className="px-5 py-3 text-sm font-semibold text-[#7a4a18]">20% contingency</td>
-            <td className="px-5 py-3 text-xs text-[#7a4a18]">
+            <td
+              className="px-5 py-3 text-xs text-[#7a4a18]"
+              colSpan={showReadiness ? 2 : 1}
+            >
               Buffer for change orders & surprises behind walls
             </td>
             <td className="px-5 py-3 text-right font-semibold text-[#7a4a18]">
@@ -989,11 +1049,27 @@ function CostTable({ breakdown }: { breakdown: ReturnType<typeof getCostBreakdow
           </tr>
           <tr className="bg-[#1a1a2e] text-white">
             <td className="px-5 py-4 text-sm font-bold uppercase tracking-wider">Total</td>
-            <td className="px-5 py-4 text-xs text-[#bdbab0]">All-in estimate</td>
+            <td
+              className="px-5 py-4 text-xs text-[#bdbab0]"
+              colSpan={showReadiness ? 2 : 1}
+            >
+              All-in estimate{readiness ? ` · ${readiness.overall}% defined` : ""}
+            </td>
             <td className="px-5 py-4 text-right font-serif text-xl">
               {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
             </td>
           </tr>
+          {showReadiness && (
+            <tr>
+              <td colSpan={colSpan} className="bg-[#faf8f3] px-5 py-3 text-[11px] text-[#6a6a7a]">
+                <span className="font-semibold text-[#1a1a2e]">Reading the confidence column:</span>{" "}
+                <span className="text-[#2d5a3d]">Firm</span> = locked by code or fixed labor.{" "}
+                <span className="text-[#7a5a1a]">Estimated</span> = depends on a spec you haven't
+                set yet. <span className="text-[#8a4a1a]">Rough</span> = open decision or
+                behind-wall surprise risk — these are the numbers that move the most.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -1002,31 +1078,49 @@ function CostTable({ breakdown }: { breakdown: ReturnType<typeof getCostBreakdow
 
 function Group({
   group,
+  showReadiness,
 }: {
   group: { name: BreakdownLine["category"]; rows: BreakdownLine[]; low: number; high: number };
+  showReadiness?: boolean;
 }) {
+  const colSpan = showReadiness ? 4 : 3;
   return (
     <>
       <tr className="border-t-[3px] border-[#1a1a2e] bg-[#1a1a2e]">
         <td
-          colSpan={3}
+          colSpan={colSpan}
           className="px-5 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white"
         >
           {group.name}
         </td>
       </tr>
-      {group.rows.map((r) => (
-        <tr key={r.item} className="border-t border-[#f1ede5]">
-          <td className="py-3 pl-10 pr-5 font-medium text-[#1a1a2e]">{r.item}</td>
-          <td className="px-5 py-3 text-[#6a6a7a]">{r.description}</td>
-          <td className="px-5 py-3 text-right text-[#1a1a2e]">{fmtRange(r.low, r.high)}</td>
-        </tr>
-      ))}
+      {group.rows.map((r) => {
+        const b = readinessBadge(r.readiness);
+        const BIcon = b.icon;
+        return (
+          <tr key={r.item} className="border-t border-[#f1ede5]">
+            <td className="py-3 pl-10 pr-5 font-medium text-[#1a1a2e]">{r.item}</td>
+            <td className="px-5 py-3 text-[#6a6a7a]">{r.description}</td>
+            {showReadiness && (
+              <td className="px-5 py-3">
+                <span
+                  title={b.title}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${b.cls}`}
+                >
+                  <BIcon className="text-[9px]" />
+                  {b.label}
+                </span>
+              </td>
+            )}
+            <td className="px-5 py-3 text-right text-[#1a1a2e]">{fmtRange(r.low, r.high)}</td>
+          </tr>
+        );
+      })}
       <tr className="border-t border-[#ece9e3] bg-[#f0ede8]">
         <td className="py-2.5 pl-10 pr-5 text-xs font-bold uppercase tracking-wider text-[#1a1a2e]">
           {group.name} subtotal
         </td>
-        <td className="bg-[#f0ede8]" />
+        <td className="bg-[#f0ede8]" colSpan={showReadiness ? 2 : 1} />
         <td className="px-5 py-2.5 text-right text-sm font-bold text-[#1a1a2e]">
           {fmtRange(group.low, group.high)}
         </td>
