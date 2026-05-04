@@ -13,7 +13,6 @@ import {
   FaHouse,
   FaClock,
   FaWallet,
-  FaUser,
   FaLocationDot,
   FaCalendarDay,
   FaShield,
@@ -632,26 +631,19 @@ function ReportHeroCard({
                 Materials + labor + 10% contingency
               </p>
             </div>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-[#ece9e3] bg-white px-4 py-2 sm:justify-end">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
-                Homeowner budget
-              </span>
-              <span className="font-serif text-base text-[#1a1a2e]">{lbl(state.budgetTier)}</span>
-            </div>
           </div>
         </div>
 
-        {/* Unified 4-up meta + facts grid (2 rows) */}
+        {/* Unified meta + facts grid */}
         <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-[#f1ede5] pt-5 sm:grid-cols-4">
-          <MetaCell icon={FaUser} k="Homeowner" v={meta.homeowner} />
-          <MetaCell icon={FaLocationDot} k="Property" v={meta.property} />
+          <MetaCell icon={FaLocationDot} k="Address" v={meta.property} />
           <MetaCell icon={FaCalendarDay} k="Report" v={meta.reportPeriod} />
+          <MetaCell icon={FaBath6} k="Bathroom" v={lbl(state.bathroomKind)} />
           <ReadinessCell pct={meta.bidReadiness} />
 
-          <MetaCell icon={FaBath6} k="Bathroom" v={lbl(state.bathroomKind)} />
           <MetaCell icon={FaScrewdriverWrench} k="Project" v={projectTypeLabel(state.projectType)} />
           <MetaCell icon={FaClock} k="Urgency" v={lbl(state.urgency)} />
-          <MetaCell icon={FaWallet} k="Homeowner budget" v={lbl(state.budgetTier)} />
+          <MetaCell icon={FaWallet} k="Target budget" v={lbl(state.budgetTier)} />
         </div>
 
         {state.goals.length > 0 && (
@@ -1344,48 +1336,47 @@ function Callout({
 function ContractorChecklist({ items }: { items: string[] }) {
   if (items.length === 0) {
     return (
-      <section className="rounded-2xl border border-[#cfe0d2] bg-[#eef3ee] px-6 py-5">
-        <div className="flex items-start gap-3">
-          <FaCircleCheck className="mt-0.5 text-lg text-[#2d5a3d]" />
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2d5a3d]">
-              You&apos;re bid-ready
-            </p>
-            <p className="mt-1 text-sm text-[#3a3a4a]">
-              Every scope question is answered — no clarifying questions for contractors.
-              Hand them the scope and ask for line-item bids.
-            </p>
+      <section className="flex h-full flex-col rounded-2xl border border-[#cfe0d2] bg-[#eef3ee] p-5">
+        <div className="flex items-center justify-between gap-3 border-b border-[#cfe0d2] pb-3">
+          <div className="flex items-center gap-2">
+            <FaCircleCheck className="text-[#2d5a3d]" />
+            <h3 className="font-serif text-lg text-[#1a1a2e]">Contractor questions</h3>
           </div>
+          <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-semibold text-[#2d5a3d]">
+            All clear
+          </span>
         </div>
+        <p className="mt-3 text-sm text-[#3a3a4a]">
+          Every scope question is answered — hand the scope to bidders as-is.
+        </p>
       </section>
     );
   }
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#ecd6bc] bg-white shadow-sm">
-      <div className="flex items-start gap-3 bg-[#f6e4d4] px-6 py-4">
-        <FaTriangleExclamation className="mt-0.5 text-lg text-[#8a4a1a]" />
-        <div className="flex-1">
-          <h2 className="mt-1 font-serif text-2xl text-[#1a1a2e]">
-            Your contractor question checklist
-          </h2>
+    <section className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#ecd6bc] bg-white shadow-sm">
+      <header className="flex items-center justify-between gap-3 bg-[#f6e4d4] px-5 py-3">
+        <div className="flex items-center gap-2">
+          <FaTriangleExclamation className="text-[#8a4a1a]" />
+          <h3 className="font-serif text-lg text-[#1a1a2e]">Ask each contractor</h3>
         </div>
-        <span className="hidden rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#8a4a1a] shadow-sm sm:inline">
-          {items.length} question{items.length === 1 ? "" : "s"}
+        <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-semibold text-[#8a4a1a] shadow-sm">
+          {items.length} {items.length === 1 ? "question" : "questions"}
         </span>
-      </div>
-      <ol className="divide-y divide-[#f1ede5]">
+      </header>
+      <ol className="flex-1 divide-y divide-[#f1ede5]">
         {items.map((q, i) => (
-          <li key={q} className="flex items-start gap-4 px-6 py-3">
-            <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#f6e4d4] text-xs font-bold text-[#8a4a1a]">
+          <li key={q} className="flex items-start gap-3 px-5 py-2.5">
+            <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-[#f6e4d4] text-[11px] font-bold text-[#8a4a1a]">
               {i + 1}
             </span>
-            <p className="text-sm leading-relaxed text-[#3a3a4a]">{q}</p>
+            <p className="text-sm leading-snug text-[#3a3a4a]">{q}</p>
           </li>
         ))}
       </ol>
     </section>
   );
 }
+
 
 function ReadinessOverview({
   readiness,
@@ -1405,77 +1396,61 @@ function ReadinessOverview({
   const overall = readiness.overall;
   const tone =
     overall >= 80
-      ? { text: "text-[#2d5a3d]", bg: "bg-[#eef3ee]", border: "border-[#cfe0d2]" }
+      ? { text: "text-[#2d5a3d]", bar: "bg-[#2d5a3d]", header: "bg-[#eef3ee]", border: "border-[#cfe0d2]", chip: "Almost bid-ready" }
       : overall >= 60
-      ? { text: "text-[#7a5a1a]", bg: "bg-[#fbf2d9]", border: "border-[#ecdfa9]" }
-      : { text: "text-[#8a4a1a]", bg: "bg-[#f6e4d4]", border: "border-[#ecd6bc]" };
-  // Pick worst dimensions → "areas to improve"
+      ? { text: "text-[#7a5a1a]", bar: "bg-[#a07820]", header: "bg-[#fbf2d9]", border: "border-[#ecdfa9]", chip: "Tighten a few items" }
+      : { text: "text-[#8a4a1a]", bar: "bg-[#8a4a1a]", header: "bg-[#f6e4d4]", border: "border-[#ecd6bc]", chip: "Needs tightening" };
   const weak = report.dimensions
     .slice()
     .sort((a, b) => a.score - b.score)
     .filter((d) => d.score < 100)
     .slice(0, 2);
   return (
-    <section className={`rounded-2xl border ${tone.border} ${tone.bg} px-6 py-5 shadow-sm`}>
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <div className={`flex h-14 w-14 flex-none items-center justify-center rounded-full bg-white ${tone.text} shadow-sm`}>
-            <span className="font-serif text-xl leading-none">{overall}%</span>
-          </div>
-          <div>
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${tone.text}`}>
-              Bid readiness
-            </p>
-            <p className="mt-0.5 text-sm leading-snug text-[#3a3a4a]">
-              {overall >= 80
-                ? "You’re close to bid-ready — minor tightening only."
-                : overall >= 60
-                ? "Solid scope. A few decisions would tighten bids."
-                : "Worth tightening before going to bid."}
-            </p>
-          </div>
+    <section className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm ${tone.border}`}>
+      <header className={`flex items-center justify-between gap-3 px-5 py-3 ${tone.header}`}>
+        <div className="flex items-baseline gap-2">
+          <span className={`font-serif text-base ${tone.text}`}>{overall}%</span>
+          <h3 className="font-serif text-lg text-[#1a1a2e]">Bid readiness</h3>
         </div>
-        <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+        <span className={`rounded-full bg-white px-2.5 py-0.5 text-[11px] font-semibold shadow-sm ${tone.text}`}>
+          {tone.chip}
+        </span>
+      </header>
+      <div className="flex flex-1 flex-col gap-3 px-5 py-4">
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
           {items.map(([k, v]) => (
-            <div
-              key={k}
-              className="flex items-center gap-2 rounded-full border border-white/60 bg-white px-3 py-1 text-xs"
-              title={`${k}: ${v}%`}
-            >
-              <span className="font-semibold text-[#1a1a2e]">{k}</span>
-              <span className="font-serif text-sm text-[#1a1a2e]">{v}%</span>
-              <span className="h-1 w-10 overflow-hidden rounded-full bg-[#f0ede8]">
-                <span
-                  className="block h-1 rounded-full bg-[#2d5a3d]"
-                  style={{ width: `${v}%` }}
-                />
+            <li key={k} className="flex items-center gap-2 text-xs">
+              <span className="w-16 font-semibold text-[#1a1a2e]">{k}</span>
+              <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#f0ede8]">
+                <span className={`block h-1.5 rounded-full ${tone.bar}`} style={{ width: `${v}%` }} />
               </span>
-            </div>
+              <span className="w-9 text-right font-serif text-sm text-[#1a1a2e]">{v}%</span>
+            </li>
           ))}
-        </div>
+        </ul>
+        {weak.length > 0 && (
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-[#f1ede5] pt-3">
+            <p className="text-xs text-[#3a3a4a]">
+              <span className={`font-semibold ${tone.text}`}>Improve:</span>{" "}
+              {weak.map((d, i) => (
+                <span key={d.key}>
+                  {i > 0 && ", "}
+                  <strong className="text-[#1a1a2e]">{d.label}</strong>
+                </span>
+              ))}
+            </p>
+            <button
+              type="button"
+              onClick={onJump}
+              className="rounded-full bg-[#1a1a2e] px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-[#2a2a4e]"
+            >
+              See details →
+            </button>
+          </div>
+        )}
       </div>
-      {weak.length > 0 && (
-        <div className="mt-4 flex flex-col gap-2 border-t border-white/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-[#3a3a4a]">
-            <span className={`font-semibold ${tone.text}`}>Where to improve:</span>{" "}
-            {weak.map((d, i) => (
-              <span key={d.key}>
-                {i > 0 && ", "}
-                <strong className="text-[#1a1a2e]">{d.label}</strong>{" "}
-                <span className="text-[#9a9aaa]">({d.score}%)</span>
-              </span>
-            ))}
-          </p>
-          <button
-            type="button"
-            onClick={onJump}
-            className="inline-flex items-center gap-1 self-start rounded-full bg-[#1a1a2e] px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-[#2a2a4e] sm:self-auto"
-          >
-            See full readiness →
-          </button>
-        </div>
-      )}
     </section>
   );
 }
+
 
