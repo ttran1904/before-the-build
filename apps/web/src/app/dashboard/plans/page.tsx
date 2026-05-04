@@ -107,8 +107,8 @@ export default function PlansPage() {
               "Email support within 24 hours",
               "Ongoing contractor evaluation",
             ]}
-            ctaHref="/dashboard/advisor?tier=premium"
-            ctaLabel="Request a match"
+            ctaHref="/dashboard/checkout?plan=premium"
+            ctaLabel="Get started"
           />
         </div>
 

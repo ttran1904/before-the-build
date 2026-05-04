@@ -802,8 +802,8 @@ export default function Home() {
                 "Email support within 24 hours",
                 "Ongoing contractor evaluation",
               ]}
-              ctaHref="/sign-in?redirect=%2Fdashboard%2Fadvisor%3Ftier%3Dpremium"
-              ctaLabel="Request a match"
+              ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dpremium"
+              ctaLabel="Get started"
             />
           </div>
 
