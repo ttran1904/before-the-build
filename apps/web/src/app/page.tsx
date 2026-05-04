@@ -5,6 +5,7 @@ import {
   FaStar, FaRobot, FaCompass, FaCouch, FaArrowsRotate,
   FaCartShopping, FaCalendarDays, FaShieldHalved, FaCertificate,
   FaRuler,
+  FaPhone, FaPhoneVolume, FaHeadset,
 } from "react-icons/fa6";
 
 /* ─── Room scene illustrations ─── */
@@ -807,45 +808,31 @@ export default function Home() {
           </div>
 
           {/* Add-ons strip */}
-          <div className="mt-10 rounded-3xl border border-[#e8e6e1] bg-white p-8">
-            <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
-              <div>
-                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
-                  Add-ons
-                </span>
-                <h3 className="mt-2 font-serif text-2xl text-[#1a1a2e]">
-                  On-Demand Expert Calls
-                </h3>
-                <p className="mt-1 max-w-xl text-sm text-[#6a6a7a]">
-                  Need help without committing to Premium? Book a single call
-                  or save with a pack.
-                </p>
-              </div>
-              <div className="grid w-full grid-cols-3 gap-3 md:w-auto md:gap-4">
-                {[
-                  { label: "Single call", price: "$59" },
-                  { label: "3-call pack", price: "$149", highlight: true },
-                  { label: "5-call pack", price: "$229" },
-                ].map((c) => (
-                  <div
-                    key={c.label}
-                    className={
-                      "flex flex-col items-center rounded-2xl border px-4 py-3 text-center " +
-                      (c.highlight
-                        ? "border-[#c08a5a] bg-[#f6f3ed]"
-                        : "border-[#ece9e3] bg-[#faf8f3]")
-                    }
-                  >
-                    <span className="font-serif text-2xl font-bold text-[#1a1a2e]">
-                      {c.price}
-                    </span>
-                    <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
-                      {c.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="mt-16 text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
+              Add-ons
+            </span>
+            <h3 className="mt-3 font-serif text-3xl text-[#1a1a2e]">
+              On-Demand Expert Calls
+            </h3>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-[#6a6a7a]">
+              For homeowners who need help without committing to Premium. Use a
+              call before signing a bid, mid-build, or any time a decision feels
+              heavy.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 sm:grid-cols-3">
+            <CallPackCard icon={<FaPhone />} label="Single call" price="$59" unit="$59 / call" />
+            <CallPackCard
+              icon={<FaPhoneVolume />}
+              label="3-call pack"
+              price="$149"
+              unit="≈ $50 / call"
+              featured
+              featuredLabel="Best value"
+            />
+            <CallPackCard icon={<FaHeadset />} label="5-call pack" price="$229" unit="≈ $46 / call" />
           </div>
 
           <p className="mt-6 text-center text-xs text-[#9a9aaa]">
@@ -1032,3 +1019,54 @@ function PlanCard({
   );
 }
 
+function CallPackCard({
+  icon,
+  label,
+  price,
+  unit,
+  featured = false,
+  featuredLabel = "Best value",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  price: string;
+  unit: string;
+  featured?: boolean;
+  featuredLabel?: string;
+}) {
+  const accent = "#c08a5a";
+  const accentBg = "#f6f3ed";
+  return (
+    <div
+      className={
+        "relative flex flex-col rounded-2xl bg-white p-6 transition hover:shadow-md " +
+        (featured ? "border-2 shadow-sm" : "border border-[#ece9e3] shadow-sm")
+      }
+      style={featured ? { borderColor: accent } : undefined}
+    >
+      {featured && (
+        <span
+          className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
+          style={{ backgroundColor: accent }}
+        >
+          {featuredLabel}
+        </span>
+      )}
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-xl text-lg"
+        style={{ backgroundColor: accentBg, color: accent }}
+      >
+        {icon}
+      </div>
+      <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+        {label}
+      </p>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="font-serif text-4xl font-bold leading-none" style={{ color: accent }}>
+          {price}
+        </span>
+        <span className="text-xs font-semibold text-[#9a9aaa]">{unit}</span>
+      </div>
+    </div>
+  );
+}

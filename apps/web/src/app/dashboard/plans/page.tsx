@@ -139,14 +139,12 @@ export default function PlansPage() {
             label="Single call"
             price="$59"
             unit="$59 / call"
-            description="One 45-minute call with an experienced contractor."
           />
           <CallPackCard
             icon={<FaPhoneVolume />}
             label="3-call pack"
             price="$149"
             unit="≈ $50 / call"
-            description="Save $28. Use across bidding, signing, and mid-build."
             featured
             featuredLabel="Best value"
           />
@@ -155,7 +153,6 @@ export default function PlansPage() {
             label="5-call pack"
             price="$229"
             unit="≈ $46 / call"
-            description="Save $66. Best for long or complex builds."
           />
         </div>
 
@@ -363,7 +360,6 @@ function CallPackCard({
   label,
   price,
   unit,
-  description,
   featured = false,
   featuredLabel = "Best value",
 }: {
@@ -371,7 +367,6 @@ function CallPackCard({
   label: string;
   price: string;
   unit: string;
-  description: string;
   featured?: boolean;
   featuredLabel?: string;
 }) {
@@ -417,9 +412,6 @@ function CallPackCard({
         <span className="text-xs font-semibold text-[#9a9aaa]">{unit}</span>
       </div>
 
-      <p className="mt-3 flex-1 text-sm leading-relaxed text-[#6a6a7a]">
-        {description}
-      </p>
     </div>
   );
 }
@@ -465,7 +457,7 @@ function ComparisonTable() {
       bg: "#eef0f4",
       icon: <FaUserGroup />,
       rows: [
-        { label: "Calls with a real person", info: "45-min calls with an experienced contractor. Used as needed.", report: false, pro: "3 calls", premium: "X calls" },
+        { label: "Calls with a real person", info: "60-min calls with an experienced contractor. Used as needed.", report: false, pro: "3 calls", premium: "X calls" },
         { label: "Bid comparison (upload up to 4 bids)", info: "We line up the bids side-by-side and flag what to question.", report: false, pro: true, premium: true },
         { label: "One round of scope refinement", info: "Update the scope after walkthroughs or initial contractor feedback.", report: false, pro: true, premium: true },
       ],
@@ -757,7 +749,7 @@ function BookCallModal({
               Pick a day and time
             </h3>
             <p className="mt-1 text-xs text-[#6a6a7a]">
-              45-minute call with an experienced contractor. Times shown in your
+              60-minute call with an experienced contractor. Times shown in your
               local timezone.
             </p>
           </div>
