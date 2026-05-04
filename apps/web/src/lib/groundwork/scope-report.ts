@@ -581,7 +581,16 @@ export function getReportMeta(s: GroundworkBathroomState): ReportMeta {
   const title = `${kind} ${action === "Not yet selected" ? "Renovation" : action}`;
 
   const now = new Date();
-  const month = now.toLocaleString("en-US", { month: "long" });
+  const datePretty = now.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const timePretty = now.toLocaleString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
   const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}${String(
     now.getDate(),
   ).padStart(2, "0")}`;
@@ -590,7 +599,7 @@ export function getReportMeta(s: GroundworkBathroomState): ReportMeta {
     title,
     homeowner: "Homeowner",
     property: "Property on file",
-    reportPeriod: month,
+    reportPeriod: `${datePretty} · ${timePretty}`,
     reportId: `GR-${stamp}`,
     bidReadiness: r.overall,
     version: "Ground Report v1",

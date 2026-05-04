@@ -31,6 +31,7 @@ import {
   getOpenItems,
   getAssumptions,
   projectTypeLabel,
+  type GroundworkBathroomState,
 } from "@/lib/groundwork/store";
 import {
   getCostBreakdown,
@@ -279,12 +280,17 @@ export default function GroundworkSummaryPage() {
         </header>
 
         <main ref={printRef} className="mx-auto w-full max-w-5xl space-y-6 px-6 py-8">
-          {/* ── Formal Ground Report header ─────────────────────── */}
-          <ReportTitleBlock meta={meta} />
+          {/* ── Formal Ground Report header (hero card) ──────────── */}
+          <ReportHeroCard
+            meta={meta}
+            state={state}
+            breakdown={breakdown}
+            bathroomIcon={bathroomIcon}
+          />
 
           {/* ── Tab strip (hidden in PDF) ───────────────────────── */}
           {!printAll && (
-            <nav className="-mt-3 flex flex-wrap gap-1.5 rounded-full border border-[#ece9e3] bg-white p-1 shadow-sm">
+            <nav className="flex flex-wrap gap-1.5 rounded-full border border-[#ece9e3] bg-white p-1 shadow-sm">
               {TABS.map((t) => {
                 const active = activeTab === t.id;
                 return (
@@ -308,64 +314,6 @@ export default function GroundworkSummaryPage() {
           {showTab("overview") && (
             <section className="space-y-8">
               {printAll && <TabHeading n="00" title="Overview" hint="The gist" />}
-
-              {/* Hero with realistic cost range — preserved */}
-              <div className="rounded-3xl border border-[#ece9e3] bg-white p-8 shadow-sm">
-                <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
-                      Bathroom · Groundwork
-                    </p>
-                    <h2 className="mt-2 font-serif text-4xl text-[#1a1a2e]">
-                      Contractor-ready Scope Report
-                    </h2>
-                  </div>
-                  <div className="rounded-2xl bg-[#f8f7f4] px-6 py-5 text-right">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
-                      Realistic cost range
-                    </p>
-                    <p className="mt-1 font-serif text-3xl text-[#1a1a2e]">
-                      {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
-                    </p>
-                    <p className="mt-1 text-[11px] text-[#9a9aaa]">
-                      Materials + labor + 20% contingency
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <Fact icon={bathroomIcon} k="Bathroom" v={lbl(state.bathroomKind)} />
-                  <Fact icon={FaTools} k="Project" v={projectTypeLabel(state.projectType)} />
-                  <Fact icon={FaClock} k="Urgency" v={lbl(state.urgency)} />
-                  <Fact icon={FaWallet} k="Homeowner budget" v={lbl(state.budgetTier)} />
-                </div>
-
-                {state.goals.length > 0 && (
-                  <div className="mt-6 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[#6a6a7a]">
-                      Goals:
-                    </span>
-                    {state.goals.map((g) => (
-                      <span
-                        key={g}
-                        className="rounded-full bg-[#f0ede8] px-3 py-1 text-xs font-medium text-[#1a1a2e]"
-                      >
-                        {g.replace(/_/g, " ")}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-6 flex items-start gap-3 rounded-xl border border-[#ece9e3] bg-[#faf8f3] px-4 py-3">
-                  <FaCircleInfo className="mt-0.5 flex-none text-[#c08a5a]" />
-                  <p className="text-xs leading-relaxed text-[#3a3a4a]">
-                    <span className="font-semibold text-[#1a1a2e]">
-                      Share this with every contractor.
-                    </span>{" "}
-                    Same scope in, same kind of bid out — no guesswork, no surprise quotes.
-                  </p>
-                </div>
-              </div>
 
               {/* Scope cards — preserved */}
               <Section title="What's changing vs staying">
@@ -635,27 +583,92 @@ function ScopeCard({ item }: { item: ScopeCardItem }) {
 
 /* ────────────────── New Ground Report blocks ─────────────────── */
 
-function ReportTitleBlock({
+function ReportHeroCard({
   meta,
+  state,
+  breakdown,
+  bathroomIcon,
 }: {
   meta: ReturnType<typeof getReportMeta>;
+  state: GroundworkBathroomState;
+  breakdown: ReturnType<typeof getCostBreakdown>;
+  bathroomIcon: IconType;
 }) {
   return (
-    <div className="space-y-4 border-b border-[#ece9e3] pb-5">
-      <div>
+    <div className="overflow-hidden rounded-3xl border border-[#ece9e3] bg-white shadow-sm">
+      {/* Title + meta band */}
+      <div className="px-8 pt-7 pb-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
           Before the Build · Groundwork Report
         </p>
-        <h1 className="mt-1 font-serif text-4xl leading-tight text-[#1a1a2e] sm:text-5xl">
+        <h1 className="mt-1.5 font-serif text-4xl leading-tight text-[#1a1a2e] sm:text-5xl">
           {meta.title}
         </h1>
+
+        <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+          <MetaCell k="Homeowner" v={meta.homeowner} />
+          <MetaCell k="Property" v={meta.property} />
+          <MetaCell k="Report" v={meta.reportPeriod} />
+          <ReadinessCell pct={meta.bidReadiness} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <MetaCell k="Homeowner" v={meta.homeowner} />
-        <MetaCell k="Property" v={meta.property} />
-        <MetaCell k="Report" v={meta.reportPeriod} />
-        <ReadinessCell pct={meta.bidReadiness} />
+      {/* Cost + facts band */}
+      <div className="border-t border-[#f1ede5] bg-[#faf8f3] px-8 py-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
+              Bathroom · Groundwork
+            </p>
+            <h2 className="mt-1.5 font-serif text-2xl text-[#1a1a2e] sm:text-3xl">
+              Contractor-ready Scope Report
+            </h2>
+          </div>
+          <div className="rounded-2xl bg-white px-6 py-4 text-right shadow-sm ring-1 ring-[#ece9e3]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6a6a7a]">
+              Realistic cost range
+            </p>
+            <p className="mt-0.5 font-serif text-3xl text-[#1a1a2e]">
+              {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-[#9a9aaa]">
+              Materials + labor + 20% contingency
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Fact icon={bathroomIcon} k="Bathroom" v={lbl(state.bathroomKind)} />
+          <Fact icon={FaTools} k="Project" v={projectTypeLabel(state.projectType)} />
+          <Fact icon={FaClock} k="Urgency" v={lbl(state.urgency)} />
+          <Fact icon={FaWallet} k="Homeowner budget" v={lbl(state.budgetTier)} />
+        </div>
+
+        {state.goals.length > 0 && (
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#6a6a7a]">
+              Goals:
+            </span>
+            {state.goals.map((g) => (
+              <span
+                key={g}
+                className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#1a1a2e] ring-1 ring-[#ece9e3]"
+              >
+                {g.replace(/_/g, " ")}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#ece9e3] bg-white px-4 py-3">
+          <FaCircleInfo className="mt-0.5 flex-none text-[#c08a5a]" />
+          <p className="text-xs leading-relaxed text-[#3a3a4a]">
+            <span className="font-semibold text-[#1a1a2e]">
+              Share this with every contractor.
+            </span>{" "}
+            Same scope in, same kind of bid out — no guesswork, no surprise quotes.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -673,21 +686,16 @@ function MetaCell({ k, v }: { k: string; v: string }) {
 function ReadinessCell({ pct }: { pct: number }) {
   const tone =
     pct >= 80
-      ? { fg: "text-[#2d5a3d]", bar: "bg-[#2d5a3d]" }
+      ? "text-[#2d5a3d]"
       : pct >= 60
-      ? { fg: "text-[#7a5a1a]", bar: "bg-[#c08a5a]" }
-      : { fg: "text-[#8a4a1a]", bar: "bg-[#c08a5a]" };
+      ? "text-[#7a5a1a]"
+      : "text-[#8a4a1a]";
   return (
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c08a5a]">
         Bid Readiness
       </p>
-      <div className="mt-1 flex items-center gap-3">
-        <p className={`font-serif text-xl ${tone.fg}`}>{pct}%</p>
-        <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#f0ede8]">
-          <div className={`h-1 rounded-full ${tone.bar}`} style={{ width: `${pct}%` }} />
-        </div>
-      </div>
+      <p className={`mt-1 font-serif text-2xl leading-none ${tone}`}>{pct}%</p>
     </div>
   );
 }
