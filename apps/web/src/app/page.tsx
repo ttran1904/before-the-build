@@ -1052,16 +1052,16 @@ function CallPackCard({
           {featuredLabel}
         </span>
       )}
-      <div
-        className="flex h-11 w-11 items-center justify-center rounded-xl text-lg"
-        style={{ backgroundColor: accentBg, color: accent }}
-      >
-        {icon}
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-xl text-lg"
+          style={{ backgroundColor: accentBg, color: accent }}
+        >
+          {icon}
+        </div>
+        <p className="font-serif text-lg text-[#1a1a2e]">{label}</p>
       </div>
-      <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
-        {label}
-      </p>
-      <div className="mt-1 flex items-baseline gap-2">
+      <div className="mt-5 flex items-baseline gap-2">
         <span className="font-serif text-4xl font-bold leading-none" style={{ color: accent }}>
           {price}
         </span>
