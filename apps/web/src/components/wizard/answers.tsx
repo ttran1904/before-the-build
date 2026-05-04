@@ -15,6 +15,59 @@ export function TileSelect({
   value: string | null;
   onChange: (v: string) => void;
 }) {
+  // "Rich" layout when any option has a description: icon-only inside
+  // the circle, then bold label + subtitle stacked below.
+  const rich = options.some((o) => !!o.desc);
+
+  if (rich) {
+    return (
+      <div className="mt-10 grid w-full max-w-5xl grid-cols-2 gap-x-6 gap-y-10 px-2 sm:grid-cols-3 md:grid-cols-4">
+        {options.map((o) => {
+          const Icon = o.icon;
+          const selected = value === o.id;
+          const disabled = o.disabled;
+          return (
+            <button
+              key={o.id}
+              onClick={() => !disabled && onChange(o.id)}
+              disabled={disabled}
+              aria-disabled={disabled}
+              className={`group flex flex-col items-center text-center transition ${
+                disabled ? "cursor-not-allowed opacity-50" : ""
+              }`}
+            >
+              <span
+                className={`mb-4 flex h-24 w-24 items-center justify-center rounded-full border transition ${
+                  disabled
+                    ? "border-transparent bg-[#f0ede8]"
+                    : selected
+                    ? "border-[#1a1a2e] bg-[#e8e6e1]"
+                    : "border-transparent bg-[#f0ede8] group-hover:bg-[#e8e6e1]"
+                }`}
+              >
+                {Icon && (
+                  <Icon
+                    className={`text-2xl text-[#3a3a4a] transition ${
+                      disabled ? "" : "group-hover:text-[#1a1a2e]"
+                    }`}
+                  />
+                )}
+              </span>
+              <span className="px-1 text-sm font-semibold leading-snug text-[#1a1a2e]">
+                {o.label}
+              </span>
+              {o.desc && (
+                <span className="mt-1 px-1 text-xs leading-snug text-[#6a6a7a]">
+                  {o.desc}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="mt-12 flex flex-wrap justify-center gap-8">
       {options.map((o) => {
