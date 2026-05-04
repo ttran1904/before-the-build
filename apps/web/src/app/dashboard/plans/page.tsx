@@ -222,10 +222,6 @@ export default function PlansPage() {
             q="When should I add Groundwork Premium?"
             a="Premium makes sense once your build has started and decisions come up regularly — change orders, contractor behavior, mid-build pivots. The call packs are great for one-off moments before or during construction."
           />
-          <Faq
-            q="What if I need a refund?"
-            a="If your Groundwork Report or Pro doesn&apos;t make your bids more comparable, email us within 7 days and we&apos;ll refund the purchase. Call packs are refunded if cancelled 24h in advance."
-          />
         </div>
       </section>
 
