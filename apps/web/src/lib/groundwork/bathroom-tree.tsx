@@ -2,36 +2,67 @@
 
 import {
   FaPaintRoller,
-  FaScrewdriverWrench,
-  FaHammer,
-  FaCompass,
   FaBath,
   FaShower,
   FaToilet,
   FaCrown,
-  FaCalendarDays,
-  FaClock,
-  FaWandMagicSparkles,
-  FaWheelchair,
-  FaChildReaching,
-  FaLeaf,
-  FaWrench,
-  FaChartLine,
-  FaUpRightAndDownLeftFromCenter,
+  FaRulerCombined,
   FaCircleQuestion,
   FaLock,
-  FaArrowsRotate,
-  FaArrowsUpDownLeftRight,
+  FaWind,
+  FaTemperatureHigh,
+  FaPlug,
+  FaLightbulb,
+  FaDroplet,
+  FaSliders,
+  FaHandsBubbles,
+  FaUser,
+  FaUsers,
+  FaHouse,
+  FaTableCellsLarge,
+  FaSquare,
 } from "react-icons/fa6";
 
-import { TileSelect, PillSelect, ChipMulti, LongText, PhotoUpload } from "@/components/wizard/answers";
+import {
+  TileSelect,
+  PillSelect,
+  ChipMulti,
+  LongText,
+  PhotoUpload,
+  ShortText,
+  DimensionsInput,
+} from "@/components/wizard/answers";
 import type { QuestionNode, WizardTab } from "@/components/wizard/types";
 import {
   useGroundworkStore,
-  type ProjectType,
+  type IntentChoice,
+  type DemoChoice,
+  type PlumbingChoice,
+  type ShowerInScope,
+  type ShowerUpdate,
+  type ShowerSize,
+  type DrainLocation,
+  type TileHeight,
+  type FixtureSetup,
+  type FixtureStatus,
+  type ShowerGlass,
+  type VanityPlan,
+  type VanitySize,
+  type VanityStatus,
+  type ToiletPlan,
+  type TileStatus,
+  type TileLook,
+  type WallTileExtent,
+  type ShowerFloorTile,
+  type GroutChoice,
+  type TileEdgeChoice,
+  type ElectricalFan,
+  type ElectricalFloor,
+  type ElectricalOutlets,
+  type PaintChoice,
+  type AccessoriesChoice,
   type BathroomKind,
-  type Urgency,
-  type BudgetTier,
+  type ProjectType,
   type FixtureChange,
   type WallChange,
   type ElectricalChange,
@@ -44,263 +75,1174 @@ export const GROUNDWORK_TABS: WizardTab[] = [
   { id: "photos", label: "Photos" },
 ];
 
-/** Build the node list. We capture the store via getState() inside
- *  callbacks so we don't depend on React hooks here. */
+/* ── Helpers that derive the legacy roll-up fields from the new
+ *    PDF-aligned answers. The summary page + cost-breakdown read the
+ *    legacy fields, so we update them whenever a related new answer
+ *    is committed. ─────────────────────────────────────────────── */
+
+function deriveProjectType(
+  intent: IntentChoice | null,
+  demo: DemoChoice | null,
+): ProjectType | null {
+  if (demo === "full_gut") return "full_gut";
+  if (intent === "rethink") return "layout_change";
+  if (intent === "refresh") return "cosmetic_refresh";
+  if (intent === "replace") return "pull_and_replace";
+  if (demo === "cosmetic") return "cosmetic_refresh";
+  if (demo === "standard") return "pull_and_replace";
+  return null;
+}
+
+function deriveLayout(p: PlumbingChoice | null): LayoutChange | null {
+  switch (p) {
+    case "staying":
+      return "none";
+    case "sink_might_move":
+      return "door";
+    case "shower_might_move":
+      return "wall";
+    case "rethinking":
+      return "full_layout";
+    case "unsure":
+      return "unsure";
+    default:
+      return null;
+  }
+}
+
+function deriveShowerTub(
+  inScope: ShowerInScope | null,
+  update: ShowerUpdate | null,
+): FixtureChange | null {
+  if (inScope === "no") return "keep";
+  if (!update) return null;
+  if (update === "unsure") return "unsure";
+  if (update === "tub_to_shower" || update === "walkin_curbless")
+    return "relocate";
+  return "replace";
+}
+
+function deriveVanity(p: VanityPlan | null): FixtureChange | null {
+  switch (p) {
+    case "keep":
+      return "keep";
+    case "single":
+    case "double":
+    case "pedestal":
+      return "replace";
+    case "unsure":
+      return "unsure";
+    default:
+      return null;
+  }
+}
+
+function deriveToilet(p: ToiletPlan | null): FixtureChange | null {
+  switch (p) {
+    case "keep":
+      return "keep";
+    case "owner_supplied":
+    case "builder_supplied":
+      return "replace";
+    case "unsure":
+      return "unsure";
+    default:
+      return null;
+  }
+}
+
+function deriveWalls(
+  extent: WallTileExtent | null,
+  paint: PaintChoice | null,
+): WallChange | null {
+  if (extent && extent !== "unsure") return "new_tile";
+  if (paint === "yes") return "paint_only";
+  if (paint === "unsure" || extent === "unsure") return "unsure";
+  if (paint === "no") return "paint_only";
+  return null;
+}
+
+function deriveLighting(choices: string[]): FixtureChange | null {
+  if (choices.length === 0) return null;
+  if (choices.includes("none")) return "keep";
+  if (choices.includes("not_sure")) return "unsure";
+  return "replace";
+}
+
+function deriveElectrical(choices: string[]): ElectricalChange | null {
+  if (choices.length === 0) return null;
+  if (choices.includes("none")) return "none";
+  if (choices.includes("not_sure")) return "unsure";
+  const big = choices.filter((c) =>
+    ["fan", "heated_floor", "outlets", "fixtures"].includes(c),
+  );
+  if (big.length >= 3) return "major";
+  if (big.includes("outlets")) return "new_outlets";
+  if (big.includes("fixtures")) return "new_fixtures";
+  return "new_outlets";
+}
+
+/* ── Build the node list. Captures the store via getState() inside
+ *    callbacks so we don't depend on React hooks here. ────────── */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
   const get = () => useGroundworkStore.getState();
   const setKey = useGroundworkStore.getState().set;
 
-  /* ── Project tab ───────────────────────────────────────────── */
-  const projectType: QuestionNode<ProjectType | null> = {
-    id: "project-type",
+  /* ── PART 2: Which room — Screens 02-03 ───────────────────── */
+
+  const room: QuestionNode<"bathroom" | null> = {
+    id: "room",
     tab: "project",
-    question: "What best describes your bathroom project?",
-    initial: () => get().projectType,
-    commit: (v) => v && setKey("projectType", v),
-    next: () => "bathroom-kind",
-    render: ({ value, onChange }) => (
+    question: "Which room are we working on?",
+    helper: "We've built this specifically for bathrooms. More rooms coming soon.",
+    initial: () => "bathroom",
+    commit: () => {},
+    next: () => "bath-type",
+    render: ({ value, onAdvance }) => (
       <TileSelect
         value={value}
-        onChange={(v) => onChange(v as ProjectType)}
+        onChange={() => onAdvance("bathroom")}
         options={[
-          { id: "cosmetic_refresh", label: "Cosmetic Refresh", icon: FaPaintRoller },
-          { id: "pull_and_replace", label: "Pull & Replace", icon: FaScrewdriverWrench },
-          { id: "full_gut", label: "Full Gut", icon: FaHammer },
-          { id: "layout_change", label: "Layout Change", icon: FaCompass },
+          { id: "bathroom", label: "Bathroom", icon: FaBath },
+          { id: "kitchen", label: "Kitchen (coming soon)", icon: FaHouse },
+          { id: "primary_suite", label: "Primary Suite (coming soon)", icon: FaCrown },
+          { id: "laundry", label: "Laundry (coming soon)", icon: FaDroplet },
+          { id: "other", label: "Other (coming soon)", icon: FaCircleQuestion },
         ]}
       />
     ),
   };
 
-  const bathroomKind: QuestionNode<BathroomKind | null> = {
-    id: "bathroom-kind",
+  const bathType: QuestionNode<BathroomKind | null> = {
+    id: "bath-type",
     tab: "project",
-    question: "Which bathroom is this?",
-    helper: "Size and use influence the realistic cost range.",
+    question: "Which bathroom?",
     initial: () => get().bathroomKind,
     commit: (v) => v && setKey("bathroomKind", v),
-    next: () => "goals",
+    next: () => "intent",
     render: ({ value, onChange }) => (
       <TileSelect
         value={value}
         onChange={(v) => onChange(v as BathroomKind)}
         options={[
-          { id: "half_bath", label: "Half Bath", icon: FaToilet },
-          { id: "three_quarter", label: "3/4 Bath", icon: FaShower },
-          { id: "full_bath", label: "Full Bath", icon: FaBath },
-          { id: "primary", label: "Primary Suite", icon: FaCrown },
+          { id: "primary", label: "Primary bath", icon: FaCrown },
+          { id: "full_bath", label: "Guest bath", icon: FaUsers },
+          { id: "three_quarter", label: "Hall bath", icon: FaUser },
+          { id: "half_bath", label: "Powder room (no shower or tub)", icon: FaToilet },
         ]}
       />
     ),
   };
 
-  const goals: QuestionNode<string[]> = {
-    id: "goals",
+  /* ── PART 3: Project intent + scope — Screens 04-06 ───────── */
+
+  const intent: QuestionNode<IntentChoice | null> = {
+    id: "intent",
     tab: "project",
-    question: "What are your main goals for this project?",
-    helper: "Select as many as you'd like.",
-    initial: () => get().goals,
-    commit: (v) => setKey("goals", v),
-    next: () => "urgency",
-    isValid: (v) => Array.isArray(v) && v.length > 0,
+    question: "What feels most true about this project?",
+    helper: "Don't overthink it. Go with your gut.",
+    initial: () => get().intent,
+    commit: (v) => {
+      if (!v) return;
+      setKey("intent", v);
+      const pt = deriveProjectType(v, get().demo);
+      if (pt) setKey("projectType", pt);
+    },
+    next: () => "demo",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as IntentChoice)}
+        options={[
+          {
+            id: "refresh",
+            label:
+              "I want to refresh what's there — update the look without changing the layout",
+          },
+          {
+            id: "replace",
+            label:
+              "I want to replace most finishes and fixtures — same layout, everything updated",
+          },
+          {
+            id: "rethink",
+            label:
+              "I want to rethink the layout — some things are moving, or I'm not sure yet",
+          },
+          {
+            id: "unsure",
+            label:
+              "I'm not totally sure yet — I know I want to renovate, but I'm still figuring out scope",
+          },
+        ]}
+      />
+    ),
+  };
+
+  const demo: QuestionNode<DemoChoice | null> = {
+    id: "demo",
+    tab: "project",
+    question: "What's being removed?",
+    helper: "Your best guess is enough. You can always adjust.",
+    initial: () => get().demo,
+    commit: (v) => {
+      if (!v) return;
+      setKey("demo", v);
+      const pt = deriveProjectType(get().intent, v);
+      if (pt) setKey("projectType", pt);
+    },
+    next: () => "plumbing",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as DemoChoice)}
+        options={[
+          { id: "cosmetic", label: "Mostly cosmetic — surfaces updating, fixtures staying" },
+          { id: "standard", label: "Tile and fixtures coming out — standard renovation demo" },
+          { id: "full_gut", label: "Full gut — tile, drywall, down to the studs" },
+          { id: "unsure", label: "Not sure yet" },
+        ]}
+      />
+    ),
+  };
+
+  const plumbing: QuestionNode<PlumbingChoice | null> = {
+    id: "plumbing",
+    tab: "project",
+    question: "Are the big fixtures staying in the same places?",
+    helper:
+      "Moving plumbing is one of the most significant cost variables in a renovation. Even a rough answer helps.",
+    initial: () => get().plumbing,
+    commit: (v) => {
+      if (!v) return;
+      setKey("plumbing", v);
+      const layout = deriveLayout(v);
+      if (layout) setKey("layout", layout);
+    },
+    next: () => "shower-in-scope",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as PlumbingChoice)}
+        options={[
+          { id: "staying", label: "Yes — everything stays where it is" },
+          { id: "sink_might_move", label: "Sink or vanity might move" },
+          { id: "shower_might_move", label: "Shower or tub is moving or changing" },
+          { id: "rethinking", label: "We're rethinking the whole layout" },
+          { id: "unsure", label: "Not sure yet" },
+        ]}
+      />
+    ),
+  };
+
+  /* ── PART 4: Shower / tub — Screens 07-14 (skipped if powder) ── */
+
+  const isPowderRoom = () => get().bathroomKind === "half_bath";
+  const showerNotInScope = () => get().showerInScope === "no";
+  const isCurbless = () => get().showerUpdate === "walkin_curbless";
+
+  const showerInScope: QuestionNode<ShowerInScope | null> = {
+    id: "shower-in-scope",
+    tab: "scope",
+    question: "Is the shower or tub part of this renovation?",
+    skip: isPowderRoom,
+    initial: () => get().showerInScope,
+    commit: (v) => {
+      if (!v) return;
+      setKey("showerInScope", v);
+      const st = deriveShowerTub(v, get().showerUpdate);
+      if (st) setKey("showerTub", st);
+    },
+    next: (v) => (v === "no" ? "vanity-plan" : "shower-update"),
+    render: ({ value, onChange }) => (
+      <TileSelect
+        value={value}
+        onChange={(v) => onChange(v as ShowerInScope)}
+        options={[
+          { id: "yes", label: "Yes", icon: FaShower },
+          { id: "no", label: "No — staying as-is", icon: FaLock },
+        ]}
+      />
+    ),
+  };
+
+  const showerUpdate: QuestionNode<ShowerUpdate | null> = {
+    id: "shower-update",
+    tab: "scope",
+    question: "What kind of update are you making?",
+    helper:
+      "Curbless showers are gorgeous but require drain confirmation before a builder can give a firm number — we'll flag it if you pick that.",
+    skip: () => isPowderRoom() || showerNotInScope(),
+    initial: () => get().showerUpdate,
+    commit: (v) => {
+      if (!v) return;
+      setKey("showerUpdate", v);
+      const st = deriveShowerTub(get().showerInScope, v);
+      if (st) setKey("showerTub", st);
+    },
+    next: () => "shower-size",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as ShowerUpdate)}
+        options={[
+          { id: "tub_surround", label: "Keep the tub, update the surround" },
+          { id: "update_existing", label: "Update the existing shower" },
+          { id: "tub_to_shower", label: "Convert tub to shower" },
+          { id: "walkin_curbed", label: "Walk-in shower with a threshold (curbed)" },
+          { id: "walkin_curbless", label: "Walk-in shower, no threshold (curbless)" },
+          { id: "unsure", label: "Not sure yet" },
+        ]}
+      />
+    ),
+  };
+
+  const showerSize: QuestionNode<ShowerSize | null> = {
+    id: "shower-size",
+    tab: "scope",
+    question: "Do you know roughly how big the shower will be?",
+    helper: "Approximate is completely fine.",
+    skip: () => isPowderRoom() || showerNotInScope(),
+    initial: () => get().showerSize,
+    commit: (v) => v && setKey("showerSize", v),
+    next: (v) => {
+      if (v === "known") return "shower-size-dim";
+      if (isCurbless()) return "drain-location";
+      return "tile-height";
+    },
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as ShowerSize)}
+        options={[
+          { id: "small", label: "Small / standard (around 36\u201d × 36\u201d)" },
+          { id: "medium", label: "Medium / common (around 36\u201d × 60\u201d)" },
+          { id: "large", label: "Larger (48\u201d or bigger)" },
+          { id: "known", label: "I know the dimensions" },
+          { id: "unsure", label: "Not sure yet" },
+        ]}
+      />
+    ),
+  };
+
+  const showerSizeDim: QuestionNode<{ width: string; depth: string }> = {
+    id: "shower-size-dim",
+    tab: "scope",
+    question: "What are the shower dimensions?",
+    helper: "Width × depth in inches.",
+    skip: () =>
+      isPowderRoom() || showerNotInScope() || get().showerSize !== "known",
+    initial: () => ({ width: get().showerWidth, depth: get().showerDepth }),
+    commit: ({ width, depth }) => {
+      setKey("showerWidth", width);
+      setKey("showerDepth", depth);
+    },
+    next: () => (isCurbless() ? "drain-location" : "tile-height"),
+    isValid: (v) => v.width.trim().length > 0 && v.depth.trim().length > 0,
+    render: ({ value, onChange }) => (
+      <DimensionsInput
+        width={value.width}
+        depth={value.depth}
+        onWidth={(w) => onChange({ ...value, width: w })}
+        onDepth={(d) => onChange({ ...value, depth: d })}
+      />
+    ),
+  };
+
+  const drainLocation: QuestionNode<DrainLocation | null> = {
+    id: "drain-location",
+    tab: "scope",
+    question: "Do you know where the drain is right now?",
+    helper:
+      "For a curbless shower, drain position affects structural scope. It doesn't have to be confirmed today — but it does need to be confirmed before you sign a contract.",
+    skip: () => isPowderRoom() || showerNotInScope() || !isCurbless(),
+    initial: () => get().drainLocation,
+    commit: (v) => v && setKey("drainLocation", v),
+    next: () => "tile-height",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as DrainLocation)}
+        options={[
+          { id: "staying", label: "Yes — drain is staying in place" },
+          { id: "unsure", label: "Not sure — haven't checked yet" },
+          { id: "moving", label: "It needs to move" },
+        ]}
+      />
+    ),
+  };
+
+  const tileHeight: QuestionNode<TileHeight | null> = {
+    id: "tile-height",
+    tab: "scope",
+    question: "How high is the tile going in the shower?",
+    skip: () => isPowderRoom() || showerNotInScope(),
+    initial: () => get().tileHeight,
+    commit: (v) => v && setKey("tileHeight", v),
+    next: () => "shower-features",
+    render: ({ value, onChange }) => (
+      <TileSelect
+        value={value}
+        onChange={(v) => onChange(v as TileHeight)}
+        options={[
+          { id: "ceiling", label: "All the way to the ceiling", icon: FaRulerCombined },
+          { id: "partway", label: "Partway up (standard height)", icon: FaSquare },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
+        ]}
+      />
+    ),
+  };
+
+  const showerFeatures: QuestionNode<string[]> = {
+    id: "shower-features",
+    tab: "scope",
+    question: "Any built-in features in the shower?",
+    helper: "Select everything you're thinking about — even if it's not final.",
+    skip: () => isPowderRoom() || showerNotInScope(),
+    initial: () => get().showerFeatures,
+    commit: (v) => setKey("showerFeatures", v),
+    next: () => "fixture-setup",
     render: ({ value, onChange }) => (
       <ChipMulti
         value={value}
         onChange={onChange}
         options={[
-          { id: "update_style", label: "Update Style", icon: FaPaintRoller },
-          { id: "fix_problems", label: "Fix Problems", icon: FaWrench },
-          { id: "increase_value", label: "Increase Home Value", icon: FaChartLine },
-          { id: "more_space", label: "More Space", icon: FaUpRightAndDownLeftFromCenter },
-          { id: "energy_efficient", label: "Energy Efficient", icon: FaLeaf },
-          { id: "accessibility", label: "Improve Accessibility", icon: FaWheelchair },
-          { id: "family_friendly", label: "Family-Friendly", icon: FaChildReaching },
+          { id: "niche", label: "Niche (recessed shelf)" },
+          { id: "bench", label: "Bench" },
+          { id: "multi_niche", label: "Multiple niches or custom shelving" },
+          { id: "none", label: "None" },
+          { id: "unsure", label: "Not sure yet" },
         ]}
       />
     ),
   };
 
-  const urgency: QuestionNode<Urgency | null> = {
-    id: "urgency",
-    tab: "project",
-    question: "When do you need this done?",
-    initial: () => get().urgency,
-    commit: (v) => v && setKey("urgency", v),
-    next: () => "budget",
-    render: ({ value, onChange }) => (
-      <TileSelect
-        value={value}
-        onChange={(v) => onChange(v as Urgency)}
-        options={[
-          { id: "asap", label: "ASAP", icon: FaWandMagicSparkles },
-          { id: "soonish", label: "Soonish", icon: FaCalendarDays },
-          { id: "no_rush", label: "No Rush", icon: FaClock },
-        ]}
-      />
-    ),
-  };
-
-  const budget: QuestionNode<BudgetTier | null> = {
-    id: "budget",
-    tab: "project",
-    question: "What's your approximate budget range?",
-    helper: "We use this to flag scope that might push past it.",
-    initial: () => get().budgetTier,
-    commit: (v) => v && setKey("budgetTier", v),
-    next: () => "vanity",
+  const fixtureSetup: QuestionNode<FixtureSetup | null> = {
+    id: "fixture-setup",
+    tab: "scope",
+    question: "What shower fixture setup are you imagining?",
+    helper:
+      "Think about the experience, not the product. We'll ask about the specific fixture next.",
+    skip: () => isPowderRoom() || showerNotInScope(),
+    initial: () => get().fixtureSetup,
+    commit: (v) => v && setKey("fixtureSetup", v),
+    next: () => "fixture-status",
     render: ({ value, onChange }) => (
       <PillSelect
         value={value}
-        onChange={(v) => onChange(v as BudgetTier)}
+        onChange={(v) => onChange(v as FixtureSetup)}
         options={[
-          { id: "above_100k", label: "Above $100,000" },
-          { id: "50_to_100k", label: "$50,000 – $100,000" },
-          { id: "25_to_50k", label: "$25,000 – $50,000" },
-          { id: "10_to_25k", label: "$10,000 – $25,000" },
-          { id: "under_10k", label: "Under $10,000" },
+          { id: "standard", label: "Standard showerhead — simple, single head" },
+          { id: "rain_hand", label: "Rain head + hand shower (most common)" },
+          { id: "full_system", label: "Full system — body sprays, rain head, and hand shower" },
+          { id: "unsure", label: "Not sure yet" },
         ]}
       />
     ),
   };
 
-  /* ── Scope tab — what's changing ───────────────────────────── */
-
-  const fixtureOptions = [
-    { id: "keep", label: "Keep", icon: FaLock },
-    { id: "replace", label: "Replace", icon: FaArrowsRotate },
-    { id: "relocate", label: "Relocate", icon: FaArrowsUpDownLeftRight },
-    { id: "unsure", label: "Unsure", icon: FaCircleQuestion },
-  ];
-
-  const fixtureNode = (
-    id: string,
-    question: string,
-    storeKey:
-      | "vanity"
-      | "toilet"
-      | "showerTub"
-      | "flooring"
-      | "lighting",
-    nextId: string
-  ): QuestionNode<FixtureChange | null> => ({
-    id,
+  const fixtureStatus: QuestionNode<FixtureStatus | null> = {
+    id: "fixture-status",
     tab: "scope",
-    question,
-    initial: () => get()[storeKey],
-    commit: (v) => v && setKey(storeKey, v),
-    next: () => nextId,
+    question: "Have you found a specific fixture yet?",
+    helper:
+      "Shower fixtures range from $300 to $4,200+ depending on brand. Until a specific model is chosen, every builder is estimating differently.",
+    skip: () => isPowderRoom() || showerNotInScope(),
+    initial: () => get().fixtureStatus,
+    commit: (v) => v && setKey("fixtureStatus", v),
+    next: (v) => (v === "selected" ? "fixture-brand" : "shower-glass"),
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as FixtureStatus)}
+        options={[
+          { id: "selected", label: "Yes — I have a specific fixture in mind" },
+          { id: "not_yet", label: "Not yet — still looking" },
+        ]}
+      />
+    ),
+  };
+
+  const fixtureBrand: QuestionNode<string> = {
+    id: "fixture-brand",
+    tab: "scope",
+    question: "What fixture do you have in mind?",
+    helper: "Optional — brand and model if you know it.",
+    skip: () =>
+      isPowderRoom() ||
+      showerNotInScope() ||
+      get().fixtureStatus !== "selected",
+    initial: () => get().fixtureBrand,
+    commit: (v) => setKey("fixtureBrand", v),
+    next: () => "shower-glass",
+    render: ({ value, onChange }) => (
+      <ShortText
+        value={value}
+        onChange={onChange}
+        label="Brand / model"
+        placeholder="e.g. Kohler Artifacts, Moen Gibson"
+      />
+    ),
+  };
+
+  const showerGlass: QuestionNode<ShowerGlass | null> = {
+    id: "shower-glass",
+    tab: "scope",
+    question: "What about a shower enclosure?",
+    helper:
+      "Glass enclosures are usually contracted separately — but your builder needs to know now whether to include blocking in the walls.",
+    skip: () => isPowderRoom() || showerNotInScope(),
+    initial: () => get().showerGlass,
+    commit: (v) => v && setKey("showerGlass", v),
+    next: () => "vanity-plan",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as ShowerGlass)}
+        options={[
+          { id: "include", label: "Include glass enclosure in this scope" },
+          { id: "later", label: "Not now, but probably later (include blocking)" },
+          { id: "open", label: "No enclosure — open shower" },
+          { id: "unsure", label: "Not sure yet (include blocking just in case)" },
+        ]}
+      />
+    ),
+  };
+
+  /* ── PART 5: Vanity & sink — Screens 15-17 ────────────────── */
+
+  const vanityPlan: QuestionNode<VanityPlan | null> = {
+    id: "vanity-plan",
+    tab: "scope",
+    question: "What's happening with the vanity?",
+    initial: () => get().vanityPlan,
+    commit: (v) => {
+      if (!v) return;
+      setKey("vanityPlan", v);
+      const fc = deriveVanity(v);
+      if (fc) setKey("vanity", fc);
+    },
+    next: (v) => (v === "keep" ? "toilet-plan" : "vanity-size"),
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as VanityPlan)}
+        options={[
+          { id: "keep", label: "Keeping the existing vanity" },
+          { id: "single", label: "Replacing with a single vanity" },
+          { id: "double", label: "Replacing with a double vanity" },
+          { id: "pedestal", label: "Pedestal sink or wall-mount only" },
+          { id: "unsure", label: "Not sure yet" },
+        ]}
+      />
+    ),
+  };
+
+  const vanitySize: QuestionNode<VanitySize | null> = {
+    id: "vanity-size",
+    tab: "scope",
+    question: "Do you know the vanity size yet?",
+    helper:
+      "Your builder sets the plumbing to match the vanity width. Once that's set, changing it is a change order.",
+    skip: () => get().vanityPlan === "keep",
+    initial: () => get().vanitySize,
+    commit: (v) => v && setKey("vanitySize", v),
+    next: (v) =>
+      v === "known" || v === "roughly" ? "vanity-width" : "vanity-status",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as VanitySize)}
+        options={[
+          { id: "known", label: "Yes — I know the width" },
+          { id: "roughly", label: "Roughly" },
+          { id: "not_yet", label: "Not yet" },
+        ]}
+      />
+    ),
+  };
+
+  const vanityWidth: QuestionNode<string> = {
+    id: "vanity-width",
+    tab: "scope",
+    question:
+      "About how wide will the vanity be?",
+    helper: "Inches. Even an approximation helps.",
+    skip: () => {
+      const v = get().vanitySize;
+      return v !== "known" && v !== "roughly";
+    },
+    initial: () => get().vanityWidth,
+    commit: (v) => setKey("vanityWidth", v),
+    next: () => "vanity-status",
+    isValid: (v) => v.trim().length > 0,
+    render: ({ value, onChange }) => (
+      <ShortText
+        value={value}
+        onChange={onChange}
+        label="Width"
+        inputMode="decimal"
+        placeholder="36"
+      />
+    ),
+  };
+
+  const vanityStatus: QuestionNode<VanityStatus | null> = {
+    id: "vanity-status",
+    tab: "scope",
+    question: "Have you already selected your vanity?",
+    helper:
+      "Once plumbing rough-in is set, changing the vanity size is a change order. You don't need it picked yet — just confirmed before construction.",
+    skip: () => get().vanityPlan === "keep",
+    initial: () => get().vanityStatus,
+    commit: (v) => v && setKey("vanityStatus", v),
+    next: () => "toilet-plan",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as VanityStatus)}
+        options={[
+          { id: "selected", label: "Yes — vanity is selected and confirmed" },
+          { id: "not_yet", label: "Not yet — still shopping" },
+        ]}
+      />
+    ),
+  };
+
+  /* ── PART 6: Toilet — Screen 18 ───────────────────────────── */
+
+  const toiletPlan: QuestionNode<ToiletPlan | null> = {
+    id: "toilet-plan",
+    tab: "scope",
+    question: "What's happening with the toilet?",
+    initial: () => get().toiletPlan,
+    commit: (v) => {
+      if (!v) return;
+      setKey("toiletPlan", v);
+      const tc = deriveToilet(v);
+      if (tc) setKey("toilet", tc);
+    },
+    next: () => "tile-status",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as ToiletPlan)}
+        options={[
+          { id: "keep", label: "Keeping it — existing toilet stays" },
+          { id: "owner_supplied", label: "Replacing it — I'll supply the new toilet" },
+          { id: "builder_supplied", label: "Replacing it — builder supplies and installs" },
+          { id: "unsure", label: "Not sure yet" },
+        ]}
+      />
+    ),
+  };
+
+  /* ── PART 7: Tile & finishes — Screens 19-23 ─────────────── */
+
+  const tileStatus: QuestionNode<TileStatus | null> = {
+    id: "tile-status",
+    tab: "scope",
+    question: "Have you picked your tile yet?",
+    helper:
+      "Tile format — size and shape — affects labor as much as material cost. A general direction is enough.",
+    initial: () => get().tileStatus,
+    commit: (v) => v && setKey("tileStatus", v),
+    next: (v) => {
+      if (v === "know") return "tile-known-text";
+      if (v === "kindof") return "tile-direction-text";
+      return "tile-look";
+    },
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as TileStatus)}
+        options={[
+          { id: "know", label: "Yes — I know what I want" },
+          { id: "kindof", label: "Kind of — I know the look, not the spec" },
+          { id: "not_yet", label: "Not yet" },
+        ]}
+      />
+    ),
+  };
+
+  const tileKnownText: QuestionNode<string> = {
+    id: "tile-known-text",
+    tab: "scope",
+    question: "Tell us what you know.",
+    helper: "e.g. large format matte porcelain, herringbone",
+    skip: () => get().tileStatus !== "know",
+    initial: () => get().tileKnownText,
+    commit: (v) => setKey("tileKnownText", v),
+    next: () => "tile-look",
+    isValid: (v) => v.trim().length > 0,
+    render: ({ value, onChange }) => (
+      <LongText
+        value={value}
+        onChange={onChange}
+        placeholder="Describe the tile you have in mind"
+      />
+    ),
+  };
+
+  const tileDirectionText: QuestionNode<string> = {
+    id: "tile-direction-text",
+    tab: "scope",
+    question: "Describe the direction you're leaning.",
+    skip: () => get().tileStatus !== "kindof",
+    initial: () => get().tileDirectionText,
+    commit: (v) => setKey("tileDirectionText", v),
+    next: () => "tile-look",
+    isValid: (v) => v.trim().length > 0,
+    render: ({ value, onChange }) => (
+      <LongText
+        value={value}
+        onChange={onChange}
+        placeholder="e.g. warm neutrals, matte, organic textures"
+      />
+    ),
+  };
+
+  const tileLook: QuestionNode<TileLook | null> = {
+    id: "tile-look",
+    tab: "scope",
+    question: "What size or look are you leaning toward?",
+    helper: "Even a general direction helps set the labor assumption in your report.",
+    initial: () => get().tileLook,
+    commit: (v) => v && setKey("tileLook", v),
+    next: () => "wall-tile-extent",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as TileLook)}
+        options={[
+          { id: "large", label: "Large format (12×24 or bigger)" },
+          { id: "medium", label: "Medium format (12×12)" },
+          { id: "small", label: "Small format or mosaic (under 4×4)" },
+          { id: "patterned", label: "Patterned layout (herringbone, offset, etc.)" },
+          { id: "unsure", label: "No idea yet" },
+        ]}
+      />
+    ),
+  };
+
+  const wallTileExtent: QuestionNode<WallTileExtent | null> = {
+    id: "wall-tile-extent",
+    tab: "scope",
+    question: "Where do you want tile on the walls?",
+    helper:
+      'This is one of the most common reasons bids come back at different numbers. Every builder reads "tile throughout" differently.',
+    initial: () => get().wallTileExtent,
+    commit: (v) => {
+      if (!v) return;
+      setKey("wallTileExtent", v);
+      const w = deriveWalls(v, get().paint);
+      if (w) setKey("walls", w);
+    },
+    next: () => "shower-floor-tile",
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as WallTileExtent)}
+        options={[
+          { id: "shower_only", label: "Shower surround only" },
+          { id: "shower_vanity", label: "Shower + vanity wall (partway up)" },
+          { id: "most_partway", label: "Most walls (partway up)" },
+          { id: "most_full", label: "Most walls, full height" },
+          { id: "unsure", label: "Not sure yet" },
+        ]}
+      />
+    ),
+  };
+
+  const showerFloorTile: QuestionNode<ShowerFloorTile | null> = {
+    id: "shower-floor-tile",
+    tab: "scope",
+    question: "Is the shower floor the same tile as the rest of the floor?",
+    helper:
+      "A different tile in the shower — like a mosaic or accent — affects both material and labor cost.",
+    skip: () => isPowderRoom() || showerNotInScope(),
+    initial: () => get().showerFloorTile,
+    commit: (v) => v && setKey("showerFloorTile", v),
+    next: () => "grout",
     render: ({ value, onChange }) => (
       <TileSelect
         value={value}
-        onChange={(v) => onChange(v as FixtureChange)}
-        options={fixtureOptions}
+        onChange={(v) => onChange(v as ShowerFloorTile)}
+        options={[
+          { id: "same", label: "Same tile throughout", icon: FaTableCellsLarge },
+          { id: "different", label: "Different tile (mosaic, accent)", icon: FaShower },
+          { id: "unsure", label: "Not decided yet", icon: FaCircleQuestion },
+        ]}
       />
     ),
-  });
+  };
 
-  const vanity = fixtureNode("vanity", "What about the vanity?", "vanity", "toilet");
-  // ^ id collision with key — fix:
-  vanity.id = "vanity";
-
-  const toilet = fixtureNode("toilet", "And the toilet?", "toilet", "shower-tub");
-  const showerTub = fixtureNode("shower-tub", "Shower or tub?", "showerTub", "flooring");
-  const flooring = fixtureNode("flooring", "Flooring?", "flooring", "walls");
-
-  const walls: QuestionNode<WallChange | null> = {
-    id: "walls",
+  const grout: QuestionNode<GroutChoice | null> = {
+    id: "grout",
     tab: "scope",
-    question: "What's happening to the walls?",
-    initial: () => get().walls,
-    commit: (v) => v && setKey("walls", v),
+    question: "What kind of grout?",
+    helper:
+      "Standard grout works for most projects. Epoxy is more stain-resistant and costs more.",
+    initial: () => get().grout,
+    commit: (v) => v && setKey("grout", v),
+    next: () => "tile-edge",
+    render: ({ value, onChange }) => (
+      <TileSelect
+        value={value}
+        onChange={(v) => onChange(v as GroutChoice)}
+        options={[
+          { id: "standard", label: "Standard grout", icon: FaHandsBubbles },
+          { id: "epoxy", label: "Epoxy grout (more durable, higher cost)", icon: FaDroplet },
+          { id: "unsure", label: "Not decided yet", icon: FaCircleQuestion },
+        ]}
+      />
+    ),
+  };
+
+  const tileEdge: QuestionNode<TileEdgeChoice | null> = {
+    id: "tile-edge",
+    tab: "scope",
+    question: "Tile edge treatment?",
+    helper:
+      "Where your tile meets paint or another surface. Some builders use a metal strip (Schluter), others a finished tile edge.",
+    initial: () => get().tileEdge,
+    commit: (v) => v && setKey("tileEdge", v),
+    next: (v) => (v === "selected" ? "tile-edge-text" : "lighting"),
+    render: ({ value, onChange }) => (
+      <TileSelect
+        value={value}
+        onChange={(v) => onChange(v as TileEdgeChoice)}
+        options={[
+          { id: "selected", label: "Already selected", icon: FaCircleQuestion },
+          { id: "unsure", label: "Not decided yet", icon: FaCircleQuestion },
+        ]}
+      />
+    ),
+  };
+
+  const tileEdgeText: QuestionNode<string> = {
+    id: "tile-edge-text",
+    tab: "scope",
+    question: "Describe the tile edge treatment.",
+    skip: () => get().tileEdge !== "selected",
+    initial: () => get().tileEdgeText,
+    commit: (v) => setKey("tileEdgeText", v),
     next: () => "lighting",
+    isValid: (v) => v.trim().length > 0,
     render: ({ value, onChange }) => (
-      <TileSelect
+      <ShortText
         value={value}
-        onChange={(v) => onChange(v as WallChange)}
+        onChange={onChange}
+        placeholder="e.g. brushed-nickel Schluter strip"
+      />
+    ),
+  };
+
+  /* ── PART 8: Lighting & electrical — Screens 24-25D ─────── */
+
+  const lighting: QuestionNode<string[]> = {
+    id: "lighting",
+    tab: "scope",
+    question: "What lighting is changing?",
+    initial: () => get().lightingChoices,
+    commit: (v) => {
+      setKey("lightingChoices", v);
+      const lc = deriveLighting(v);
+      if (lc) setKey("lighting", lc);
+    },
+    next: () => "electrical",
+    isValid: (v) => v.length > 0,
+    render: ({ value, onChange }) => (
+      <ChipMulti
+        value={value}
+        onChange={onChange}
         options={[
-          { id: "paint_only", label: "Paint Only", icon: FaPaintRoller },
-          { id: "new_tile", label: "New Tile", icon: FaScrewdriverWrench },
-          { id: "wallpaper", label: "Wallpaper", icon: FaWandMagicSparkles },
-          { id: "structural", label: "Structural", icon: FaHammer },
-          { id: "unsure", label: "Unsure", icon: FaCircleQuestion },
+          { id: "vanity_light", label: "Vanity light", icon: FaLightbulb },
+          { id: "shower_recessed", label: "Recessed light in shower", icon: FaLightbulb },
+          { id: "both", label: "Both", icon: FaLightbulb },
+          { id: "none", label: "Nothing — lighting stays as-is", icon: FaLock },
+          { id: "not_sure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
   };
 
-  const lighting = fixtureNode("lighting", "Lighting?", "lighting", "electrical");
-
-  const electrical: QuestionNode<ElectricalChange | null> = {
+  const electrical: QuestionNode<string[]> = {
     id: "electrical",
     tab: "scope",
-    question: "Any electrical work?",
-    helper: "New outlets, switches, fan, or panel changes.",
-    initial: () => get().electrical,
-    commit: (v) => v && setKey("electrical", v),
-    next: () => "layout",
+    question: "Any electrical upgrades while you're in there?",
+    helper:
+      "Select everything that's on the table — even if it's not decided yet. We'll ask one follow-up on anything you select.",
+    initial: () => get().electricalUpgrades,
+    commit: (v) => {
+      setKey("electricalUpgrades", v);
+      const ec = deriveElectrical(v);
+      if (ec) setKey("electrical", ec);
+    },
+    next: () => nextElectricalSub("electrical"),
+    isValid: (v) => v.length > 0,
     render: ({ value, onChange }) => (
-      <TileSelect
+      <ChipMulti
         value={value}
-        onChange={(v) => onChange(v as ElectricalChange)}
+        onChange={onChange}
         options={[
-          { id: "none", label: "None", icon: FaWandMagicSparkles },
-          { id: "new_outlets", label: "New Outlets", icon: FaScrewdriverWrench },
-          { id: "new_fixtures", label: "New Fixtures", icon: FaPaintRoller },
-          { id: "major", label: "Major Work", icon: FaHammer },
-          { id: "unsure", label: "Unsure", icon: FaCircleQuestion },
+          { id: "fan", label: "New exhaust fan", icon: FaWind },
+          { id: "heated_floor", label: "Heated floor", icon: FaTemperatureHigh },
+          { id: "outlets", label: "New outlets", icon: FaPlug },
+          { id: "fixtures", label: "New or updated light fixtures (beyond vanity & shower)", icon: FaLightbulb },
+          { id: "none", label: "None of these", icon: FaLock },
+          { id: "not_sure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
   };
 
-  const layout: QuestionNode<LayoutChange | null> = {
-    id: "layout",
+  // The follow-up screens (25A-25D) are conditional and ordered:
+  // fan → heated floor → outlets → fixtures → paint
+  function nextElectricalSub(after: string): string {
+    const order: Array<[string, string]> = [
+      ["fan", "electrical-fan"],
+      ["heated_floor", "electrical-floor"],
+      ["outlets", "electrical-outlets"],
+      ["fixtures", "electrical-fixtures"],
+    ];
+    const upgrades = get().electricalUpgrades;
+    const skipAll = upgrades.includes("none") || upgrades.length === 0;
+    if (skipAll) return "paint";
+    const startIdx = (() => {
+      switch (after) {
+        case "electrical":
+          return 0;
+        case "electrical-fan":
+          return 1;
+        case "electrical-floor":
+          return 2;
+        case "electrical-outlets":
+          return 3;
+        case "electrical-fixtures":
+          return 4;
+        default:
+          return 4;
+      }
+    })();
+    for (let i = startIdx; i < order.length; i++) {
+      const [key, id] = order[i];
+      if (upgrades.includes(key)) return id;
+    }
+    return "paint";
+  }
+
+  const electricalFan: QuestionNode<ElectricalFan | null> = {
+    id: "electrical-fan",
     tab: "scope",
-    question: "Are you moving any walls or doors?",
-    initial: () => get().layout,
-    commit: (v) => v && setKey("layout", v),
+    question: "What's happening with the exhaust fan?",
+    helper:
+      "Same location and same duct is a simple swap. A new duct run is a different scope item — and a different cost.",
+    skip: () => !get().electricalUpgrades.includes("fan"),
+    initial: () => get().electricalFan,
+    commit: (v) => v && setKey("electricalFan", v),
+    next: () => nextElectricalSub("electrical-fan"),
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as ElectricalFan)}
+        options={[
+          { id: "simple_swap", label: "Replacing the fan, same location, same duct" },
+          { id: "new_duct", label: "New fan, same location, new duct run needed" },
+          { id: "new_location", label: "New fan in a new location" },
+          { id: "unsure", label: "Not sure yet" },
+        ]}
+      />
+    ),
+  };
+
+  const electricalFloor: QuestionNode<ElectricalFloor | null> = {
+    id: "electrical-floor",
+    tab: "scope",
+    question: "Is heated floor confirmed or still being considered?",
+    helper:
+      "Heated floor has to be wired before the subfloor goes down. Once electrical rough-in is done, adding it later means tearing things back up.",
+    skip: () => !get().electricalUpgrades.includes("heated_floor"),
+    initial: () => get().electricalFloor,
+    commit: (v) => v && setKey("electricalFloor", v),
+    next: () => nextElectricalSub("electrical-floor"),
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as ElectricalFloor)}
+        options={[
+          { id: "confirmed", label: "Confirmed — include it in scope" },
+          { id: "considering", label: "Still considering — flag it for me" },
+        ]}
+      />
+    ),
+  };
+
+  const electricalOutlets: QuestionNode<ElectricalOutlets | null> = {
+    id: "electrical-outlets",
+    tab: "scope",
+    question: "What kind of outlet work?",
+    helper:
+      "GFCI outlets are the safety outlets required near water. Adding brand new outlets where there aren't any is a different scope item.",
+    skip: () => !get().electricalUpgrades.includes("outlets"),
+    initial: () => get().electricalOutlets,
+    commit: (v) => v && setKey("electricalOutlets", v),
+    next: () => nextElectricalSub("electrical-outlets"),
+    render: ({ value, onChange }) => (
+      <PillSelect
+        value={value}
+        onChange={(v) => onChange(v as ElectricalOutlets)}
+        options={[
+          { id: "add_new", label: "Adding outlets where there aren't any currently" },
+          { id: "gfci_update", label: "Updating existing outlets to GFCI" },
+          { id: "both", label: "Both" },
+          { id: "unsure", label: "Not sure — want the builder to assess" },
+        ]}
+      />
+    ),
+  };
+
+  const electricalFixtures: QuestionNode<string[]> = {
+    id: "electrical-fixtures",
+    tab: "scope",
+    question: "Which fixtures are being added or replaced?",
+    helper:
+      "Select all that apply. Vanity light and shower light were already covered — this is anything beyond those.",
+    skip: () => !get().electricalUpgrades.includes("fixtures"),
+    initial: () => get().electricalFixtures,
+    commit: (v) => setKey("electricalFixtures", v),
+    next: (v) =>
+      v.includes("other")
+        ? "electrical-fixtures-other"
+        : nextElectricalSub("electrical-fixtures"),
+    isValid: (v) => v.length > 0,
+    render: ({ value, onChange }) => (
+      <ChipMulti
+        value={value}
+        onChange={onChange}
+        options={[
+          { id: "recessed_main", label: "Recessed lights in the main bathroom (outside the shower)", icon: FaLightbulb },
+          { id: "sconces", label: "Sconces", icon: FaLightbulb },
+          { id: "other", label: "Other", icon: FaSliders },
+          { id: "not_sure", label: "Not sure yet", icon: FaCircleQuestion },
+        ]}
+      />
+    ),
+  };
+
+  const electricalFixturesOther: QuestionNode<string> = {
+    id: "electrical-fixtures-other",
+    tab: "scope",
+    question: "Describe the other fixture(s).",
+    skip: () => !get().electricalFixtures.includes("other"),
+    initial: () => get().electricalFixturesOther,
+    commit: (v) => setKey("electricalFixturesOther", v),
+    next: () => nextElectricalSub("electrical-fixtures"),
+    isValid: (v) => v.trim().length > 0,
+    render: ({ value, onChange }) => (
+      <ShortText
+        value={value}
+        onChange={onChange}
+        placeholder="e.g. statement pendant over the tub"
+      />
+    ),
+  };
+
+  /* ── PART 9: Paint & accessories — Screens 26-27 ───────── */
+
+  const paint: QuestionNode<PaintChoice | null> = {
+    id: "paint",
+    tab: "scope",
+    question: "Is painting part of this renovation?",
+    initial: () => get().paint,
+    commit: (v) => {
+      if (!v) return;
+      setKey("paint", v);
+      const w = deriveWalls(get().wallTileExtent, v);
+      if (w) setKey("walls", w);
+    },
+    next: () => "accessories",
+    render: ({ value, onChange }) => (
+      <TileSelect
+        value={value}
+        onChange={(v) => onChange(v as PaintChoice)}
+        options={[
+          { id: "yes", label: "Yes — ceiling and walls", icon: FaPaintRoller },
+          { id: "no", label: "No — paint excluded", icon: FaLock },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
+        ]}
+      />
+    ),
+  };
+
+  const accessories: QuestionNode<AccessoriesChoice | null> = {
+    id: "accessories",
+    tab: "scope",
+    question: "What about mirrors, towel bars, and hooks?",
+    helper:
+      "These are usually handled separately from contractor scope — but the wall blocking that supports them goes in before the walls close.",
+    initial: () => get().accessories,
+    commit: (v) => v && setKey("accessories", v),
     next: () => "photos-current",
     render: ({ value, onChange }) => (
-      <TileSelect
+      <PillSelect
         value={value}
-        onChange={(v) => onChange(v as LayoutChange)}
+        onChange={(v) => onChange(v as AccessoriesChoice)}
         options={[
-          { id: "none", label: "No Changes", icon: FaWandMagicSparkles },
-          { id: "door", label: "Door Only", icon: FaScrewdriverWrench },
-          { id: "wall", label: "One Wall", icon: FaHammer },
-          { id: "full_layout", label: "Full Layout", icon: FaCompass },
-          { id: "unsure", label: "Unsure", icon: FaCircleQuestion },
+          { id: "self", label: "I'll handle those myself after construction" },
+          { id: "builder", label: "I want the builder to install them" },
+          { id: "unsure", label: "Not sure yet" },
         ]}
       />
     ),
   };
 
-  /* ── Photos tab ────────────────────────────────────────────── */
+  /* ── PART 10: Current state + inspiration — Screens 28-29 ── */
 
   const photosCurrent: QuestionNode<string[]> = {
     id: "photos-current",
     tab: "photos",
-    question: "Upload photos of your current bathroom.",
-    helper: "We need every wall and a few angles. You can add more later.",
+    question: "Got photos of the current bathroom?",
+    helper:
+      "Totally optional. If you have them handy, they're helpful context — but don't let this slow you down.",
     initial: () => get().photos,
     commit: (v) => setKey("photos", v),
-    next: () => "floor-plan",
+    next: () => "photos-inspiration",
     render: ({ value, onChange }) => (
       <PhotoUpload value={value} onChange={onChange} />
     ),
   };
 
-  const floorPlan: QuestionNode<string[]> = {
-    id: "floor-plan",
+  const photosInspiration: QuestionNode<string[]> = {
+    id: "photos-inspiration",
     tab: "photos",
-    question: "Upload a floor plan or rough sketch.",
-    helper: "A photo of a hand-drawn sketch with rough dimensions is fine.",
+    question: "Anything you've been drawn to?",
+    helper:
+      "A saved photo or screenshot — completely optional. Doesn't change your Ground Report. Just helps us understand where you're headed.",
     initial: () => get().floorPlan,
     commit: (v) => setKey("floorPlan", v),
-    next: () => "notes",
+    next: () => "inspiration-link",
     render: ({ value, onChange }) => (
       <PhotoUpload value={value} onChange={onChange} />
+    ),
+  };
+
+  const inspirationLink: QuestionNode<string> = {
+    id: "inspiration-link",
+    tab: "photos",
+    question: "Have a link to share?",
+    helper: "Pinterest, Instagram, Houzz — anything. Optional.",
+    initial: () => get().inspirationLink,
+    commit: (v) => setKey("inspirationLink", v),
+    next: () => "notes",
+    render: ({ value, onChange }) => (
+      <ShortText
+        value={value}
+        onChange={onChange}
+        inputMode="url"
+        placeholder="https://"
+      />
     ),
   };
 
@@ -308,8 +1250,9 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     id: "notes",
     terminal: true,
     tab: "photos",
-    question: "Anything else the contractor should know?",
-    helper: "Constraints, history, things you've already had quoted — anything.",
+    question: "Anything else we should know?",
+    helper:
+      "Constraints, history, things you've already had quoted — anything that helps your builder.",
     initial: () => get().notes,
     commit: (v) => setKey("notes", v),
     next: () => null,
@@ -323,21 +1266,48 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
   };
 
   return [
-    projectType,
-    bathroomKind,
-    goals,
-    urgency,
-    budget,
-    vanity,
-    toilet,
-    showerTub,
-    flooring,
-    walls,
+    room,
+    bathType,
+    intent,
+    demo,
+    plumbing,
+    showerInScope,
+    showerUpdate,
+    showerSize,
+    showerSizeDim,
+    drainLocation,
+    tileHeight,
+    showerFeatures,
+    fixtureSetup,
+    fixtureStatus,
+    fixtureBrand,
+    showerGlass,
+    vanityPlan,
+    vanitySize,
+    vanityWidth,
+    vanityStatus,
+    toiletPlan,
+    tileStatus,
+    tileKnownText,
+    tileDirectionText,
+    tileLook,
+    wallTileExtent,
+    showerFloorTile,
+    grout,
+    tileEdge,
+    tileEdgeText,
     lighting,
     electrical,
-    layout,
+    electricalFan,
+    electricalFloor,
+    electricalOutlets,
+    electricalFixtures,
+    electricalFixturesOther,
+    paint,
+    accessories,
     photosCurrent,
-    floorPlan,
+    photosInspiration,
+    inspirationLink,
     notes,
   ];
 }

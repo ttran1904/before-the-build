@@ -119,6 +119,97 @@ export function ChipMulti({
 }
 
 /* ────────────────────────────────────────────────────────────────
+ * Single-line free text input (used for short fields like brand,
+ * model, link, edge-treatment description, dimensions reveal).
+ * Inline label optional. Optional = renderer treats empty as valid.
+ * ──────────────────────────────────────────────────────────────── */
+export function ShortText({
+  value,
+  onChange,
+  placeholder,
+  label,
+  inputMode,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  label?: string;
+  inputMode?: "text" | "numeric" | "decimal" | "url";
+}) {
+  return (
+    <div className="mt-8">
+      {label && (
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+          {label}
+        </label>
+      )}
+      <input
+        type="text"
+        inputMode={inputMode}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-md border border-[#cfcabe] px-4 py-3 text-sm text-[#1a1a2e] outline-none transition focus:border-[#1a1a2e]"
+      />
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
+ * Two paired short text inputs side-by-side (e.g. width × depth).
+ * ──────────────────────────────────────────────────────────────── */
+export function DimensionsInput({
+  width,
+  depth,
+  onWidth,
+  onDepth,
+  unit = '"',
+}: {
+  width: string;
+  depth: string;
+  onWidth: (v: string) => void;
+  onDepth: (v: string) => void;
+  unit?: string;
+}) {
+  return (
+    <div className="mt-8 grid grid-cols-2 gap-4">
+      <div>
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+          Width
+        </label>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={width}
+            onChange={(e) => onWidth(e.target.value)}
+            placeholder="36"
+            className="w-full rounded-md border border-[#cfcabe] px-4 py-3 text-sm text-[#1a1a2e] outline-none transition focus:border-[#1a1a2e]"
+          />
+          <span className="text-sm text-[#6a6a7a]">{unit}</span>
+        </div>
+      </div>
+      <div>
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[#9a9aaa]">
+          Depth
+        </label>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={depth}
+            onChange={(e) => onDepth(e.target.value)}
+            placeholder="60"
+            className="w-full rounded-md border border-[#cfcabe] px-4 py-3 text-sm text-[#1a1a2e] outline-none transition focus:border-[#1a1a2e]"
+          />
+          <span className="text-sm text-[#6a6a7a]">{unit}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
  * Long-form free text (used for "anything else we should know").
  * ──────────────────────────────────────────────────────────────── */
 export function LongText({

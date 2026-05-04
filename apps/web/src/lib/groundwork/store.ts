@@ -55,6 +55,73 @@ export type LayoutChange =
   | "full_layout"
   | "unsure";
 
+/* ── PDF-aligned answer types (Groundwork Intake v3) ──────────── */
+
+export type IntentChoice = "refresh" | "replace" | "rethink" | "unsure";
+export type DemoChoice = "cosmetic" | "standard" | "full_gut" | "unsure";
+export type PlumbingChoice =
+  | "staying"
+  | "sink_might_move"
+  | "shower_might_move"
+  | "rethinking"
+  | "unsure";
+export type ShowerInScope = "yes" | "no";
+export type ShowerUpdate =
+  | "tub_surround"
+  | "update_existing"
+  | "tub_to_shower"
+  | "walkin_curbed"
+  | "walkin_curbless"
+  | "unsure";
+export type ShowerSize = "small" | "medium" | "large" | "known" | "unsure";
+export type DrainLocation = "staying" | "unsure" | "moving";
+export type TileHeight = "ceiling" | "partway" | "unsure";
+export type FixtureSetup = "standard" | "rain_hand" | "full_system" | "unsure";
+export type FixtureStatus = "selected" | "not_yet";
+export type ShowerGlass = "include" | "later" | "open" | "unsure";
+export type VanityPlan =
+  | "keep"
+  | "single"
+  | "double"
+  | "pedestal"
+  | "unsure";
+export type VanitySize = "known" | "roughly" | "not_yet";
+export type VanityStatus = "selected" | "not_yet";
+export type ToiletPlan =
+  | "keep"
+  | "owner_supplied"
+  | "builder_supplied"
+  | "unsure";
+export type TileStatus = "know" | "kindof" | "not_yet";
+export type TileLook =
+  | "large"
+  | "medium"
+  | "small"
+  | "patterned"
+  | "unsure";
+export type WallTileExtent =
+  | "shower_only"
+  | "shower_vanity"
+  | "most_partway"
+  | "most_full"
+  | "unsure";
+export type ShowerFloorTile = "same" | "different" | "unsure";
+export type GroutChoice = "standard" | "epoxy" | "unsure";
+export type TileEdgeChoice = "selected" | "unsure";
+export type ElectricalFan =
+  | "simple_swap"
+  | "new_duct"
+  | "new_location"
+  | "unsure";
+export type ElectricalFloor = "confirmed" | "considering";
+export type ElectricalOutlets =
+  | "add_new"
+  | "gfci_update"
+  | "both"
+  | "unsure";
+export type PaintChoice = "yes" | "no" | "unsure";
+export type AccessoriesChoice = "self" | "builder" | "unsure";
+
 export interface GroundworkBathroomState {
   // Project tab
   projectType: ProjectType | null;
@@ -63,7 +130,8 @@ export interface GroundworkBathroomState {
   urgency: Urgency | null;
   budgetTier: BudgetTier | null;
 
-  // Scope tab — what's changing
+  // Scope tab — what's changing (legacy roll-up fields, kept for
+  // back-compat with the summary + cost-breakdown derivers)
   vanity: FixtureChange | null;
   toilet: FixtureChange | null;
   showerTub: FixtureChange | null;
@@ -73,9 +141,60 @@ export interface GroundworkBathroomState {
   electrical: ElectricalChange | null;
   layout: LayoutChange | null;
 
+  // PDF intake — Project intent + scope framing
+  intent: IntentChoice | null;
+  demo: DemoChoice | null;
+  plumbing: PlumbingChoice | null;
+
+  // PDF intake — Shower / tub
+  showerInScope: ShowerInScope | null;
+  showerUpdate: ShowerUpdate | null;
+  showerSize: ShowerSize | null;
+  showerWidth: string;
+  showerDepth: string;
+  drainLocation: DrainLocation | null;
+  tileHeight: TileHeight | null;
+  showerFeatures: string[];
+  fixtureSetup: FixtureSetup | null;
+  fixtureStatus: FixtureStatus | null;
+  fixtureBrand: string;
+  showerGlass: ShowerGlass | null;
+
+  // PDF intake — Vanity & toilet
+  vanityPlan: VanityPlan | null;
+  vanitySize: VanitySize | null;
+  vanityWidth: string;
+  vanityStatus: VanityStatus | null;
+  toiletPlan: ToiletPlan | null;
+
+  // PDF intake — Tile & finishes
+  tileStatus: TileStatus | null;
+  tileKnownText: string;
+  tileDirectionText: string;
+  tileLook: TileLook | null;
+  wallTileExtent: WallTileExtent | null;
+  showerFloorTile: ShowerFloorTile | null;
+  grout: GroutChoice | null;
+  tileEdge: TileEdgeChoice | null;
+  tileEdgeText: string;
+
+  // PDF intake — Lighting & electrical
+  lightingChoices: string[];
+  electricalUpgrades: string[];
+  electricalFan: ElectricalFan | null;
+  electricalFloor: ElectricalFloor | null;
+  electricalOutlets: ElectricalOutlets | null;
+  electricalFixtures: string[];
+  electricalFixturesOther: string;
+
+  // PDF intake — Paint & accessories
+  paint: PaintChoice | null;
+  accessories: AccessoriesChoice | null;
+
   // Photos tab
   photos: string[];
   floorPlan: string[];
+  inspirationLink: string;
   notes: string;
 
   // Bookkeeping
@@ -108,8 +227,47 @@ const initial: GroundworkBathroomState = {
   lighting: null,
   electrical: null,
   layout: null,
+  intent: null,
+  demo: null,
+  plumbing: null,
+  showerInScope: null,
+  showerUpdate: null,
+  showerSize: null,
+  showerWidth: "",
+  showerDepth: "",
+  drainLocation: null,
+  tileHeight: null,
+  showerFeatures: [],
+  fixtureSetup: null,
+  fixtureStatus: null,
+  fixtureBrand: "",
+  showerGlass: null,
+  vanityPlan: null,
+  vanitySize: null,
+  vanityWidth: "",
+  vanityStatus: null,
+  toiletPlan: null,
+  tileStatus: null,
+  tileKnownText: "",
+  tileDirectionText: "",
+  tileLook: null,
+  wallTileExtent: null,
+  showerFloorTile: null,
+  grout: null,
+  tileEdge: null,
+  tileEdgeText: "",
+  lightingChoices: [],
+  electricalUpgrades: [],
+  electricalFan: null,
+  electricalFloor: null,
+  electricalOutlets: null,
+  electricalFixtures: [],
+  electricalFixturesOther: "",
+  paint: null,
+  accessories: null,
   photos: [],
   floorPlan: [],
+  inspirationLink: "",
   notes: "",
   completedAt: null,
   projectId: null,
