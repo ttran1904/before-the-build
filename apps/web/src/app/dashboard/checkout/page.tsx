@@ -23,7 +23,7 @@ import {
  * to the returned session URL.
  * ────────────────────────────────────────────────────────────── */
 
-type PlanId = "core" | "guided" | "build-book";
+type PlanId = "core" | "guided" | "premium" | "build-book";
 
 type Plan = {
   id: PlanId;
@@ -59,6 +59,19 @@ const PLANS: Record<PlanId, Plan> = {
       "3 calls with a real person — used as needed",
       "Bid comparison — upload up to 4 bids, flags what to question",
       "One round of scope refinement",
+    ],
+  },
+  premium: {
+    id: "premium",
+    name: "Groundwork Premium",
+    tagline: "Concierge support · per room",
+    priceCents: 149900,
+    includes: [
+      "Dedicated experienced contractor",
+      "Bid, estimate & change-order review",
+      "Decision support mid-build",
+      "Email support within 24 hours",
+      "Ongoing contractor evaluation",
     ],
   },
   "build-book": {
