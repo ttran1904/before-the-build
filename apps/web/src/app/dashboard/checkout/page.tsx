@@ -12,8 +12,7 @@ import {
   FaCheck,
   FaInfinity,
   FaLock,
-  FaShieldHalved,
-} from "react-icons/fa6";
+  } from "react-icons/fa6";
 
 /* ──────────────────────────────────────────────────────────────
  * Checkout — sleek, condensed, payments-first.
@@ -310,9 +309,6 @@ function CheckoutInner() {
                 <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-[#9a9aaa]">
                   <span className="inline-flex items-center gap-1">
                     <FaLock className="text-[10px]" /> Secure payment
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <FaShieldHalved className="text-[10px]" /> 7-day refund
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <FaInfinity className="text-[10px]" /> Lifetime access
