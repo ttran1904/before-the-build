@@ -5,8 +5,6 @@ import {
   FaStar, FaRobot, FaCompass, FaCouch, FaArrowsRotate,
   FaCartShopping, FaCalendarDays, FaShieldHalved, FaCertificate,
   FaRuler,
-  FaClipboardList,
-  FaUserTie, FaHelmetSafety,
 } from "react-icons/fa6";
 
 /* ─── Room scene illustrations ─── */
@@ -744,7 +742,7 @@ export default function Home() {
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-[#6a6a7a]">
               From a self-serve scope you can hand a contractor, to a dedicated
-              retired contractor on your side from start to finish.
+              experienced contractor on your side from start to finish.
             </p>
           </div>
 
@@ -752,7 +750,6 @@ export default function Home() {
             <PlanCard
               accent="#c08a5a"
               accentBg="#f6f3ed"
-              icon={<FaClipboardList />}
               tag="Self-serve"
               title="Groundwork Report"
               subtitle="A clear plan before talking to contractors. Built to hand directly to a contractor."
@@ -772,7 +769,6 @@ export default function Home() {
             <PlanCard
               accent="#1a1a2e"
               accentBg="#eef0f4"
-              icon={<FaUserTie />}
               tag="With expert calls"
               title="Groundwork Pro"
               subtitle="A real person to help you think it through before bidding."
@@ -793,14 +789,13 @@ export default function Home() {
             <PlanCard
               accent="#2d5a3d"
               accentBg="#eef3ee"
-              icon={<FaHelmetSafety />}
-              tag="Ongoing support"
+              tag="Concierge support"
               title="Groundwork Premium"
-              subtitle="A dedicated retired contractor on your side once the build has started."
-              price="$500+"
-              priceNote="monthly · based on project size"
+              subtitle="A dedicated, experienced contractor on your side once the build has started."
+              price="$1,499"
+              priceNote="one-time · per room"
               features={[
-                "Dedicated retired contractor",
+                "Dedicated experienced contractor",
                 "Bid, estimate & change-order review",
                 "Decision support mid-build",
                 "Email support within 24 hours",
@@ -819,7 +814,7 @@ export default function Home() {
                   Add-ons
                 </span>
                 <h3 className="mt-2 font-serif text-2xl text-[#1a1a2e]">
-                  Occasional Call Support
+                  On-Demand Expert Calls
                 </h3>
                 <p className="mt-1 max-w-xl text-sm text-[#6a6a7a]">
                   Need help without committing to Premium? Book a single call
@@ -947,7 +942,6 @@ export default function Home() {
 function PlanCard({
   accent,
   accentBg,
-  icon,
   tag,
   title,
   subtitle,
@@ -961,7 +955,6 @@ function PlanCard({
 }: {
   accent: string;
   accentBg: string;
-  icon: React.ReactNode;
   tag: string;
   title: string;
   subtitle: string;
@@ -992,14 +985,9 @@ function PlanCard({
         </span>
       )}
 
-      {/* Header: icon left, tag right */}
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-12 w-12 flex-none items-center justify-center rounded-xl text-xl"
-          style={{ backgroundColor: accentBg, color: accent }}
-        >
-          {icon}
-        </div>
+      {/* Header: title with tag */}
+      <div className="flex flex-wrap items-center gap-3">
+        <h4 className="font-serif text-3xl text-[#1a1a2e]">{title}</h4>
         <span
           className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
           style={{ backgroundColor: accentBg, color: accent }}
@@ -1007,8 +995,6 @@ function PlanCard({
           {tag}
         </span>
       </div>
-
-      <h4 className="mt-5 font-serif text-3xl text-[#1a1a2e]">{title}</h4>
       <p className="mt-2 text-sm text-[#6a6a7a]">{subtitle}</p>
 
       {/* Centered price block, mid-card */}
