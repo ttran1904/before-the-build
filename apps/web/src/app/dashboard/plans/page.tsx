@@ -6,7 +6,6 @@ import {
   FaCheck,
   FaMinus,
   FaInfinity,
-  FaShieldHalved,
   FaArrowRight,
   FaPhone,
   FaPhoneVolume,
@@ -187,16 +186,11 @@ export default function PlansPage() {
 
       {/* ── Trust / value strip ──────────────────────────────── */}
       <section className="rounded-3xl bg-[#1a1a2e] p-10 text-white">
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2">
           <ValueProp
             icon={<FaInfinity />}
             title="Lifetime project access"
             body="Your scope and brief stay in your account forever — no renewal fees, no expiry."
-          />
-          <ValueProp
-            icon={<FaShieldHalved />}
-            title="7-day money-back"
-            body="If your Report or Pro doesn&apos;t make your bids clearer, we refund it."
           />
           <ValueProp
             icon={<FaCheck />}
