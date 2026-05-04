@@ -11,6 +11,7 @@ export interface AnswerOption {
   label: string;
   desc?: string;
   icon?: IconType;
+  disabled?: boolean;
 }
 
 export interface QuestionRenderProps<V = unknown> {

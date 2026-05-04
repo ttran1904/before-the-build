@@ -205,10 +205,10 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
         onChange={() => onAdvance("bathroom")}
         options={[
           { id: "bathroom", label: "Bathroom", icon: FaBath },
-          { id: "kitchen", label: "Kitchen (coming soon)", icon: FaHouse },
-          { id: "primary_suite", label: "Primary Suite (coming soon)", icon: FaCrown },
-          { id: "laundry", label: "Laundry (coming soon)", icon: FaDroplet },
-          { id: "other", label: "Other (coming soon)", icon: FaCircleQuestion },
+          { id: "kitchen", label: "Kitchen (coming soon)", icon: FaHouse, disabled: true },
+          { id: "primary_suite", label: "Primary Suite (coming soon)", icon: FaCrown, disabled: true },
+          { id: "laundry", label: "Laundry (coming soon)", icon: FaDroplet, disabled: true },
+          { id: "other", label: "Other (coming soon)", icon: FaCircleQuestion, disabled: true },
         ]}
       />
     ),

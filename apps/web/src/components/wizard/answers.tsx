@@ -20,18 +20,23 @@ export function TileSelect({
       {options.map((o) => {
         const Icon = o.icon;
         const selected = value === o.id;
+        const disabled = o.disabled;
         return (
           <button
             key={o.id}
-            onClick={() => onChange(o.id)}
+            onClick={() => !disabled && onChange(o.id)}
+            disabled={disabled}
+            aria-disabled={disabled}
             className={`group flex h-32 w-32 flex-col items-center justify-center rounded-full border transition ${
-              selected
+              disabled
+                ? "cursor-not-allowed border-transparent bg-[#f0ede8] opacity-50"
+                : selected
                 ? "border-[#1a1a2e] bg-[#e8e6e1]"
                 : "border-transparent bg-[#f0ede8] hover:bg-[#e8e6e1]"
             }`}
           >
             {Icon && (
-              <Icon className="mb-2 text-2xl text-[#3a3a4a] transition group-hover:text-[#1a1a2e]" />
+              <Icon className={`mb-2 text-2xl text-[#3a3a4a] transition ${disabled ? "" : "group-hover:text-[#1a1a2e]"}`} />
             )}
             <span className="px-2 text-center text-xs font-medium leading-tight text-[#3a3a4a]">
               {o.label}
@@ -60,12 +65,17 @@ export function PillSelect({
     <div className="mt-10 flex flex-col items-center gap-3">
       {options.map((o) => {
         const selected = value === o.id;
+        const disabled = o.disabled;
         return (
           <button
             key={o.id}
-            onClick={() => onChange(o.id)}
+            onClick={() => !disabled && onChange(o.id)}
+            disabled={disabled}
+            aria-disabled={disabled}
             className={`w-72 rounded-md px-6 py-5 text-sm transition ${
-              selected
+              disabled
+                ? "cursor-not-allowed bg-[#f0ede8] text-[#1a1a2e] opacity-50"
+                : selected
                 ? "bg-[#1a1a2e] text-white"
                 : "bg-[#f0ede8] text-[#1a1a2e] hover:bg-[#e8e6e1]"
             }`}
@@ -99,12 +109,17 @@ export function ChipMulti({
       {options.map((o) => {
         const Icon = o.icon;
         const selected = value.includes(o.id);
+        const disabled = o.disabled;
         return (
           <button
             key={o.id}
-            onClick={() => toggle(o.id)}
+            onClick={() => !disabled && toggle(o.id)}
+            disabled={disabled}
+            aria-disabled={disabled}
             className={`flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm transition ${
-              selected
+              disabled
+                ? "cursor-not-allowed border-[#d8d4ca] text-[#3a3a4a] opacity-50"
+                : selected
                 ? "border-[#1a1a2e] bg-[#1a1a2e] text-white"
                 : "border-[#d8d4ca] text-[#3a3a4a] hover:border-[#1a1a2e]"
             }`}
