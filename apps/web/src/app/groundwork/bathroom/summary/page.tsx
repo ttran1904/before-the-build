@@ -329,11 +329,11 @@ export default function GroundworkSummaryPage() {
             <section className="space-y-8">
               {printAll && <TabHeading n="00" title="Overview" hint="The gist" />}
 
-              {/* TOP: contractor-question checklist — what to ask contractors */}
-              <ContractorChecklist items={openItems} />
-
-              {/* Readiness — condensed, in Overview, before cost */}
-              <ReadinessOverview readiness={readiness} report={readinessReport} onJump={() => setActiveTab("readiness")} />
+              {/* TOP: checklist + readiness side-by-side to save vertical space */}
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <ContractorChecklist items={openItems} />
+                <ReadinessOverview readiness={readiness} report={readinessReport} onJump={() => setActiveTab("readiness")} />
+              </div>
 
               {/* Scope chips */}
               <Section title="What's changing vs staying">
@@ -620,16 +620,24 @@ function ReportHeroCard({
               {meta.title}
             </h1>
           </div>
-          <div className="rounded-2xl border border-[#cfe0d2] bg-[#eef3ee] px-5 py-3.5 text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2d5a3d]">
-              Realistic cost range
-            </p>
-            <p className="mt-0.5 font-serif text-2xl text-[#1a1a2e] sm:text-3xl">
-              {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
-            </p>
-            <p className="mt-0.5 text-[10px] text-[#6a6a7a]">
-              Materials + labor + 10% contingency
-            </p>
+          <div className="flex flex-col items-stretch gap-2 sm:items-end">
+            <div className="rounded-2xl border border-[#cfe0d2] bg-[#eef3ee] px-5 py-3.5 sm:text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2d5a3d]">
+                Realistic cost range
+              </p>
+              <p className="mt-0.5 font-serif text-2xl text-[#1a1a2e] sm:text-3xl">
+                {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
+              </p>
+              <p className="mt-0.5 text-[10px] text-[#6a6a7a]">
+                Materials + labor + 10% contingency
+              </p>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-[#ece9e3] bg-white px-4 py-2 sm:justify-end">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
+                Homeowner budget
+              </span>
+              <span className="font-serif text-base text-[#1a1a2e]">{lbl(state.budgetTier)}</span>
+            </div>
           </div>
         </div>
 
@@ -1357,16 +1365,9 @@ function ContractorChecklist({ items }: { items: string[] }) {
       <div className="flex items-start gap-3 bg-[#f6e4d4] px-6 py-4">
         <FaTriangleExclamation className="mt-0.5 text-lg text-[#8a4a1a]" />
         <div className="flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a4a1a]">
-            Ask each contractor to confirm these
-          </p>
           <h2 className="mt-1 font-serif text-2xl text-[#1a1a2e]">
             Your contractor question checklist
           </h2>
-          <p className="mt-1 text-sm text-[#6a6a7a]">
-            We&apos;ve pulled out every open assumption. Walk through these with each
-            bidder so their numbers are actually comparable.
-          </p>
         </div>
         <span className="hidden rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#8a4a1a] shadow-sm sm:inline">
           {items.length} question{items.length === 1 ? "" : "s"}
@@ -1427,7 +1428,7 @@ function ReadinessOverview({
             </p>
             <p className="mt-0.5 text-sm leading-snug text-[#3a3a4a]">
               {overall >= 80
-                ? "You&apos;re close to bid-ready — minor tightening only."
+                ? "You’re close to bid-ready — minor tightening only."
                 : overall >= 60
                 ? "Solid scope. A few decisions would tighten bids."
                 : "Worth tightening before going to bid."}
