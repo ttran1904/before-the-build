@@ -42,14 +42,14 @@ export default function StartPage() {
           <ProductCard
             href="/groundwork/bathroom"
             tag="Groundwork Report"
-            price="$399 / room"
-            title="Get a complete, contractor-ready scope before anyone bids."
+            price="$190 / room"
+            title="We hand-hold you to a contractor-ready scope before anyone bids."
             bullets={[
-              "Project summary & existing conditions snapshot",
-              "Defined scope — included, excluded, undecided",
-              "Decision checklist & major variables map",
-              "Builder questions to ask",
-              "Next-step roadmap (PDF)",
+              "Guided scope writing — you answer, we structure it",
+              "Scope defined: included, excluded, undecided",
+              "Decision checklist + major-variables map",
+              "Checklist of questions for every contractor",
+              "Email Q&A while you write your scope",
             ]}
             icon={<FaClipboardList className="text-2xl text-[#c08a5a]" />}
             cta="Start Groundwork Report"
@@ -72,8 +72,8 @@ export default function StartPage() {
         </div>
 
         <p className="mt-10 text-center text-xs text-[#9a9890]">
-          Groundwork Pro ($799/room) adds 3 expert calls and bid comparison.
-          Groundwork Premium (from $500/month) is ongoing support once your
+          Groundwork Pro ($590/room) adds 3 one-on-one calls with a contractor advisor and bid comparison.
+          Groundwork Premium ($1,690/room) is concierge support once your
           build starts.
         </p>
       </main>

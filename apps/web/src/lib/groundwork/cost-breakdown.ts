@@ -27,7 +27,7 @@ const round = (n: number) => Math.round(n / 50) * 50;
 
 // How tightly we squeeze each line item toward its midpoint.
 // 1.0 = original wide spread, 0 = point estimate. Lower = more confident range.
-const NARROW_FACTOR = 0.4;
+const NARROW_FACTOR = 0.15;
 
 export function getCostBreakdown(s: GroundworkBathroomState): CostBreakdown {
   const range = getRealisticCostRange(s);

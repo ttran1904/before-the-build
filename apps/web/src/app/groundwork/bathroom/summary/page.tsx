@@ -43,7 +43,6 @@ import {
   getCostBreakdown,
   fmtRange,
   type BreakdownLine,
-  type LineReadiness,
 } from "@/lib/groundwork/cost-breakdown";
 import {
   getScopeOfWork,
@@ -330,7 +329,13 @@ export default function GroundworkSummaryPage() {
             <section className="space-y-8">
               {printAll && <TabHeading n="00" title="Overview" hint="The gist" />}
 
-              {/* Scope cards — preserved */}
+              {/* TOP: contractor-question checklist — what to ask contractors */}
+              <ContractorChecklist items={openItems} />
+
+              {/* Readiness — condensed, in Overview, before cost */}
+              <ReadinessOverview readiness={readiness} report={readinessReport} onJump={() => setActiveTab("readiness")} />
+
+              {/* Scope chips */}
               <Section title="What's changing vs staying">
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {scopeItems.map((it) => (
@@ -339,27 +344,18 @@ export default function GroundworkSummaryPage() {
                 </div>
               </Section>
 
-              {/* Budget snapshot — also surfaced on overview for at-a-glance value */}
+              {/* Budget snapshot */}
               <Section title="Estimated cost breakdown">
                 <CostTable breakdown={breakdown} readiness={readiness} />
               </Section>
 
-              {/* Quick callouts — preserved */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Callout
-                  title="Ask each contractor to confirm these"
-                  icon={FaTriangleExclamation}
-                  tone="warn"
-                  items={openItems}
-                  emptyText="Nothing flagged — every scope question was answered."
-                />
-                <Callout
-                  title="What this estimate already assumes"
-                  icon={FaCircleInfo}
-                  tone="info"
-                  items={assumptions}
-                />
-              </div>
+              {/* Assumptions builders will price */}
+              <Callout
+                title="What this estimate already assumes"
+                icon={FaCircleInfo}
+                tone="info"
+                items={assumptions}
+              />
 
               {state.notes && (
                 <Section title="Homeowner notes">
@@ -424,7 +420,7 @@ export default function GroundworkSummaryPage() {
               <BudgetTiers data={sensitivity} />
 
               <Section title="Estimated cost breakdown">
-                <CostTable breakdown={breakdown} readiness={readiness} showReadiness />
+                <CostTable breakdown={breakdown} readiness={readiness} />
               </Section>
             </section>
           )}
@@ -481,6 +477,7 @@ export default function GroundworkSummaryPage() {
               />
               <ReadinessGrid r={readiness} />
               <ReadinessBreakdown report={readinessReport} />
+
               <div className="rounded-2xl border border-[#ece9e3] bg-white px-6 py-5 shadow-sm">
                 <p
                   className="text-sm leading-relaxed text-[#3a3a4a]"
@@ -720,14 +717,23 @@ function ReadinessCell({ pct }: { pct: number }) {
   );
 }
 
-function statusToneClass(s: ScopeStatus) {
+
+function statusPillClass(s: ScopeStatus) {
   switch (s) {
     case "DEFINED":
-      return "text-[#2d5a3d]";
+      return "bg-[#eef3ee] text-[#2d5a3d] border-[#cfe0d2]";
     case "ASSUMED":
-      return "text-[#7a5a1a]";
+      return "bg-[#fbf2d9] text-[#7a5a1a] border-[#ecdfa9]";
     case "EXCLUDED":
-      return "text-[#8a4a1a]";
+      return "bg-[#f6e4d4] text-[#8a4a1a] border-[#ecd6bc]";
+  }
+}
+
+function statusLabel(s: ScopeStatus) {
+  switch (s) {
+    case "DEFINED": return "Locked in";
+    case "ASSUMED": return "We assumed";
+    case "EXCLUDED": return "Not included";
   }
 }
 
@@ -743,36 +749,56 @@ function ScopeOfWorkTable({
       </div>
     );
   }
+  const counts = rows.reduce(
+    (acc, r) => ({ ...acc, [r.status]: (acc[r.status] ?? 0) + 1 }),
+    {} as Record<ScopeStatus, number>,
+  );
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#ece9e3] bg-white">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-[#ece9e3] text-[11px] uppercase tracking-[0.18em] text-[#c08a5a]">
-            <th className="w-[18%] px-5 py-3 text-left font-semibold">Item</th>
-            <th className="px-5 py-3 text-left font-semibold">As defined</th>
-            <th className="w-[12%] px-5 py-3 text-left font-semibold">Status</th>
-            <th className="w-[16%] px-5 py-3 text-left font-semibold">Note</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.item} className="border-t border-[#f1ede5] align-top">
-              <td className="px-5 py-4 font-semibold text-[#1a1a2e]">{r.item}</td>
-              <td className="px-5 py-4 leading-relaxed text-[#3a3a4a]">
-                <RichText text={r.asDefined} />
-              </td>
-              <td
-                className={`px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.16em] ${statusToneClass(
-                  r.status,
-                )}`}
-              >
-                {r.status}
-              </td>
-              <td className="px-5 py-4 text-xs text-[#9a9aaa]">{r.note}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-[#6a6a7a]">
+        <span className="text-[#3a3a4a]">This is your living scope —</span>
+        {(["DEFINED", "ASSUMED", "EXCLUDED"] as ScopeStatus[]).map((st) =>
+          counts[st] ? (
+            <span key={st} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusPillClass(st)}`}>
+              {counts[st]} {statusLabel(st).toLowerCase()}
+            </span>
+          ) : null,
+        )}
+        <span className="text-[#9a9aaa]">· tap a row to expand</span>
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {rows.map((r) => (
+          <ScopeCardRow key={r.item} row={r} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ScopeCardRow({ row }: { row: ReturnType<typeof getScopeOfWork>[number] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`rounded-2xl border bg-white p-4 transition ${open ? "border-[#1a1a2e] shadow-sm" : "border-[#ece9e3] hover:border-[#d8d4cc]"}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-start justify-between gap-3 text-left"
+      >
+        <div className="flex-1">
+          <p className="font-semibold text-[#1a1a2e]">{row.item}</p>
+          <p className={`mt-1 text-sm leading-relaxed text-[#3a3a4a] ${open ? "" : "line-clamp-2"}`}>
+            <RichText text={row.asDefined} />
+          </p>
+        </div>
+        <span className={`inline-flex flex-none items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusPillClass(row.status)}`}>
+          {statusLabel(row.status)}
+        </span>
+      </button>
+      {open && row.note && (
+        <p className="mt-3 border-t border-[#f1ede5] pt-3 text-xs leading-relaxed text-[#6a6a7a]">
+          <span className="font-semibold text-[#3a3a4a]">Friend note:</span> {row.note}
+        </p>
+      )}
     </div>
   );
 }
@@ -808,6 +834,7 @@ function AssumptionLogList({
 }: {
   rows: ReturnType<typeof getAssumptionLog>;
 }) {
+  const [ack, setAck] = useState<Record<string, boolean>>({});
   if (rows.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-[#ece9e3] bg-white p-6 text-center text-sm text-[#6a6a7a]">
@@ -815,31 +842,56 @@ function AssumptionLogList({
       </div>
     );
   }
+  const ackCount = Object.values(ack).filter(Boolean).length;
   return (
-    <div className="rounded-2xl border border-[#ece9e3] bg-white">
-      {rows.map((r, idx) => (
-        <div
-          key={r.id}
-          className={`grid grid-cols-[40px_1fr_90px] items-start gap-4 px-5 py-4 ${
-            idx > 0 ? "border-t border-[#f1ede5]" : ""
-          }`}
-        >
-          <span className="text-xs font-semibold tracking-wider text-[#9a9aaa]">{r.id}</span>
-          <p className="text-sm leading-relaxed text-[#3a3a4a]">
-            {r.text.split(r.highlight).map((seg, i, arr) => (
-              <span key={i}>
-                {seg}
-                {i < arr.length - 1 && (
-                  <span className="text-[#c08a5a]">{r.highlight}</span>
-                )}
+    <div className="space-y-3">
+      <p className="text-xs text-[#6a6a7a]">
+        Tap <strong className="text-[#1a1a2e]">Got it</strong> on each one as you and the contractor agree.
+        {ackCount > 0 && <span className="ml-2 text-[#2d5a3d]">({ackCount} of {rows.length} acknowledged)</span>}
+      </p>
+      <div className="space-y-3">
+        {rows.map((r) => {
+          const isAck = !!ack[r.id];
+          return (
+            <div
+              key={r.id}
+              className={`flex items-start gap-4 rounded-2xl border bg-white p-4 transition ${
+                isAck ? "border-[#cfe0d2] bg-[#f6faf6]" : "border-[#ece9e3]"
+              }`}
+            >
+              <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#faf8f3] text-[10px] font-bold text-[#9a9aaa]">
+                {r.id}
               </span>
-            ))}
-          </p>
-          <span className={`text-xs font-semibold ${impactClass(r.impact)}`}>
-            {r.impact} impact
-          </span>
-        </div>
-      ))}
+              <div className="flex-1">
+                <p className={`text-sm leading-relaxed ${isAck ? "text-[#6a6a7a] line-through" : "text-[#3a3a4a]"}`}>
+                  {r.text.split(r.highlight).map((seg, i, arr) => (
+                    <span key={i}>
+                      {seg}
+                      {i < arr.length - 1 && (
+                        <span className={isAck ? "text-[#9a9aaa]" : "text-[#c08a5a]"}>{r.highlight}</span>
+                      )}
+                    </span>
+                  ))}
+                </p>
+                <p className={`mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${impactClass(r.impact)}`}>
+                  {r.impact} impact on cost
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAck((m) => ({ ...m, [r.id]: !m[r.id] }))}
+                className={`flex-none rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+                  isAck
+                    ? "bg-[#2d5a3d] text-white hover:bg-[#244a32]"
+                    : "border border-[#ece9e3] text-[#3a3a4a] hover:border-[#1a1a2e]"
+                }`}
+              >
+                {isAck ? "✓ Got it" : "Got it"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -849,6 +901,7 @@ function OpenItemsGrid({
 }: {
   cards: ReturnType<typeof getOpenItemCards>;
 }) {
+  const [state, setState] = useState<Record<string, "open" | "asked" | "resolved">>({});
   if (cards.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-[#ece9e3] bg-white p-6 text-center text-sm text-[#6a6a7a]">
@@ -857,16 +910,68 @@ function OpenItemsGrid({
     );
   }
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {cards.map((c) => (
-        <div key={c.title} className="rounded-2xl border border-[#ece9e3] bg-white p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
-            {c.category}
-          </p>
-          <p className="mt-2 font-semibold text-[#1a1a2e]">{c.title}</p>
-          <p className="mt-2 text-sm leading-relaxed text-[#3a3a4a]">{c.body}</p>
-        </div>
-      ))}
+    <div className="space-y-4">
+      <p className="text-xs text-[#6a6a7a]">
+        These are real next actions — mark them as you ask contractors or pick a direction.
+      </p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {cards.map((c) => {
+          const st = state[c.title] ?? "open";
+          const stBg =
+            st === "resolved"
+              ? "border-[#cfe0d2] bg-[#f6faf6]"
+              : st === "asked"
+              ? "border-[#ecdfa9] bg-[#fdfaee]"
+              : "border-[#ece9e3] bg-white";
+          return (
+            <div key={c.title} className={`rounded-2xl border p-5 transition ${stBg}`}>
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c08a5a]">
+                  {c.category}
+                </p>
+                {st !== "open" && (
+                  <span className={`text-[10px] font-bold uppercase tracking-[0.16em] ${st === "resolved" ? "text-[#2d5a3d]" : "text-[#7a5a1a]"}`}>
+                    {st === "resolved" ? "✓ Picked" : "⏳ Asked"}
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 font-semibold text-[#1a1a2e]">{c.title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-[#3a3a4a]">{c.body}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setState((m) => ({ ...m, [c.title]: st === "resolved" ? "open" : "resolved" }))}
+                  className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+                    st === "resolved"
+                      ? "bg-[#2d5a3d] text-white hover:bg-[#244a32]"
+                      : "border border-[#cfe0d2] text-[#2d5a3d] hover:bg-[#eef3ee]"
+                  }`}
+                >
+                  Picked it
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setState((m) => ({ ...m, [c.title]: st === "asked" ? "open" : "asked" }))}
+                  className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+                    st === "asked"
+                      ? "bg-[#7a5a1a] text-white"
+                      : "border border-[#ecdfa9] text-[#7a5a1a] hover:bg-[#fbf2d9]"
+                  }`}
+                >
+                  Asked contractor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setState((m) => ({ ...m, [c.title]: "open" }))}
+                  className="rounded-full border border-[#ece9e3] px-3 py-1 text-[11px] font-semibold text-[#9a9aaa] transition hover:border-[#1a1a2e] hover:text-[#1a1a2e]"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -988,7 +1093,7 @@ function ReadinessBreakdown({
       <div className="flex flex-col gap-1 border-b border-[#f1ede5] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
-            What's still open
+            What&apos;s still open
           </p>
           <h3 className="mt-1 font-serif text-2xl text-[#1a1a2e]">
             {totalOpen === 0
@@ -998,7 +1103,7 @@ function ReadinessBreakdown({
         </div>
         <p className="text-xs text-[#6a6a7a] sm:max-w-xs sm:text-right">
           We track every intake answer behind the scenes — these are the ones still
-          unresolved or marked "not sure".
+          unresolved or marked &quot;not sure&quot;.
         </p>
       </div>
       <div className="grid grid-cols-1 divide-y divide-[#f1ede5] sm:grid-cols-2 sm:divide-y-0 sm:divide-x">
@@ -1059,37 +1164,13 @@ function ReadinessBreakdown({
 
 /* ────────────────── Existing Cost Breakdown table (preserved) ── */
 
-function readinessBadge(r: LineReadiness) {
-  if (r === "firm")
-    return {
-      icon: FaCircleCheck,
-      label: "Firm",
-      cls: "bg-[#eef3ee] text-[#2d5a3d] border-[#d6e3d8]",
-      title: "High confidence — driven by code minimums or fixed labor.",
-    };
-  if (r === "estimated")
-    return {
-      icon: FaCircleInfo,
-      label: "Estimated",
-      cls: "bg-[#fbf2d9] text-[#7a5a1a] border-[#ecdfa9]",
-      title: "Mid confidence — depends on a finish or fixture spec.",
-    };
-  return {
-    icon: FaTriangleExclamation,
-    label: "Rough",
-    cls: "bg-[#f6e4d4] text-[#8a4a1a] border-[#ecd6bc]",
-    title: "Low confidence — open decision or behind-wall discovery.",
-  };
-}
 
 function CostTable({
   breakdown,
   readiness,
-  showReadiness,
 }: {
   breakdown: ReturnType<typeof getCostBreakdown>;
   readiness?: ReturnType<typeof getReadinessScores>;
-  showReadiness?: boolean;
 }) {
   if (breakdown.lines.length === 0) {
     return (
@@ -1111,7 +1192,6 @@ function CostTable({
     const high = rows.reduce((n, r) => n + r.high, 0);
     groups.push({ name: cat, rows, low, high });
   }
-  const colSpan = showReadiness ? 4 : 3;
   return (
     <div className="overflow-hidden rounded-2xl border border-[#ece9e3] bg-white shadow-sm">
       <table className="w-full text-sm">
@@ -1119,15 +1199,12 @@ function CostTable({
           <tr>
             <th className="px-5 py-3 text-left font-semibold">Item</th>
             <th className="px-5 py-3 text-left font-semibold">Description</th>
-            {showReadiness && (
-              <th className="px-5 py-3 text-left font-semibold">Confidence</th>
-            )}
             <th className="px-5 py-3 text-right font-semibold">Estimated cost</th>
           </tr>
         </thead>
         <tbody>
           {groups.map((g) => (
-            <Group key={g.name} group={g} showReadiness={showReadiness} />
+            <Group key={g.name} group={g} />
           ))}
           <tr className="border-t-2 border-[#1a1a2e] bg-[#e8e6e1]">
             <td className="px-5 py-3 text-sm font-bold uppercase tracking-wider text-[#1a1a2e]">
@@ -1135,7 +1212,6 @@ function CostTable({
             </td>
             <td
               className="px-5 py-3 text-xs text-[#3a3a4a]"
-              colSpan={showReadiness ? 2 : 1}
             >
               Materials + labor + permits
             </td>
@@ -1147,7 +1223,6 @@ function CostTable({
             <td className="px-5 py-3 text-sm font-semibold text-[#7a4a18]">20% contingency</td>
             <td
               className="px-5 py-3 text-xs text-[#7a4a18]"
-              colSpan={showReadiness ? 2 : 1}
             >
               Buffer for change orders & surprises behind walls
             </td>
@@ -1159,7 +1234,6 @@ function CostTable({
             <td className="px-5 py-4 text-sm font-bold uppercase tracking-wider">Total</td>
             <td
               className="px-5 py-4 text-xs text-[#bdbab0]"
-              colSpan={showReadiness ? 2 : 1}
             >
               All-in estimate{readiness ? ` · ${readiness.overall}% defined` : ""}
             </td>
@@ -1167,17 +1241,6 @@ function CostTable({
               {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
             </td>
           </tr>
-          {showReadiness && (
-            <tr>
-              <td colSpan={colSpan} className="bg-[#faf8f3] px-5 py-3 text-[11px] text-[#6a6a7a]">
-                <span className="font-semibold text-[#1a1a2e]">Reading the confidence column:</span>{" "}
-                <span className="text-[#2d5a3d]">Firm</span> = locked by code or fixed labor.{" "}
-                <span className="text-[#7a5a1a]">Estimated</span> = depends on a spec you haven't
-                set yet. <span className="text-[#8a4a1a]">Rough</span> = open decision or
-                behind-wall surprise risk — these are the numbers that move the most.
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
     </div>
@@ -1186,12 +1249,10 @@ function CostTable({
 
 function Group({
   group,
-  showReadiness,
 }: {
   group: { name: BreakdownLine["category"]; rows: BreakdownLine[]; low: number; high: number };
-  showReadiness?: boolean;
 }) {
-  const colSpan = showReadiness ? 4 : 3;
+  const colSpan = 3;
   return (
     <>
       <tr className="border-t-[3px] border-[#1a1a2e] bg-[#1a1a2e]">
@@ -1202,33 +1263,18 @@ function Group({
           {group.name}
         </td>
       </tr>
-      {group.rows.map((r) => {
-        const b = readinessBadge(r.readiness);
-        const BIcon = b.icon;
-        return (
-          <tr key={r.item} className="border-t border-[#f1ede5]">
-            <td className="py-3 pl-10 pr-5 font-medium text-[#1a1a2e]">{r.item}</td>
-            <td className="px-5 py-3 text-[#6a6a7a]">{r.description}</td>
-            {showReadiness && (
-              <td className="px-5 py-3">
-                <span
-                  title={b.title}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${b.cls}`}
-                >
-                  <BIcon className="text-[9px]" />
-                  {b.label}
-                </span>
-              </td>
-            )}
-            <td className="px-5 py-3 text-right text-[#1a1a2e]">{fmtRange(r.low, r.high)}</td>
-          </tr>
-        );
-      })}
+      {group.rows.map((r) => (
+        <tr key={r.item} className="border-t border-[#f1ede5]">
+          <td className="py-3 pl-10 pr-5 font-medium text-[#1a1a2e]">{r.item}</td>
+          <td className="px-5 py-3 text-[#6a6a7a]">{r.description}</td>
+          <td className="px-5 py-3 text-right text-[#1a1a2e]">{fmtRange(r.low, r.high)}</td>
+        </tr>
+      ))}
       <tr className="border-t border-[#ece9e3] bg-[#f0ede8]">
         <td className="py-2.5 pl-10 pr-5 text-xs font-bold uppercase tracking-wider text-[#1a1a2e]">
           {group.name} subtotal
         </td>
-        <td className="bg-[#f0ede8]" colSpan={showReadiness ? 2 : 1} />
+        <td className="bg-[#f0ede8]" />
         <td className="px-5 py-2.5 text-right text-sm font-bold text-[#1a1a2e]">
           {fmtRange(group.low, group.high)}
         </td>
@@ -1284,3 +1330,151 @@ function Callout({
     </section>
   );
 }
+
+/* ────────────────── Friend-mode helpers (2026 refresh) ────────── */
+
+function ContractorChecklist({ items }: { items: string[] }) {
+  if (items.length === 0) {
+    return (
+      <section className="rounded-2xl border border-[#cfe0d2] bg-[#eef3ee] px-6 py-5">
+        <div className="flex items-start gap-3">
+          <FaCircleCheck className="mt-0.5 text-lg text-[#2d5a3d]" />
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2d5a3d]">
+              You&apos;re bid-ready
+            </p>
+            <p className="mt-1 text-sm text-[#3a3a4a]">
+              Every scope question is answered — no clarifying questions for contractors.
+              Hand them the scope and ask for line-item bids.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[#ecd6bc] bg-white shadow-sm">
+      <div className="flex items-start gap-3 bg-[#f6e4d4] px-6 py-4">
+        <FaTriangleExclamation className="mt-0.5 text-lg text-[#8a4a1a]" />
+        <div className="flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a4a1a]">
+            Ask each contractor to confirm these
+          </p>
+          <h2 className="mt-1 font-serif text-2xl text-[#1a1a2e]">
+            Your contractor question checklist
+          </h2>
+          <p className="mt-1 text-sm text-[#6a6a7a]">
+            We&apos;ve pulled out every open assumption. Walk through these with each
+            bidder so their numbers are actually comparable.
+          </p>
+        </div>
+        <span className="hidden rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#8a4a1a] shadow-sm sm:inline">
+          {items.length} question{items.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      <ol className="divide-y divide-[#f1ede5]">
+        {items.map((q, i) => (
+          <li key={q} className="flex items-start gap-4 px-6 py-3">
+            <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#f6e4d4] text-xs font-bold text-[#8a4a1a]">
+              {i + 1}
+            </span>
+            <p className="text-sm leading-relaxed text-[#3a3a4a]">{q}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ReadinessOverview({
+  readiness,
+  report,
+  onJump,
+}: {
+  readiness: ReturnType<typeof getReadinessScores>;
+  report: ReturnType<typeof getReadinessReport>;
+  onJump: () => void;
+}) {
+  const items: Array<[string, number]> = [
+    ["Scope", readiness.scopeDefinition],
+    ["Finishes", readiness.finishSelections],
+    ["Structural", readiness.structuralClarity],
+    ["Fixtures", readiness.fixtureSpecs],
+  ];
+  const overall = readiness.overall;
+  const tone =
+    overall >= 80
+      ? { text: "text-[#2d5a3d]", bg: "bg-[#eef3ee]", border: "border-[#cfe0d2]" }
+      : overall >= 60
+      ? { text: "text-[#7a5a1a]", bg: "bg-[#fbf2d9]", border: "border-[#ecdfa9]" }
+      : { text: "text-[#8a4a1a]", bg: "bg-[#f6e4d4]", border: "border-[#ecd6bc]" };
+  // Pick worst dimensions → "areas to improve"
+  const weak = report.dimensions
+    .slice()
+    .sort((a, b) => a.score - b.score)
+    .filter((d) => d.score < 100)
+    .slice(0, 2);
+  return (
+    <section className={`rounded-2xl border ${tone.border} ${tone.bg} px-6 py-5 shadow-sm`}>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <div className={`flex h-14 w-14 flex-none items-center justify-center rounded-full bg-white ${tone.text} shadow-sm`}>
+            <span className="font-serif text-xl leading-none">{overall}%</span>
+          </div>
+          <div>
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${tone.text}`}>
+              Bid readiness
+            </p>
+            <p className="mt-0.5 text-sm leading-snug text-[#3a3a4a]">
+              {overall >= 80
+                ? "You&apos;re close to bid-ready — minor tightening only."
+                : overall >= 60
+                ? "Solid scope. A few decisions would tighten bids."
+                : "Worth tightening before going to bid."}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+          {items.map(([k, v]) => (
+            <div
+              key={k}
+              className="flex items-center gap-2 rounded-full border border-white/60 bg-white px-3 py-1 text-xs"
+              title={`${k}: ${v}%`}
+            >
+              <span className="font-semibold text-[#1a1a2e]">{k}</span>
+              <span className="font-serif text-sm text-[#1a1a2e]">{v}%</span>
+              <span className="h-1 w-10 overflow-hidden rounded-full bg-[#f0ede8]">
+                <span
+                  className="block h-1 rounded-full bg-[#2d5a3d]"
+                  style={{ width: `${v}%` }}
+                />
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {weak.length > 0 && (
+        <div className="mt-4 flex flex-col gap-2 border-t border-white/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-[#3a3a4a]">
+            <span className={`font-semibold ${tone.text}`}>Where to improve:</span>{" "}
+            {weak.map((d, i) => (
+              <span key={d.key}>
+                {i > 0 && ", "}
+                <strong className="text-[#1a1a2e]">{d.label}</strong>{" "}
+                <span className="text-[#9a9aaa]">({d.score}%)</span>
+              </span>
+            ))}
+          </p>
+          <button
+            type="button"
+            onClick={onJump}
+            className="inline-flex items-center gap-1 self-start rounded-full bg-[#1a1a2e] px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-[#2a2a4e] sm:self-auto"
+          >
+            See full readiness →
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+

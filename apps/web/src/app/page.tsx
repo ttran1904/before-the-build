@@ -742,8 +742,8 @@ export default function Home() {
               Three Groundwork plans. Pick the one that fits.
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-[#6a6a7a]">
-              From a self-serve scope you can hand a contractor, to a dedicated
-              experienced contractor on your side from start to finish.
+              From a guided self-serve scope, to a 1:1 contractor advisor on call,
+              to a concierge who runs point on the whole project for you.
             </p>
           </div>
 
@@ -751,17 +751,18 @@ export default function Home() {
             <PlanCard
               accent="#c08a5a"
               accentBg="#f6f3ed"
-              tag="Self-serve"
+              tag="Guided self-serve"
               title="Groundwork Report"
-              subtitle="A clear plan before talking to contractors. Built to hand directly to a contractor."
-              price="$399"
+              subtitle="We hand-hold you through writing a clear, contractor-ready scope. You answer simple questions, we do the structuring."
+              price="$190"
               priceNote="one-time · per room"
               features={[
-                "Contractor-ready scope PDF",
-                "Defined scope — in, out, undecided",
-                "Decision checklist & builder questions",
-                "Major variables map",
-                "Next-step roadmap",
+                "Contractor-ready scope — done with you, not just a template",
+                "Defined scope: what's in, out, and still undecided",
+                "Checklist of questions to grill every contractor with",
+                "Major-variables map (what swings the price most)",
+                "Next-step roadmap so you always know what's next",
+                "Email Q&A while you write your scope",
               ]}
               ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dcore"
               ctaLabel="Get started"
@@ -770,18 +771,19 @@ export default function Home() {
             <PlanCard
               accent="#1a1a2e"
               accentBg="#eef0f4"
-              tag="With expert calls"
+              tag="1:1 contractor advisor"
               title="Groundwork Pro"
-              subtitle="A real person to help you think it through before bidding."
-              price="$799"
+              subtitle="A real contractor advisor on the phone with you — before you sign anything. We do the heavy lifting; you just decide."
+              price="$590"
               priceNote="one-time · per room"
               featured
               featuredLabel="Most popular · $10k+ projects"
               features={[
                 "Everything in Groundwork Report",
-                "3 calls with a real person",
-                "Bid comparison — upload up to 4 bids",
-                "One round of scope refinement",
+                "3 × 1:1 calls with an experienced contractor advisor",
+                "We compare up to 4 contractor bids side-by-side for you",
+                "We rewrite your scope after walkthroughs so it''s airtight",
+                "Direct text/email line during the bidding window",
               ]}
               ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dguided"
               ctaLabel="Get started"
@@ -790,17 +792,18 @@ export default function Home() {
             <PlanCard
               accent="#2d5a3d"
               accentBg="#eef3ee"
-              tag="Concierge support"
+              tag="Concierge — we run point"
               title="Groundwork Premium"
-              subtitle="A dedicated, experienced contractor on your side once the build has started."
-              price="$1,499"
+              subtitle="A dedicated contractor advisor by your side from bid day through final walkthrough. We handle the awkward calls so you don''t have to."
+              price="$1,690"
               priceNote="one-time · per room"
               features={[
-                "Dedicated experienced contractor",
-                "Bid, estimate & change-order review",
-                "Decision support mid-build",
-                "Email support within 24 hours",
-                "Ongoing contractor evaluation",
+                "Everything in Groundwork Pro",
+                "One dedicated advisor — same person the whole project",
+                "We review every bid, estimate & change order before you sign",
+                "Decision support mid-build (text us anytime; reply <24 hrs)",
+                "Honest read on how your contractor is actually performing",
+                "We sit in on key contractor calls if you want backup",
               ]}
               ctaHref="/sign-in?redirect=%2Fdashboard%2Fcheckout%3Fplan%3Dpremium"
               ctaLabel="Get started"

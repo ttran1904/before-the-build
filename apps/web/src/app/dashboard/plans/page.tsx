@@ -61,16 +61,17 @@ export default function PlansPage() {
           <PlanCard
             accent="#c08a5a"
             accentBg="#f6f3ed"
-            tag="Self-serve"
+            tag="Guided self-serve"
             title="Groundwork Report"
-            price="$399"
+            price="$190"
             priceNote="one-time · per room"
             highlights={[
-              "Contractor-ready scope PDF",
-              "Defined scope — in, out, undecided",
-              "Decision checklist & builder questions",
-              "Major variables map",
+              "Contractor-ready scope — done with you",
+              "Scope defined: in, out, and undecided",
+              "Checklist of questions for every contractor",
+              "Major-variables map",
               "Next-step roadmap",
+              "Email Q&A while you write your scope",
             ]}
             ctaHref="/dashboard/checkout?plan=core"
             ctaLabel="Get started"
@@ -78,17 +79,18 @@ export default function PlansPage() {
           <PlanCard
             accent="#1a1a2e"
             accentBg="#eef0f4"
-            tag="With expert calls"
+            tag="1:1 contractor advisor"
             title="Groundwork Pro"
-            price="$799"
+            price="$590"
             priceNote="one-time · per room"
             featured
             featuredLabel="Most popular · $10k+ projects"
             highlights={[
               "Everything in Groundwork Report",
-              "3 calls with a real person",
-              "Bid comparison — upload up to 4 bids",
-              "One round of scope refinement",
+              "3 × 1:1 calls with a contractor advisor",
+              "We compare up to 4 bids side-by-side for you",
+              "We rewrite your scope after walkthroughs",
+              "Direct text/email line during bidding",
             ]}
             ctaHref="/dashboard/checkout?plan=guided"
             ctaLabel="Get started"
@@ -96,16 +98,17 @@ export default function PlansPage() {
           <PlanCard
             accent="#2d5a3d"
             accentBg="#eef3ee"
-            tag="Concierge support"
+            tag="Concierge — we run point"
             title="Groundwork Premium"
-            price="$1,499"
+            price="$1,690"
             priceNote="one-time · per room"
             highlights={[
-              "Dedicated experienced contractor",
-              "Bid, estimate & change-order review",
-              "Decision support mid-build",
-              "Email support within 24 hours",
-              "Ongoing contractor evaluation",
+              "Everything in Groundwork Pro",
+              "One dedicated advisor for the whole project",
+              "We review every bid, estimate & change order",
+              "Text us anytime mid-build · reply <24 hrs",
+              "Honest read on contractor performance",
+              "We''ll sit in on key contractor calls",
             ]}
             ctaHref="/dashboard/checkout?plan=premium"
             ctaLabel="Get started"
@@ -212,7 +215,7 @@ export default function PlansPage() {
           />
           <Faq
             q="Can I upgrade from Report to Pro later?"
-            a="Yes. We credit the full $399 from Report toward Pro if you decide you want the calls and bid comparison afterward."
+            a="Yes. We credit the full $190 from Report toward Pro if you decide you want the calls and bid comparison afterward."
           />
           <Faq
             q="When should I add Groundwork Premium?"
@@ -498,7 +501,7 @@ function ComparisonTable() {
                 Groundwork Report
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
-                $399
+                $190
                 <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
                   / room
                 </span>
@@ -512,7 +515,7 @@ function ComparisonTable() {
                 Groundwork Pro
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
-                $799
+                $590
                 <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
                   / room
                 </span>
@@ -523,7 +526,7 @@ function ComparisonTable() {
                 Groundwork Premium
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
-                $1,499
+                $1,690
                 <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
                   / room
                 </span>
