@@ -849,8 +849,7 @@ export default function Home() {
           </div>
 
           <p className="mt-6 text-center text-xs text-[#9a9aaa]">
-            Report and Pro are one-time per-room payments. Premium is monthly,
-            based on project size.{" "}
+            All three plans are one-time, per-room payments.{" "}
             <Link href="/dashboard/plans" className="underline-offset-2 hover:underline">
               See full plan comparison →
             </Link>

@@ -43,7 +43,7 @@ export default function PlansPage() {
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[#6a6a7a]">
           Three ways to get a real contractor&apos;s clarity on your project —
           from a self-serve scope to a dedicated, experienced contractor by your
-          side. Report and Pro are one-time per-room; Premium is monthly.
+          side. All three plans are one-time, per-room.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#6a6a7a]">
           <span className="inline-flex items-center gap-1.5">
@@ -113,8 +113,7 @@ export default function PlansPage() {
         </div>
 
         <p className="mt-4 text-center text-xs text-[#9a9aaa]">
-          Report and Pro are one-time per-room payments. Premium is monthly,
-          based on project size. All prices in USD.
+          All three plans are one-time, per-room payments. All prices in USD.
         </p>
       </section>
 
@@ -194,8 +193,8 @@ export default function PlansPage() {
           />
           <ValueProp
             icon={<FaCheck />}
-            title="One simple payment"
-            body="Pay once per project for Report and Pro. Only Premium is monthly."
+            title="One-time payment"
+            body="One-time, per-room pricing across every Groundwork plan — no subscriptions."
           />
         </div>
       </section>
