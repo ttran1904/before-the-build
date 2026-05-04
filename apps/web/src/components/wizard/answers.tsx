@@ -10,16 +10,19 @@ export function TileSelect({
   options,
   value,
   onChange,
+  layout,
 }: {
   options: AnswerOption[];
   value: string | null;
   onChange: (v: string) => void;
+  /** "compact" = label inside the circle (default for short icon-only sets).
+   *  "below"   = icon-only circle, bold label (and optional subtitle) below.
+   *  When omitted, "below" is used if any option has `desc`. */
+  layout?: "compact" | "below";
 }) {
-  // "Rich" layout when any option has a description: icon-only inside
-  // the circle, then bold label + subtitle stacked below.
-  const rich = options.some((o) => !!o.desc);
+  const useBelow = layout ? layout === "below" : options.some((o) => !!o.desc);
 
-  if (rich) {
+  if (useBelow) {
     return (
       <div className="mt-10 grid w-full max-w-5xl grid-cols-2 gap-x-6 gap-y-10 px-2 sm:grid-cols-3 md:grid-cols-4">
         {options.map((o) => {
@@ -53,11 +56,11 @@ export function TileSelect({
                   />
                 )}
               </span>
-              <span className="px-1 text-sm font-semibold leading-snug text-[#1a1a2e]">
+              <span className="block w-full px-1 text-center text-sm font-semibold leading-snug text-[#1a1a2e]">
                 {o.label}
               </span>
               {o.desc && (
-                <span className="mt-1 px-1 text-xs leading-snug text-[#6a6a7a]">
+                <span className="mt-1 block w-full px-1 text-center text-xs leading-snug text-[#6a6a7a]">
                   {o.desc}
                 </span>
               )}

@@ -26,6 +26,9 @@ import {
   FaWandMagicSparkles,
   FaThumbtack,
   FaBorderAll,
+  FaFaucet,
+  FaFaucetDrip,
+  FaSoap,
 } from "react-icons/fa6";
 
 import {
@@ -256,33 +259,14 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     next: () => "demo",
     render: ({ value, onChange }) => (
       <TileSelect
+        layout="below"
         value={value}
         onChange={(v) => onChange(v as IntentChoice)}
         options={[
-          {
-            id: "refresh",
-            label: "Refresh the look",
-            desc: "Update finishes — keep the layout",
-            icon: FaPaintRoller,
-          },
-          {
-            id: "replace",
-            label: "Replace finishes & fixtures",
-            desc: "Same layout, everything updated",
-            icon: FaArrowsRotate,
-          },
-          {
-            id: "rethink",
-            label: "Rethink the layout",
-            desc: "Some things may move",
-            icon: FaWandMagicSparkles,
-          },
-          {
-            id: "unsure",
-            label: "Still figuring it out",
-            desc: "I want to renovate, scope is open",
-            icon: FaCircleQuestion,
-          },
+          { id: "refresh", label: "Refresh the look", icon: FaPaintRoller },
+          { id: "replace", label: "Replace everything", icon: FaArrowsRotate },
+          { id: "rethink", label: "Rethink the layout", icon: FaWandMagicSparkles },
+          { id: "unsure", label: "Still figuring it out", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -303,33 +287,14 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     next: () => "plumbing",
     render: ({ value, onChange }) => (
       <TileSelect
+        layout="below"
         value={value}
         onChange={(v) => onChange(v as DemoChoice)}
         options={[
-          {
-            id: "cosmetic",
-            label: "Mostly cosmetic",
-            desc: "Surfaces only — fixtures stay",
-            icon: FaPaintRoller,
-          },
-          {
-            id: "standard",
-            label: "Standard demo",
-            desc: "Tile and fixtures coming out",
-            icon: FaScrewdriverWrench,
-          },
-          {
-            id: "full_gut",
-            label: "Full gut",
-            desc: "Tile, drywall, down to the studs",
-            icon: FaHammer,
-          },
-          {
-            id: "unsure",
-            label: "Not sure yet",
-            desc: "We'll figure it out together",
-            icon: FaCircleQuestion,
-          },
+          { id: "cosmetic", label: "Surfaces only", icon: FaPaintRoller },
+          { id: "standard", label: "Tile & fixtures out", icon: FaScrewdriverWrench },
+          { id: "full_gut", label: "Full gut", icon: FaHammer },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -351,39 +316,15 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     next: () => "shower-in-scope",
     render: ({ value, onChange }) => (
       <TileSelect
+        layout="below"
         value={value}
         onChange={(v) => onChange(v as PlumbingChoice)}
         options={[
-          {
-            id: "staying",
-            label: "Everything stays",
-            desc: "All fixtures stay where they are",
-            icon: FaLock,
-          },
-          {
-            id: "sink_might_move",
-            label: "Sink might move",
-            desc: "Vanity location may change",
-            icon: FaDroplet,
-          },
-          {
-            id: "shower_might_move",
-            label: "Shower or tub moves",
-            desc: "Wet area is changing",
-            icon: FaShower,
-          },
-          {
-            id: "rethinking",
-            label: "Rethinking the layout",
-            desc: "We're moving multiple things",
-            icon: FaArrowsUpDownLeftRight,
-          },
-          {
-            id: "unsure",
-            label: "Not sure yet",
-            desc: "Still working it out",
-            icon: FaCircleQuestion,
-          },
+          { id: "staying", label: "Everything stays", icon: FaLock },
+          { id: "sink_might_move", label: "Sink might move", icon: FaDroplet },
+          { id: "shower_might_move", label: "Shower might move", icon: FaShower },
+          { id: "rethinking", label: "Moving lots of things", icon: FaArrowsUpDownLeftRight },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -437,45 +378,16 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     next: () => "shower-size",
     render: ({ value, onChange }) => (
       <TileSelect
+        layout="below"
         value={value}
         onChange={(v) => onChange(v as ShowerUpdate)}
         options={[
-          {
-            id: "tub_surround",
-            label: "Keep the tub",
-            desc: "Update the surround only",
-            icon: FaBath,
-          },
-          {
-            id: "update_existing",
-            label: "Update existing shower",
-            desc: "Same footprint, refreshed",
-            icon: FaShower,
-          },
-          {
-            id: "tub_to_shower",
-            label: "Tub → shower",
-            desc: "Convert tub into a shower",
-            icon: FaArrowsRotate,
-          },
-          {
-            id: "walkin_curbed",
-            label: "Walk-in (curbed)",
-            desc: "New shower with a threshold",
-            icon: FaSquare,
-          },
-          {
-            id: "walkin_curbless",
-            label: "Walk-in (curbless)",
-            desc: "Flush shower, no threshold",
-            icon: FaWandMagicSparkles,
-          },
-          {
-            id: "unsure",
-            label: "Not sure yet",
-            desc: "Still weighing options",
-            icon: FaCircleQuestion,
-          },
+          { id: "tub_surround", label: "Keep the tub", icon: FaBath },
+          { id: "update_existing", label: "Update what's there", icon: FaShower },
+          { id: "tub_to_shower", label: "Tub → shower", icon: FaArrowsRotate },
+          { id: "walkin_curbed", label: "Walk-in (curbed)", icon: FaSquare },
+          { id: "walkin_curbless", label: "Walk-in (curbless)", icon: FaWandMagicSparkles },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -613,33 +525,14 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     next: () => "fixture-status",
     render: ({ value, onChange }) => (
       <TileSelect
+        layout="below"
         value={value}
         onChange={(v) => onChange(v as FixtureSetup)}
         options={[
-          {
-            id: "standard",
-            label: "Standard",
-            desc: "Single showerhead",
-            icon: FaShower,
-          },
-          {
-            id: "rain_hand",
-            label: "Rain + hand",
-            desc: "Rain head plus hand shower",
-            icon: FaDroplet,
-          },
-          {
-            id: "full_system",
-            label: "Full system",
-            desc: "Body sprays, rain, and hand",
-            icon: FaSliders,
-          },
-          {
-            id: "unsure",
-            label: "Not sure yet",
-            desc: "Still exploring",
-            icon: FaCircleQuestion,
-          },
+          { id: "standard", label: "Standard head", icon: FaShower },
+          { id: "rain_hand", label: "Rain + hand", icon: FaDroplet },
+          { id: "full_system", label: "Full spa system", icon: FaSliders },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -701,33 +594,14 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     next: () => "vanity-plan",
     render: ({ value, onChange }) => (
       <TileSelect
+        layout="below"
         value={value}
         onChange={(v) => onChange(v as ShowerGlass)}
         options={[
-          {
-            id: "include",
-            label: "Include glass",
-            desc: "Enclosure in this scope",
-            icon: FaBorderAll,
-          },
-          {
-            id: "later",
-            label: "Maybe later",
-            desc: "Add wall blocking now",
-            icon: FaThumbtack,
-          },
-          {
-            id: "open",
-            label: "Open shower",
-            desc: "No enclosure",
-            icon: FaWind,
-          },
-          {
-            id: "unsure",
-            label: "Not sure",
-            desc: "Add blocking just in case",
-            icon: FaCircleQuestion,
-          },
+          { id: "include", label: "Include glass", icon: FaBorderAll },
+          { id: "later", label: "Maybe later", icon: FaThumbtack },
+          { id: "open", label: "Open shower", icon: FaWind },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -749,39 +623,15 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     next: (v) => (v === "keep" ? "toilet-plan" : "vanity-size"),
     render: ({ value, onChange }) => (
       <TileSelect
+        layout="below"
         value={value}
         onChange={(v) => onChange(v as VanityPlan)}
         options={[
-          {
-            id: "keep",
-            label: "Keep existing",
-            desc: "Vanity stays as-is",
-            icon: FaLock,
-          },
-          {
-            id: "single",
-            label: "Single vanity",
-            desc: "Replace with one sink",
-            icon: FaSquare,
-          },
-          {
-            id: "double",
-            label: "Double vanity",
-            desc: "Replace with two sinks",
-            icon: FaTableCellsLarge,
-          },
-          {
-            id: "pedestal",
-            label: "Pedestal / wall-mount",
-            desc: "No cabinet base",
-            icon: FaDroplet,
-          },
-          {
-            id: "unsure",
-            label: "Not sure yet",
-            desc: "Still deciding",
-            icon: FaCircleQuestion,
-          },
+          { id: "keep", label: "Keep existing", icon: FaLock },
+          { id: "single", label: "Single vanity", icon: FaFaucet },
+          { id: "double", label: "Double vanity", icon: FaFaucetDrip },
+          { id: "pedestal", label: "Pedestal sink", icon: FaSoap },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -874,33 +724,14 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     next: () => "tile-status",
     render: ({ value, onChange }) => (
       <TileSelect
+        layout="below"
         value={value}
         onChange={(v) => onChange(v as ToiletPlan)}
         options={[
-          {
-            id: "keep",
-            label: "Keep it",
-            desc: "Existing toilet stays",
-            icon: FaLock,
-          },
-          {
-            id: "owner_supplied",
-            label: "I'll supply it",
-            desc: "Replacing — I buy the toilet",
-            icon: FaToilet,
-          },
-          {
-            id: "builder_supplied",
-            label: "Builder supplies it",
-            desc: "Builder picks and installs",
-            icon: FaScrewdriverWrench,
-          },
-          {
-            id: "unsure",
-            label: "Not sure yet",
-            desc: "Still deciding",
-            icon: FaCircleQuestion,
-          },
+          { id: "keep", label: "Keep it", icon: FaLock },
+          { id: "owner_supplied", label: "I'll supply it", icon: FaToilet },
+          { id: "builder_supplied", label: "Builder supplies", icon: FaScrewdriverWrench },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
@@ -1010,39 +841,15 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
     next: () => "shower-floor-tile",
     render: ({ value, onChange }) => (
       <TileSelect
+        layout="below"
         value={value}
         onChange={(v) => onChange(v as WallTileExtent)}
         options={[
-          {
-            id: "shower_only",
-            label: "Shower only",
-            desc: "Just the surround",
-            icon: FaShower,
-          },
-          {
-            id: "shower_vanity",
-            label: "Shower + vanity wall",
-            desc: "Partway up",
-            icon: FaTableCellsLarge,
-          },
-          {
-            id: "most_partway",
-            label: "Most walls",
-            desc: "Partway up",
-            icon: FaBorderAll,
-          },
-          {
-            id: "most_full",
-            label: "Most walls, full height",
-            desc: "Floor to ceiling",
-            icon: FaRulerCombined,
-          },
-          {
-            id: "unsure",
-            label: "Not sure yet",
-            desc: "Still deciding",
-            icon: FaCircleQuestion,
-          },
+          { id: "shower_only", label: "Shower only", icon: FaShower },
+          { id: "shower_vanity", label: "Shower & vanity wall", icon: FaTableCellsLarge },
+          { id: "most_partway", label: "Most walls, partway", icon: FaBorderAll },
+          { id: "most_full", label: "Most walls, full height", icon: FaRulerCombined },
+          { id: "unsure", label: "Not sure yet", icon: FaCircleQuestion },
         ]}
       />
     ),
