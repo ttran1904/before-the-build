@@ -296,9 +296,7 @@ export function buildGroundworkBathroomTree(): QuestionNode<any>[] {
   const address: QuestionNode<string> = {
     id: "address",
     tab: "project",
-    question: "Where's the project?",
-    helper:
-      "Just a street address is enough. Your browser can autofill from saved addresses — we use this so the report has a real property reference.",
+    question: "What is the address?",
     initial: () => get().propertyAddress,
     commit: (v) => setKey("propertyAddress", v.trim()),
     next: () => "bath-type",
