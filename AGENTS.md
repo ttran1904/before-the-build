@@ -102,3 +102,34 @@ These instructions apply to the entire repository.
 - Add UX constraints for consumer-facing pages:
   - accessibility minimums (labels, contrast, keyboard support)
   - responsive breakpoints and loading/empty/error states
+
+
+## Product Purpose (Why This App Exists)
+
+**Sell on fear, deliver on trust.** Homeowners are afraid of overpaying, getting
+surprise change orders, and ending up with a horror remodel story. We are the
+**reliable, trustworthy friend** who walks them through it before any contractor
+shows up.
+
+Every feature must serve one of these four jobs:
+
+1. **Guidance** — tell the homeowner what good looks like, what to decide next,
+   and what they're allowed to push back on.
+2. **Products like the Scope Report** — tangible deliverables they can hand to a
+   contractor (or use to vet one).
+3. **Suggestions** — concrete things to do, ask, or consider at this stage of
+   the project.
+4. **Narrow the price range and the decisions** — a tight, confident dollar
+   range is the product. A $2,900–$10,750 range is a Google search. A
+   $5,000–$7,500 range with a reason is what we sell.
+
+### Implications for code
+
+- **Cost ranges should be tight, not safe.** When in doubt, narrow the band
+  toward the midpoint. Wide bands erode trust. See
+  `apps/web/src/lib/groundwork/cost-breakdown.ts` (`NARROW_FACTOR`) and
+  `getRealisticCostRange` in `apps/web/src/lib/groundwork/store.ts`.
+- **Always pair a number with a reason.** A range without "why this is the
+  range" is worse than no range.
+- **Every screen should answer: what do I do next?** Never end on a dead end.
+- **Voice = warm friend, not corporate SaaS.** Match the UI Design instructions.

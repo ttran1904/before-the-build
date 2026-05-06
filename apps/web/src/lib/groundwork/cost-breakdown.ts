@@ -25,6 +25,10 @@ export interface CostBreakdown {
 
 const round = (n: number) => Math.round(n / 50) * 50;
 
+// How tightly we squeeze each line item toward its midpoint.
+// 1.0 = original wide spread, 0 = point estimate. Lower = more confident range.
+const NARROW_FACTOR = 0.4;
+
 export function getCostBreakdown(s: GroundworkBathroomState): CostBreakdown {
   const range = getRealisticCostRange(s);
   const scale =
@@ -46,12 +50,18 @@ export function getCostBreakdown(s: GroundworkBathroomState): CostBreakdown {
     high: number,
     readiness: LineReadiness = "estimated",
   ) => {
+    // Narrow each line band toward its midpoint so the total range feels
+    // confident and decision-ready, not a generic web-search spread.
+    // (See AGENTS.md "Product Purpose" — a tight, trustworthy range is the product.)
+    const mid = (low + high) / 2;
+    const narrowedLow = mid - (mid - low) * NARROW_FACTOR;
+    const narrowedHigh = mid + (high - mid) * NARROW_FACTOR;
     lines.push({
       category,
       item,
       description,
-      low: round(low * scale),
-      high: round(high * scale),
+      low: round(narrowedLow * scale),
+      high: round(narrowedHigh * scale),
       readiness,
     });
   };
@@ -206,8 +216,8 @@ export function getCostBreakdown(s: GroundworkBathroomState): CostBreakdown {
 
   const subtotalLow = lines.reduce((n, l) => n + l.low, 0);
   const subtotalHigh = lines.reduce((n, l) => n + l.high, 0);
-  const contingencyLow = round(subtotalLow * 0.2);
-  const contingencyHigh = round(subtotalHigh * 0.2);
+  const contingencyLow = round(subtotalLow * 0.1);
+  const contingencyHigh = round(subtotalHigh * 0.1);
   const totalLow = subtotalLow + contingencyLow;
   const totalHigh = subtotalHigh + contingencyHigh;
 

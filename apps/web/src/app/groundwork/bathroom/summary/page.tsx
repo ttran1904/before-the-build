@@ -631,7 +631,7 @@ function ReportHeroCard({
               {fmtRange(breakdown.totalLow, breakdown.totalHigh)}
             </p>
             <p className="mt-0.5 text-[10px] text-[#6a6a7a]">
-              Materials + labor + 20% contingency
+              Materials + labor + 10% contingency
             </p>
           </div>
         </div>
