@@ -17,7 +17,6 @@ import {
   FaListCheck,
   FaUserGroup,
   FaScrewdriverWrench,
-  FaKey,
 } from "react-icons/fa6";
 
 
@@ -41,16 +40,17 @@ export default function PlansPage() {
           Compare the 3 Groundwork plans
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[#6a6a7a]">
-          Three ways to get a real contractor&apos;s clarity on your project —
-          from a self-serve scope to a dedicated, experienced contractor by your
-          side. All three plans are one-time, per-room.
+          Three ways to get a real contractor&apos;s clarity on your project.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#6a6a7a]">
           <span className="inline-flex items-center gap-1.5">
-            <FaInfinity className="text-[#2d5a3d]" /> Lifetime project access
+            <FaCheck className="text-[#2d5a3d]" /> Independent from your contractor
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <FaCheck className="text-[#2d5a3d]" /> No subscription on scope
+            <FaCheck className="text-[#2d5a3d]" /> Contractor clarity guarantee
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <FaInfinity className="text-[#2d5a3d]" /> Lifetime project access
           </span>
         </div>
       </header>
@@ -61,17 +61,16 @@ export default function PlansPage() {
           <PlanCard
             accent="#c08a5a"
             accentBg="#f6f3ed"
-            tag="Guided self-serve"
+            tag="Self-serve"
             title="Groundwork Report"
-            price="$190"
+            price="$199"
             priceNote="one-time · per room"
             highlights={[
-              "Contractor-ready scope — done with you",
-              "Scope defined: in, out, and undecided",
-              "Checklist of questions for every contractor",
-              "Major-variables map",
-              "Next-step roadmap",
-              "Email Q&A while you write your scope",
+              "Contractor-ready scope PDF",
+              "Defined scope: in, out, undecided",
+              "Decision checklist and builder questions",
+              "Major variables map",
+              "Reviewed by an experienced contractor advisor",
             ]}
             ctaHref="/dashboard/checkout?plan=core"
             ctaLabel="Get started"
@@ -79,18 +78,17 @@ export default function PlansPage() {
           <PlanCard
             accent="#1a1a2e"
             accentBg="#eef0f4"
-            tag="1:1 contractor advisor"
+            tag="With expert calls"
             title="Groundwork Pro"
-            price="$590"
+            price="$599"
             priceNote="one-time · per room"
             featured
             featuredLabel="Most popular · $10k+ projects"
             highlights={[
               "Everything in Groundwork Report",
-              "3 × 1:1 calls with a contractor advisor",
-              "We compare up to 4 bids side-by-side for you",
-              "We rewrite your scope after walkthroughs",
-              "Direct text/email line during bidding",
+              "3 calls with your experienced contractor advisor",
+              "Bid comparison and review: upload up to 4 bids",
+              "One round of scope refinement",
             ]}
             ctaHref="/dashboard/checkout?plan=guided"
             ctaLabel="Get started"
@@ -98,36 +96,42 @@ export default function PlansPage() {
           <PlanCard
             accent="#2d5a3d"
             accentBg="#eef3ee"
-            tag="Concierge — we run point"
+            tag="Concierge support"
             title="Groundwork Premium"
-            price="$1,690"
-            priceNote="one-time · per room"
+            price="From $1,500"
+            priceNote="per month · based on project size"
             highlights={[
               "Everything in Groundwork Pro",
-              "One dedicated advisor for the whole project",
-              "We review every bid, estimate & change order",
-              "Text us anytime mid-build · reply <24 hrs",
-              "Honest read on contractor performance",
-              "We''ll sit in on key contractor calls",
+              "8 scheduled 60-minute calls per month",
+              "1 onsite visit per month",
+              "Unlimited email support",
+              "Change-order and bid review",
+              "Decision support throughout your build",
+              "3-month minimum commitment",
             ]}
             ctaHref="/dashboard/checkout?plan=premium"
-            ctaLabel="Get started"
+            ctaLabel="Book a free 15-min call"
+            ctaVariant="outline"
+            footnote="Larger projects and whole house renovations are priced on the discovery call."
           />
         </div>
 
-        <p className="mt-4 text-center text-xs text-[#9a9aaa]">
-          All three plans are one-time, per-room payments. All prices in USD.
+        <p className="mt-6 text-center text-xs text-[#c08a5a]">
+          Report and Pro are one-time per-room payments. Premium is monthly per project with a 3-month minimum. All prices in USD.
+        </p>
+        <p className="mx-auto mt-4 max-w-3xl text-center text-xs leading-relaxed text-[#6a6a7a]">
+          Cancel before your intake is submitted for a full refund. Once your report is in review, the work has begun and no refund is issued. If a contractor tells you the scope is unclear, send us their feedback and we will revise the report at no additional cost.
         </p>
       </section>
 
-      {/* ── On-Demand Expert Calls add-ons ──────────────────── */}
+      {/* ── Occasional Call Support add-ons ─────────────────── */}
       <section>
         <div className="text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
             Add-ons
           </p>
           <h2 className="mt-3 font-serif text-3xl text-[#1a1a2e]">
-            On-Demand Expert Calls
+            Occasional Call Support
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-[14px] text-[#6a6a7a]">
             For homeowners who need help without committing to Premium. Use a
@@ -140,22 +144,27 @@ export default function PlansPage() {
           <CallPackCard
             icon={<FaPhone />}
             label="Single call"
-            price="$59"
-            unit="$59 / call"
+            price="$100"
+            unit="$100 / call"
+            description="One 60-minute call with an experienced contractor advisor."
           />
           <CallPackCard
             icon={<FaPhoneVolume />}
             label="3-call pack"
-            price="$149"
-            unit="≈ $50 / call"
+            price="$285"
+            unit="≈ $95 / call"
+            description="Use across bidding, signing, and mid-build."
+            savings="Save $15"
             featured
             featuredLabel="Best value"
           />
           <CallPackCard
             icon={<FaHeadset />}
             label="5-call pack"
-            price="$229"
-            unit="≈ $46 / call"
+            price="$450"
+            unit="≈ $90 / call"
+            description="Best for long or complex builds."
+            savings="Save $50"
           />
         </div>
 
@@ -215,7 +224,7 @@ export default function PlansPage() {
           />
           <Faq
             q="Can I upgrade from Report to Pro later?"
-            a="Yes. We credit the full $190 from Report toward Pro if you decide you want the calls and bid comparison afterward."
+            a="Yes. We credit the full $199 from Report toward Pro if you decide you want the calls and bid comparison afterward."
           />
           <Faq
             q="When should I add Groundwork Premium?"
@@ -265,6 +274,8 @@ function PlanCard({
   highlights,
   ctaHref,
   ctaLabel,
+  ctaVariant = "solid",
+  footnote,
   featured = false,
   featuredLabel = "Most popular",
 }: {
@@ -278,6 +289,8 @@ function PlanCard({
   highlights: string[];
   ctaHref: string;
   ctaLabel: string;
+  ctaVariant?: "solid" | "outline";
+  footnote?: string;
   featured?: boolean;
   featuredLabel?: string;
 }) {
@@ -349,11 +362,23 @@ function PlanCard({
 
       <Link
         href={ctaHref}
-        className="mt-7 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-        style={{ backgroundColor: accent }}
+        className={
+          "mt-7 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition hover:opacity-90 " +
+          (ctaVariant === "outline" ? "border-2 bg-white" : "text-white")
+        }
+        style={
+          ctaVariant === "outline"
+            ? { borderColor: accent, color: accent }
+            : { backgroundColor: accent }
+        }
       >
         {ctaLabel} <FaArrowRight className="text-xs" />
       </Link>
+      {footnote && (
+        <p className="mt-3 text-center text-[11px] leading-relaxed text-[#9a9aaa]">
+          {footnote}
+        </p>
+      )}
     </div>
   );
 }
@@ -363,6 +388,8 @@ function CallPackCard({
   label,
   price,
   unit,
+  description,
+  savings,
   featured = false,
   featuredLabel = "Best value",
 }: {
@@ -370,6 +397,8 @@ function CallPackCard({
   label: string;
   price: string;
   unit: string;
+  description?: string;
+  savings?: string;
   featured?: boolean;
   featuredLabel?: string;
 }) {
@@ -414,6 +443,15 @@ function CallPackCard({
         <span className="text-xs font-semibold text-[#9a9aaa]">{unit}</span>
       </div>
 
+      {description && (
+        <p className="mt-3 text-sm leading-relaxed text-[#6a6a7a]">
+          {description}
+        </p>
+      )}
+      {savings && (
+        <p className="mt-2 text-xs font-semibold text-[#2d5a3d]">{savings}</p>
+      )}
+
     </div>
   );
 }
@@ -436,54 +474,45 @@ function ComparisonTable() {
 
   const groups: Group[] = [
     {
-      category: "Scope & report",
+      category: "Scope and report",
       color: "#c08a5a",
       bg: "#f6f3ed",
       icon: <FaListCheck />,
       rows: [
         { label: "Project summary", info: "A 1-page overview a contractor can read in 60 seconds.", report: true, pro: true, premium: true },
         { label: "Existing conditions snapshot", info: "What\'s already in the room today — finishes, fixtures, known issues.", report: true, pro: true, premium: true },
-        { label: "Defined scope (included, excluded, undecided)", info: "Every line item flagged as in, out, or still TBD so bids stay comparable.", report: true, pro: true, premium: true },
+        { label: "Defined scope: in, out, undecided", info: "Every line item flagged as in, out, or still TBD so bids stay comparable.", report: true, pro: true, premium: true },
         { label: "Room-by-room breakdown", report: true, pro: true, premium: true },
-        { label: "What to get clear before bidding", info: "The decisions you should lock in before sending the scope to contractors.", report: true, pro: true, premium: true },
-        { label: "Decision checklist", report: true, pro: true, premium: true },
+        { label: "Decision checklist and builder questions", info: "The decisions you need to lock in, plus the questions to ask each contractor.", report: true, pro: true, premium: true },
         { label: "Major variables map", info: "The few choices (layout, plumbing, finishes) that swing the price the most.", report: true, pro: true, premium: true },
-        { label: "Builder questions to ask", info: "Targeted questions that surface a contractor\'s real assumptions.", report: true, pro: true, premium: true },
         { label: "Next-step roadmap", report: true, pro: true, premium: true },
         { label: "Contractor-ready PDF", info: "Single shareable file you can hand directly to any contractor.", report: true, pro: true, premium: true },
+        { label: "Reviewed by an experienced contractor advisor", report: true, pro: true, premium: true },
+        { label: "Lifetime project access", info: "Your scope and brief stay in your account forever — no expiry.", report: true, pro: true, premium: true },
       ],
     },
     {
-      category: "Pre-bid expert support",
+      category: "Time with your experienced contractor advisor",
       color: "#1a1a2e",
       bg: "#eef0f4",
       icon: <FaUserGroup />,
       rows: [
-        { label: "Calls with a real person", info: "60-min calls with an experienced contractor. Used as needed.", report: false, pro: "3 calls", premium: "X calls" },
-        { label: "Bid comparison (upload up to 4 bids)", info: "We line up the bids side-by-side and flag what to question.", report: false, pro: true, premium: true },
-        { label: "One round of scope refinement", info: "Update the scope after walkthroughs or initial contractor feedback.", report: false, pro: true, premium: true },
+        { label: "Calls with your experienced contractor advisor", info: "60-min calls. Used as needed.", report: false, pro: "3 calls", premium: "8 calls / month" },
+        { label: "Onsite visit", report: false, pro: false, premium: "1 per month" },
+        { label: "Email support", report: false, pro: false, premium: "Unlimited" },
       ],
     },
     {
-      category: "Mid-build ongoing support",
+      category: "Reviews, decisions and evaluations",
       color: "#2d5a3d",
       bg: "#eef3ee",
       icon: <FaScrewdriverWrench />,
       rows: [
-        { label: "Dedicated experienced contractor", info: "The same person across your whole project — no rotating advisors.", report: false, pro: false, premium: true },
+        { label: "Bid comparison: upload up to 4 bids", info: "We line up the bids side-by-side and flag what to question.", report: false, pro: true, premium: true },
+        { label: "One round of scope refinement", info: "Update the scope after walkthroughs or initial contractor feedback.", report: false, pro: true, premium: true },
         { label: "Change-order review", info: "We sanity-check change orders before you sign.", report: false, pro: false, premium: true },
-        { label: "Decision support mid-build", report: false, pro: false, premium: true },
-        { label: "Email support within 24 hours", report: false, pro: false, premium: true },
+        { label: "Decision support throughout your build", report: false, pro: false, premium: true },
         { label: "Ongoing contractor evaluation", info: "Honest read on how your contractor is performing through the build.", report: false, pro: false, premium: true },
-      ],
-    },
-    {
-      category: "Ownership",
-      color: "#1a1a2e",
-      bg: "#eef0f4",
-      icon: <FaKey />,
-      rows: [
-        { label: "Lifetime access to your project", info: "Your scope and brief stay in your account forever — no expiry.", report: true, pro: true, premium: true },
       ],
     },
   ];
@@ -501,7 +530,7 @@ function ComparisonTable() {
                 Groundwork Report
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
-                $190
+                $199
                 <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
                   / room
                 </span>
@@ -515,7 +544,7 @@ function ComparisonTable() {
                 Groundwork Pro
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
-                $590
+                $599
                 <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
                   / room
                 </span>
@@ -526,9 +555,9 @@ function ComparisonTable() {
                 Groundwork Premium
               </div>
               <div className="mt-1 font-serif text-lg text-[#1a1a2e]">
-                $1,690
+                From $1,500
                 <span className="ml-1 text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-[#9a9aaa]">
-                  / room
+                  / mo
                 </span>
               </div>
             </th>
