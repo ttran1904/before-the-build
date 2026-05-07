@@ -96,7 +96,7 @@ export default function PlansPage() {
           <PlanCard
             accent="#2d5a3d"
             accentBg="#eef3ee"
-            tag="Concierge support"
+            tag="Concierge + expert advisor"
             title="Groundwork Premium"
             price="From $1,500"
             priceNote="per month · based on project size"
