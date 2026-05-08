@@ -251,7 +251,7 @@ export const fmtRange = (lo: number, hi: number) =>
  * rescaling every line so the new total lands inside DEMO_TARGET,
  * preserving each line’s relative weight and readiness flag.
  * ------------------------------------------------------------------ */
-const DEMO_TARGET = { low: 24_000, high: 28_650 };
+const DEMO_TARGET = { low: 52_000, high: 61_500 };
 
 export function getDemoCostBreakdown(s: GroundworkBathroomState): CostBreakdown {
   const real = getCostBreakdown(s);
