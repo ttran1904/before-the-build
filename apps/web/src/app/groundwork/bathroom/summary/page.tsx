@@ -40,6 +40,7 @@ import {
 } from "@/lib/groundwork/store";
 import {
   getCostBreakdown,
+  getDemoCostBreakdown,
   fmtRange,
   type BreakdownLine,
 } from "@/lib/groundwork/cost-breakdown";
@@ -219,7 +220,12 @@ export default function GroundworkSummaryPage() {
 
   const openItems = getOpenItems(state);
   const assumptions = getAssumptions(state);
-  const breakdown = getCostBreakdown(state);
+  // Demo mode: hit `?demo=1` to use the showcase-tuned breakdown without
+  // touching the real budget knowledge graph. See getDemoCostBreakdown.
+  const isDemo =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("demo") === "1";
+  const breakdown = isDemo ? getDemoCostBreakdown(state) : getCostBreakdown(state);
   const meta = getReportMeta(state);
   const scopeOfWork = getScopeOfWork(state);
   const assumptionLog = getAssumptionLog(state);

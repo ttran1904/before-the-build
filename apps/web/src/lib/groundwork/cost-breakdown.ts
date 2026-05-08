@@ -27,7 +27,8 @@ const round = (n: number) => Math.round(n / 50) * 50;
 
 // How tightly we squeeze each line item toward its midpoint.
 // 1.0 = original wide spread, 0 = point estimate. Lower = more confident range.
-const NARROW_FACTOR = 0.15;
+// REAL one — keep aligned with the budget knowledge graph. Do not edit for demos.
+const NARROW_FACTOR = 0.08;
 
 export function getCostBreakdown(s: GroundworkBathroomState): CostBreakdown {
   const range = getRealisticCostRange(s);
@@ -238,3 +239,48 @@ export const fmtUsd = (n: number) =>
 
 export const fmtRange = (lo: number, hi: number) =>
   lo === hi ? fmtUsd(lo) : `${fmtUsd(lo)} – ${fmtUsd(hi)}`;
+
+/* ------------------------------------------------------------------
+ * DEMO-ONLY breakdown.
+ *
+ * This is a sandbox for demos / screenshots / sales decks. Edit the
+ * DEMO_TARGET range freely — it does NOT affect the real budget
+ * knowledge graph or `getCostBreakdown`. Reality stays clean.
+ *
+ * It works by computing the real breakdown and proportionally
+ * rescaling every line so the new total lands inside DEMO_TARGET,
+ * preserving each line’s relative weight and readiness flag.
+ * ------------------------------------------------------------------ */
+const DEMO_TARGET = { low: 24_000, high: 28_650 };
+
+export function getDemoCostBreakdown(s: GroundworkBathroomState): CostBreakdown {
+  const real = getCostBreakdown(s);
+  if (real.totalLow <= 0 || real.totalHigh <= 0) return real;
+
+  const lowScale = DEMO_TARGET.low / real.totalLow;
+  const highScale = DEMO_TARGET.high / real.totalHigh;
+
+  const lines = real.lines.map((l) => ({
+    ...l,
+    low: round(l.low * lowScale),
+    high: round(l.high * highScale),
+  }));
+
+  const subtotalLow = lines.reduce((n, l) => n + l.low, 0);
+  const subtotalHigh = lines.reduce((n, l) => n + l.high, 0);
+  const contingencyLow = round(subtotalLow * 0.1);
+  const contingencyHigh = round(subtotalHigh * 0.1);
+  const totalLow = subtotalLow + contingencyLow;
+  const totalHigh = subtotalHigh + contingencyHigh;
+
+  return {
+    lines,
+    subtotalLow,
+    subtotalHigh,
+    contingencyLow,
+    contingencyHigh,
+    totalLow,
+    totalHigh,
+    range: real.range,
+  };
+}
