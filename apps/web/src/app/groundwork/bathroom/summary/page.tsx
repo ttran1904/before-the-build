@@ -307,6 +307,7 @@ export default function GroundworkSummaryPage() {
             state={state}
             breakdown={breakdown}
             bathroomIcon={bathroomIcon}
+            isDemo={isDemo}
           />
 
           {/* ── Tab strip (hidden in PDF) ───────────────────────── */}
@@ -608,11 +609,13 @@ function ReportHeroCard({
   state,
   breakdown,
   bathroomIcon,
+  isDemo = false,
 }: {
   meta: ReturnType<typeof getReportMeta>;
   state: GroundworkBathroomState;
   breakdown: ReturnType<typeof getCostBreakdown>;
   bathroomIcon: IconType;
+  isDemo?: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-[#ece9e3] bg-white shadow-sm">
@@ -651,7 +654,11 @@ function ReportHeroCard({
 
           <MetaCell icon={FaScrewdriverWrench} k="Project" v={projectTypeLabel(state.projectType)} />
           <MetaCell icon={FaClock} k="Urgency" v={lbl(state.urgency)} />
-          <MetaCell icon={FaWallet} k="Target budget" v={lbl(state.budgetTier)} />
+          <MetaCell
+            icon={FaWallet}
+            k="Target budget"
+            v={isDemo ? "$70,000" : lbl(state.budgetTier)}
+          />
         </div>
 
         {state.goals.length > 0 && (
