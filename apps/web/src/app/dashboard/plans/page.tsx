@@ -53,7 +53,7 @@ export default function PlansPage() {
       </header>
 
       {/* ── 3 Groundwork plans ───────────────────────────────── */}
-      <section className="!mt-6">
+      <section className="!mt-2">
         <div className="mb-6 rounded-2xl border border-[#ece9e3] bg-white px-8 py-5 text-center shadow-sm">
           <h2 className="font-serif text-3xl font-semibold text-[#1a1a2e] md:text-4xl">
             Groundwork Plans
@@ -66,7 +66,7 @@ export default function PlansPage() {
             tag="Self-guided"
             title="Report"
             price="$199"
-            priceNote="one-time · per room"
+            priceNote="one-time per room"
             highlights={[
               "Contractor-ready scope PDF",
               "Defined scope: in, out, undecided",
@@ -83,13 +83,13 @@ export default function PlansPage() {
             tag="Expert Access"
             title="Pro"
             price="$599"
-            priceNote="one-time · per room"
+            priceNote="one-time per room"
             featured
             featuredLabel="Most popular · $10k+ projects"
             highlights={[
               "Everything in Groundwork Report",
               "3 calls with your expert contractor advisor",
-              "Bid comparison and review: upload up to 4 bids",
+              "Bid comparison & review: upload up to 4 bids",
               "One round of scope refinement",
             ]}
             ctaHref="/dashboard/checkout?plan=guided"
@@ -101,7 +101,7 @@ export default function PlansPage() {
             tag="Concierge Advisory"
             title="Premium"
             price="From $1,500+"
-            priceNote="per month · based on project size"
+            priceNote="per month based on project size"
             highlights={[
               "Everything in Groundwork Pro",
               "8 calls / month",
