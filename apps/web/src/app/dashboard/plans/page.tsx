@@ -89,7 +89,14 @@ export default function PlansPage() {
             featuredLabel="Most popular · $10k+ projects"
             highlights={[
               "Everything in Groundwork Report",
-              "3 calls with your expert contractor advisor",
+              {
+                text: "3 calls with your expert contractor advisor",
+                subs: [
+                  "Ask questions as your project evolves",
+                  "Get guidance on renovation decisions",
+                  "Talk through tradeoffs before you commit",
+                ],
+              },
               "Bid comparison & review: upload up to 4 bids",
               "One round of scope refinement",
             ]}
@@ -272,7 +279,7 @@ function PlanCard({
   price: string;
   priceUnit?: string;
   priceNote: string;
-  highlights: string[];
+  highlights: (string | { text: string; subs: string[] })[];
   ctaHref: string;
   ctaLabel: string;
   ctaVariant?: "solid" | "outline";
@@ -340,18 +347,40 @@ function PlanCard({
       </div>
 
       <ul className="mt-6 flex-1 space-y-2.5">
-        {highlights.map((h) => (
-          <li
-            key={h}
-            className="flex items-start gap-2 text-sm leading-snug text-[#1a1a2e]"
-          >
-            <FaCheck
-              className="mt-1 flex-none text-[11px]"
-              style={{ color: accent }}
-            />
-            <span>{h}</span>
-          </li>
-        ))}
+        {highlights.map((h) => {
+          const text = typeof h === "string" ? h : h.text;
+          const subs = typeof h === "string" ? undefined : h.subs;
+          return (
+            <li
+              key={text}
+              className="text-sm leading-snug text-[#1a1a2e]"
+            >
+              <div className="flex items-start gap-2">
+                <FaCheck
+                  className="mt-1 flex-none text-[11px]"
+                  style={{ color: accent }}
+                />
+                <span>{text}</span>
+              </div>
+              {subs && (
+                <ul className="mt-1.5 ml-6 space-y-1">
+                  {subs.map((s) => (
+                    <li
+                      key={s}
+                      className="flex items-start gap-2 text-[13px] leading-snug text-[#6a6a7a]"
+                    >
+                      <span
+                        className="mt-2 h-px w-2 flex-none"
+                        style={{ backgroundColor: accent }}
+                      />
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       {footnote && (
