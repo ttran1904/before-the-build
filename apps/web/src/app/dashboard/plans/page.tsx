@@ -194,22 +194,6 @@ export default function PlansPage() {
         <ComparisonTable />
       </section>
 
-      {/* ── Trust / value strip ──────────────────────────────── */}
-      <section className="rounded-3xl bg-[#1a1a2e] p-10 text-white">
-        <div className="grid gap-6 md:grid-cols-2">
-          <ValueProp
-            icon={<FaInfinity />}
-            title="Lifetime project access"
-            body="Your scope and brief stay in your account forever — no renewal fees, no expiry."
-          />
-          <ValueProp
-            icon={<FaCheck />}
-            title="One-time payment"
-            body="One-time, per-room pricing across every Groundwork plan — no subscriptions."
-          />
-        </div>
-      </section>
-
       {/* ── FAQ ──────────────────────────────────────────────── */}
       <section>
         <h2 className="text-center font-serif text-3xl text-[#1a1a2e]">
@@ -655,26 +639,6 @@ function Cell({
         <FaMinus className="mx-auto text-xs text-[#cdcbc4]" />
       )}
     </td>
-  );
-}
-
-function ValueProp({
-  icon,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-lg text-[#bde0c0]">
-        {icon}
-      </div>
-      <h3 className="mt-3 font-serif text-lg">{title}</h3>
-      <p className="mt-2 text-sm text-white/70">{body}</p>
-    </div>
   );
 }
 
