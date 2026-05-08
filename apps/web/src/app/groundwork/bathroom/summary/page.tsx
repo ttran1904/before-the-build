@@ -225,14 +225,16 @@ export default function GroundworkSummaryPage() {
   const isDemo =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("demo") === "1";
-  const breakdown = isDemo ? getDemoCostBreakdown(state) : getCostBreakdown(state);
+  const readiness = getReadinessScores(state);
+  const breakdown = isDemo
+    ? getDemoCostBreakdown(state, readiness.overall)
+    : getCostBreakdown(state);
   const meta = getReportMeta(state);
   const scopeOfWork = getScopeOfWork(state);
   const assumptionLog = getAssumptionLog(state);
   const openItemCards = getOpenItemCards(state);
   const responsibility = getResponsibilityMatrix(state);
   const sensitivity = getBudgetSensitivity(state);
-  const readiness = getReadinessScores(state);
   const readinessReport = getReadinessReport(state);
 
   const scopeItems: ScopeCardItem[] = [

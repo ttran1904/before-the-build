@@ -244,21 +244,39 @@ export const fmtRange = (lo: number, hi: number) =>
  * DEMO-ONLY breakdown.
  *
  * This is a sandbox for demos / screenshots / sales decks. Edit the
- * DEMO_TARGET range freely — it does NOT affect the real budget
+ * DEMO_MIDPOINT freely — it does NOT affect the real budget
  * knowledge graph or `getCostBreakdown`. Reality stays clean.
  *
- * It works by computing the real breakdown and proportionally
- * rescaling every line so the new total lands inside DEMO_TARGET,
- * preserving each line’s relative weight and readiness flag.
+ * The headline range is centered on DEMO_MIDPOINT, with the spread
+ * driven by bid readiness (higher readiness = tighter range), so the
+ * report visually rewards a more decided scope. The midpoint sits
+ * comfortably above $60k so even the high-readiness floor stays > $60k.
  * ------------------------------------------------------------------ */
-const DEMO_TARGET = { low: 52_000, high: 61_500 };
+const DEMO_MIDPOINT = 66_000;
+// Spread as fraction of midpoint, lerped by readiness 0–1.
+// readiness=1   →  4% half-spread (≈ ±$2,640)
+// readiness=0   → 10% half-spread (≈ ±$6,600)
+const DEMO_SPREAD_TIGHT = 0.04;
+const DEMO_SPREAD_LOOSE = 0.1;
 
-export function getDemoCostBreakdown(s: GroundworkBathroomState): CostBreakdown {
+export function getDemoCostBreakdown(
+  s: GroundworkBathroomState,
+  readiness?: number,
+): CostBreakdown {
   const real = getCostBreakdown(s);
   if (real.totalLow <= 0 || real.totalHigh <= 0) return real;
 
-  const lowScale = DEMO_TARGET.low / real.totalLow;
-  const highScale = DEMO_TARGET.high / real.totalHigh;
+  const r = Math.max(0, Math.min(1, (readiness ?? 75) / 100));
+  const halfSpread = DEMO_SPREAD_LOOSE + (DEMO_SPREAD_TIGHT - DEMO_SPREAD_LOOSE) * r;
+  const targetTotalLow = DEMO_MIDPOINT * (1 - halfSpread);
+  const targetTotalHigh = DEMO_MIDPOINT * (1 + halfSpread);
+
+  // Reverse out 10% contingency so the lines + 10% lands on the target totals.
+  const targetSubLow = targetTotalLow / 1.1;
+  const targetSubHigh = targetTotalHigh / 1.1;
+
+  const lowScale = targetSubLow / real.subtotalLow;
+  const highScale = targetSubHigh / real.subtotalHigh;
 
   const lines = real.lines.map((l) => ({
     ...l,
