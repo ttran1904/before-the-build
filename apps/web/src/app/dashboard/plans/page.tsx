@@ -33,23 +33,20 @@ export default function PlansPage() {
     <div className="mx-auto max-w-6xl space-y-16 pb-20">
       {/* ── Hero ─────────────────────────────────────────────── */}
       <header className="text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
-          Plans &amp; pricing
-        </p>
-        <h1 className="mx-auto mt-3 max-w-3xl font-serif text-4xl text-[#1a1a2e] md:text-5xl">
-          Compare the 3 Groundwork plans
+        <h1 className="mx-auto font-serif text-5xl font-semibold tracking-tight text-[#1a1a2e] md:text-6xl">
+          Plans &amp; Pricing
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[#6a6a7a]">
+        <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-[#3a3a4a] md:text-xl">
           Three ways to get a real contractor&apos;s clarity on your project.
         </p>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#6a6a7a]">
-          <span className="inline-flex items-center gap-1.5">
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-[#3a3a4a] md:text-base">
+          <span className="inline-flex items-center gap-2">
             <FaCheck className="text-[#2d5a3d]" /> Independent from your contractor
           </span>
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-2">
             <FaCheck className="text-[#2d5a3d]" /> Contractor clarity guarantee
           </span>
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-2">
             <FaInfinity className="text-[#2d5a3d]" /> Lifetime project access
           </span>
         </div>
@@ -57,12 +54,15 @@ export default function PlansPage() {
 
       {/* ── 3 Groundwork plans ───────────────────────────────── */}
       <section>
+        <h2 className="mb-8 text-center font-serif text-3xl font-semibold text-[#1a1a2e] md:text-4xl">
+          Groundwork Plans
+        </h2>
         <div className="grid gap-6 md:grid-cols-3 md:items-stretch">
           <PlanCard
             accent="#c08a5a"
             accentBg="#f6f3ed"
-            tag="Self-serve"
-            title="Groundwork Report"
+            tag="Self-guided"
+            title="Report"
             price="$199"
             priceNote="one-time · per room"
             highlights={[
@@ -78,15 +78,15 @@ export default function PlansPage() {
           <PlanCard
             accent="#1a1a2e"
             accentBg="#eef0f4"
-            tag="With expert calls"
-            title="Groundwork Pro"
+            tag="Expert Access"
+            title="Pro"
             price="$599"
             priceNote="one-time · per room"
             featured
             featuredLabel="Most popular · $10k+ projects"
             highlights={[
               "Everything in Groundwork Report",
-              "3 calls with your experienced contractor advisor",
+              "3 calls with your expert contractor advisor",
               "Bid comparison and review: upload up to 4 bids",
               "One round of scope refinement",
             ]}
@@ -96,14 +96,14 @@ export default function PlansPage() {
           <PlanCard
             accent="#2d5a3d"
             accentBg="#eef3ee"
-            tag="Concierge Service"
-            title="Groundwork Premium"
+            tag="Dedicated Advisor"
+            title="Premium"
             price="From $1,500+"
             priceNote="per month · based on project size"
             highlights={[
               "Everything in Groundwork Pro",
               "8 calls / month",
-              "1 onsite visit per month",
+              "1 onsite visit / month",
               "Unlimited email support",
               "Change-order and bid review",
               "Decision support throughout your build",
