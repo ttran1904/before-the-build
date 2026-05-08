@@ -39,7 +39,7 @@ export default function PlansPage() {
         <p className="mt-4 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
           Three ways to get a real contractor&apos;s clarity on your project
         </p>
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-[#3a3a4a] md:text-base">
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-[#3a3a4a] md:text-base">
           <span className="inline-flex items-center gap-2">
             <FaCheck className="text-[#2d5a3d]" /> Independent from your contractor
           </span>
@@ -53,8 +53,8 @@ export default function PlansPage() {
       </header>
 
       {/* ── 3 Groundwork plans ───────────────────────────────── */}
-      <section>
-        <div className="mb-8 rounded-2xl border border-[#ece9e3] bg-white px-8 py-6 text-center shadow-sm">
+      <section className="!mt-6">
+        <div className="mb-6 rounded-2xl border border-[#ece9e3] bg-white px-8 py-5 text-center shadow-sm">
           <h2 className="font-serif text-3xl font-semibold text-[#1a1a2e] md:text-4xl">
             Groundwork Plans
           </h2>
