@@ -70,7 +70,8 @@ export default function PlansPage() {
             highlights={[
               "Contractor-ready scope PDF",
               "Defined scope: in, out, undecided",
-              "Decision checklist and builder questions",
+              "Decision checklist",
+              "Builder questions",
               "Major variables map",
               "Reviewed by an experienced contractor advisor",
             ]}
@@ -113,7 +114,6 @@ export default function PlansPage() {
             ]}
             ctaHref="/dashboard/checkout?plan=premium"
             ctaLabel="Book a free 15-min call"
-            ctaVariant="outline"
             footnote="Larger projects and whole house renovations are priced on the discovery call."
           />
         </div>
@@ -370,10 +370,19 @@ function PlanCard({
         ))}
       </ul>
 
+      {footnote && (
+        <p
+          className="mt-7 text-center text-[11px] font-medium leading-relaxed"
+          style={{ color: accent }}
+        >
+          {footnote}
+        </p>
+      )}
       <Link
         href={ctaHref}
         className={
-          "mt-7 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition hover:opacity-90 " +
+          (footnote ? "mt-3 " : "mt-7 ") +
+          "inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition hover:opacity-90 " +
           (ctaVariant === "outline" ? "border-2 bg-white" : "text-white")
         }
         style={
@@ -384,11 +393,6 @@ function PlanCard({
       >
         {ctaLabel} <FaArrowRight className="text-xs" />
       </Link>
-      {footnote && (
-        <p className="mt-3 text-center text-[11px] leading-relaxed text-[#9a9aaa]">
-          {footnote}
-        </p>
-      )}
     </div>
   );
 }
