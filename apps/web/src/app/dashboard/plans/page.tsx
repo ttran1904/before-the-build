@@ -96,13 +96,13 @@ export default function PlansPage() {
           <PlanCard
             accent="#2d5a3d"
             accentBg="#eef3ee"
-            tag="Hands-on advisor"
+            tag="Concierge Service"
             title="Groundwork Premium"
-            price="From $1,500"
+            price="From $1,500+"
             priceNote="per month · based on project size"
             highlights={[
               "Everything in Groundwork Pro",
-              "8 scheduled 60-minute calls per month",
+              "8 calls / month",
               "1 onsite visit per month",
               "Unlimited email support",
               "Change-order and bid review",
@@ -328,11 +328,19 @@ function PlanCard({
         style={{ borderColor: accent + "33", backgroundColor: accentBg }}
       >
         <div className="flex items-baseline gap-1">
+          {price.startsWith("From ") && (
+            <span
+              className="font-serif text-2xl font-semibold leading-none"
+              style={{ color: accent }}
+            >
+              From
+            </span>
+          )}
           <span
             className="font-serif text-5xl font-bold leading-none"
             style={{ color: accent }}
           >
-            {price}
+            {price.startsWith("From ") ? price.slice(5) : price}
           </span>
           {priceUnit && (
             <span className="text-sm font-semibold text-[#6a6a7a]">
