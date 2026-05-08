@@ -85,8 +85,9 @@ export default function PlansPage() {
             title="Pro"
             price="$599"
             priceNote="one-time per room"
-            featured
-            featuredLabel="Most popular · $10k+ projects"
+            // demo: hide "Most popular" badge + bold border
+            // featured
+            // featuredLabel="Most popular · $10k+ projects"
             highlights={[
               "Everything in Groundwork Report",
               {
