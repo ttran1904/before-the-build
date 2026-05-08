@@ -33,11 +33,11 @@ export default function PlansPage() {
     <div className="mx-auto max-w-6xl space-y-16 pb-20">
       {/* ── Hero ─────────────────────────────────────────────── */}
       <header className="text-center">
-        <h1 className="mx-auto font-serif text-5xl font-semibold tracking-tight text-[#1a1a2e] md:text-6xl">
+        <h1 className="mx-auto font-serif text-4xl font-semibold tracking-tight text-[#1a1a2e] md:text-5xl">
           Plans &amp; Pricing
         </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-[#3a3a4a] md:text-xl">
-          Three ways to get a real contractor&apos;s clarity on your project.
+        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
+          Three ways to get a real contractor&apos;s clarity on your project
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-[#3a3a4a] md:text-base">
           <span className="inline-flex items-center gap-2">
@@ -54,9 +54,11 @@ export default function PlansPage() {
 
       {/* ── 3 Groundwork plans ───────────────────────────────── */}
       <section>
-        <h2 className="mb-8 text-center font-serif text-3xl font-semibold text-[#1a1a2e] md:text-4xl">
-          Groundwork Plans
-        </h2>
+        <div className="mb-8 rounded-2xl border border-[#ece9e3] bg-white px-8 py-6 text-center shadow-sm">
+          <h2 className="font-serif text-3xl font-semibold text-[#1a1a2e] md:text-4xl">
+            Groundwork Plans
+          </h2>
+        </div>
         <div className="grid gap-6 md:grid-cols-3 md:items-stretch">
           <PlanCard
             accent="#c08a5a"
@@ -96,7 +98,7 @@ export default function PlansPage() {
           <PlanCard
             accent="#2d5a3d"
             accentBg="#eef3ee"
-            tag="Dedicated Advisor"
+            tag="Concierge Advisory"
             title="Premium"
             price="From $1,500+"
             priceNote="per month · based on project size"
