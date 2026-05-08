@@ -33,10 +33,10 @@ export default function PlansPage() {
     <div className="mx-auto max-w-6xl space-y-16 pb-20">
       {/* ── Hero ─────────────────────────────────────────────── */}
       <header className="text-center">
-        <h1 className="mx-auto font-serif text-4xl font-semibold tracking-tight text-[#1a1a2e] md:text-5xl">
+        <h1 className="mx-auto font-serif text-4xl font-normal tracking-tight text-[#1a1a2e] md:text-5xl">
           Plans &amp; Pricing
         </h1>
-        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
+        <p className="mt-4 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#c08a5a]">
           Three ways to get a real contractor&apos;s clarity on your project
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-[#3a3a4a] md:text-base">
