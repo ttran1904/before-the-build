@@ -85,9 +85,8 @@ export default function PlansPage() {
             title="Pro"
             price="$599"
             priceNote="one-time per room"
-            // demo: hide "Most popular" badge + bold border
-            // featured
-            // featuredLabel="Most popular · $10k+ projects"
+            featured
+            featuredLabel="Most popular · $10k+ projects"
             highlights={[
               "Everything in Groundwork Report",
               {
@@ -116,7 +115,7 @@ export default function PlansPage() {
               "8 calls / month",
               "1 onsite visit / month",
               "Unlimited email support",
-              "Change-order and bid review",
+              "Change-order & bid review",
               "Decision support throughout your build",
               "3-month minimum commitment",
             ]}
@@ -272,6 +271,7 @@ function PlanCard({
   footnote,
   featured = false,
   featuredLabel = "Most popular",
+  dim = false,
 }: {
   accent: string;
   accentBg: string;
@@ -287,12 +287,14 @@ function PlanCard({
   footnote?: string;
   featured?: boolean;
   featuredLabel?: string;
+  dim?: boolean;
 }) {
   return (
     <div
       className={
-        "relative flex flex-col rounded-3xl bg-white p-7 " +
-        (featured ? "border-2 shadow-md" : "border border-[#ece9e3] shadow-sm")
+        "relative flex flex-col rounded-3xl bg-white p-7 transition " +
+        (featured ? "border-2 shadow-md " : "border border-[#ece9e3] shadow-sm ") +
+        (dim ? "opacity-40" : "")
       }
       style={featured ? { borderColor: accent } : undefined}
     >
