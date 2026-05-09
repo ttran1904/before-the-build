@@ -54,7 +54,7 @@ export default function PlansPage() {
 
       {/* ── 3 Groundwork plans ───────────────────────────────── */}
       <section className="">
-        <div className="mx-auto mb-6 max-w-2xl rounded-2xl border border-[#ece9e3] bg-white px-8 py-5 text-center shadow-sm">
+        <div className="mb-6 rounded-2xl border border-[#ece9e3] bg-white px-8 py-3 text-center shadow-sm">
           <h2 className="font-serif text-3xl font-semibold text-[#1a1a2e] md:text-4xl">
             Groundwork Plans
           </h2>
@@ -113,8 +113,8 @@ export default function PlansPage() {
               "3-month minimum commitment",
             ]}
             ctaHref="/dashboard/checkout?plan=premium"
-            ctaLabel="Book a complementary discovery call"
-            footnote="All projects are priced on the discovery call."
+            ctaLabel="Book a discovery call"
+            footnote="Projects are priced during the complimentary discovery call."
           />
         </div>
 
